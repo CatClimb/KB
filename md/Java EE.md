@@ -26,7 +26,7 @@ pring对java EE开发中一些非常难用的API（JDBC、JavaMail等），都�
 
 ### 1.1.2 Spring体系结构
 
-![Spring体系结构](F:\data\knowledge_data\md\pic\image-20210723191042413.png)
+![Spring体系结构](F:\data\knowledge_data\知识\md\pic\image-20210723191042413.png)
 
 <center><b>图1.1 Spring体系结构图</b></center>
 
@@ -237,7 +237,11 @@ Spring 3中为Bean定义了5中作用域，分别为singleton（单例）、prot
 
 
 
-![image-20210725095442116](F:\data\knowledge_data\md\pic\image-20210725095442116.png)
+![image-20210725095442116](F:\data\knowledge_data\知识\md\pic\image-20210725095442116.png)
+
+
+
+
 
 1. Spring 启动，查找并加载需要被 Spring 管理的 Bean，并实例化 Bean。
 
@@ -317,7 +321,9 @@ Spring 3中为Bean定义了5中作用域，分别为singleton（单例）、prot
 
 大概原因如下：
 
-![image-20210806161256808](F:\data\knowledge_data\md\pic\image-20210806161256808.png)
+![image-20210806161256808](F:\data\knowledge_data\知识\md\pic\image-20210806161256808.png)
+
+
 
 
 
@@ -606,7 +612,9 @@ AspectJ是一个基于Java语言的AOP框架，在`编译阶段`生成 AOP 代�
 
 
 
-![image-20210805160525939](F:\data\knowledge_data\md\pic\image-20210805160525939.png)
+![image-20210805160525939](F:\data\knowledge_data\知识\md\pic\image-20210805160525939.png)
+
+
 
 <center><b>图3.1 &lt;aop:aspect&gt;子元素</b></center>
 
@@ -1030,15 +1038,21 @@ User user= jdbcTemplate.queryForObject(sql, rowMapper,52);
 
 
 
-<img src="F:\data\knowledge_data\md\pic\image-20210811115914876.png" alt="image-20210811115914876" style="zoom:150%;" />
+<img src="F:\data\knowledge_data\知识\md\pic\image-20210811115914876.png" alt="image-20210811115914876" style="zoom:150%;" />
+
+
 
 <center><b>图5.1 <tx:advice>元素及其子元素</b></center>
 
-![image-20210811121246532](F:\data\knowledge_data\md\pic\image-20210811121246532.png)
+![image-20210811121246532](F:\data\knowledge_data\知识\md\pic\image-20210811121246532.png)
+
+
 
 <center><b>图5.2 传播行为的种类</b></center>
 
-![image-20210811121348380](F:\data\knowledge_data\md\pic\image-20210811121348380.png)
+![image-20210811121348380](F:\data\knowledge_data\知识\md\pic\image-20210811121348380.png)
+
+
 
 <center><b>图5.3 &lt;tx:method&gt;元素的属性 </b></center>
 
@@ -1139,7 +1153,7 @@ public void annotationTest(){
 
 
 
-# 六、MyBatis
+# 六、MyBatis值核心配置
 
 [什么是MyBatis？](####ORM)
 
@@ -1147,9 +1161,11 @@ public void annotationTest(){
 
 [这两个框架的区别在哪？](####ORM)
 
+[SQL注入原理、预防策略和MyBaits防止注入原理](####SQL注入)
+
 ## 6.1 MyBatis工作原理
 
-![image-20210811173739494](F:\data\knowledge_data\md\pic\image-20210811173739494.png)
+![image-20210811173739494](F:\data\knowledge_data\知识\md\pic\image-20210811173739494.png)
 
 <center><b>图6.1 MyBatis框架执行流程图 </b></center>
 
@@ -1198,11 +1214,11 @@ SqlSession是MyBatis的另一个重要的对象，他是应用程序与持久层
 
 
 
-## 6.3 配置文件
+## 6.3 核心配置文件
 
 ### 6.3.1 主要元素
 
-![image-20210813183703416](F:\data\knowledge_data\md\pic\image-20210813183703416.png)
+![image-20210813183703416](F:\data\knowledge_data\知识\md\pic\image-20210813183703416.png)
 
 <center><b>图6.2 MyBatis配置文件中的主要元素</b></center>
 
@@ -1225,11 +1241,6 @@ mybatis-config.xml
 
 ```xml
 <properties resource="db.properties"/>
-
-
-
-
-
 
 <dataSource type="POOLED">
     <property name="driver" value="${jdbc.driver}"/>
@@ -1381,6 +1392,578 @@ public class MyObjectFactory extends DefaultObjectFactory{
 </objectFactory>
 ```
 
+### 6.3.7 &lt;plugins&gt;元素
+
+略（待处理）
+
+### 6.3.8 &lt;environments&gt;元素
+
+可以通过<environments>元素配置多种数据源，即`配置多种数据库。`
+
+```xml
+<environments default="development">
+    <environment id="development">
+    使用JDBC事务管理
+        <transactionManager type="JDBC" />
+        配置数据源
+        <dataSource type="POOLED">
+            <property name="driver" value="${jdbc.driver}"/>
+            <property name="url" value="${jdbc.url}"/>
+            <property name="username" value="${jdbc.username}"/>
+            <property name="password" value="${jdbc.password}"/>
+        </dataSource>
+    </environment>
+    <environment id="xxxx">...</environment>
+</environments>
+```
+
+在MyBatis中，可以配置两种类型的==事务管理器==，分别时JDBC和MANAGED，描述如下：
+
+`JDBC`：此配置直接使用了JDBC的提交和回滚设置，它依赖于从数据源得到的连接来管理事务的作用域。
+
+`MANAGED`：此配置从来不提交或回滚一个连接，而是让容器来管理事务的整个生命周期。在默认情况下，它会关闭连接，但一些容器并不希望这样，为此可以将closeConnect属性设置为false来阻止它默认的关闭行为。
+
+MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，具体如下：
+
+1. UNPOOLED
+
+   它对没有性能要求的简单应用程序时一个很好的选择。
+
+   额外配置属性有defaultTransactionIsolationLevel（默认的连接事务隔离级别）
+
+2. POOLED
+
+   <img src="F:\data\knowledge_data\知识\md\pic\1336165-20190329095229009-667958233.png" alt="img"  />
+
+   <center><b>图6.3 POOLED数据源可额外配置的属性</b></center>
+
+3. JNDI
+
+   此数据源可以在EJB(企业java beans)或应用服务器等容器中使用。容器可以集中或在外部配置数据源，然后放置一个JNDI上下文的引用。
+
+   配置JNDI数据源时，只需要配置两个属性，如图所示：
+
+   
+
+   ![img](F:\data\knowledge_data\知识\md\pic\1336165-20190329095422072-1313652381.png)
+
+   <center><b>图6.4 JNDI数据源需要配置的属性</b></center>
+
+
+
+### 6.3.9 &lt;mappers&gt;元素
+
+<mappers>元素用于指定MyBatis映射文件的位置。
+
+1. 使用类路径引入
+
+   ```xml
+   <mappers>
+       <mapper resource="com/itheima/mapper/UserMapper.xml"/>
+   </mappers>
+   ```
+
+2. 使用本地文件路径引入
+
+   ```xml
+   <mappers>
+       <mapper url="file:///D:/com/itheima/mapper/UserMapper.xml"/>
+   </mappers>
+   ```
+
+3. 使用接口类引入
+
+   ```xml
+   <mappers>
+       <mapper class="com.itheima.mapper.UserMapper"/>
+   </mappers>
+   ```
+
+4. 使用包名引入
+
+   ```xml
+   <mappers>
+       <mapper package="com.itheima.mapper"/>
+   </mappers>
+   ```
+
+## 6.4 核心映射文件
+
+### 6.4.1主要元素
+
+![img](F:\data\knowledge_data\知识\md\pic\70.png)
+
+<center><b>图6.5 映射文件的主要元素</b></center>
+
+### 6.4.2&lt;select&gt;元素
+
+```xml
+<select id="findCustomerById" parameterType="Integer" resultType="com.itheima.po.Customer">
+</select>
+```
+
+<center><b>表6.2 &lt;select&gt;元素的常用属性</b></center>
+
+|     属性      |                             说明                             |
+| :-----------: | :----------------------------------------------------------: |
+|      id       | 表示命名空间中的唯一标识符，常与命名空间组合起来使用。组合后如果不唯一，MyBatis会抛出异常 |
+| parameterType | 该属性表示传入SQL语句的参数类型的全限定名或者别名。因为MyBatis可以通过TypeHandler推断出具体传入语句的参数。器默认值是unset（依赖于驱动） |
+|   resultMap   | 表示外部resultMap的命名引用。返回时可以使用resultType或resultMap。 |
+|  flushCache   | 表示在调用SQL语句之后，是否需要MyBatis清空之前查询的本地缓存和二级缓存。其值为布尔类型（true\|false），默认为false。如果设置为true，则任何时候只要SQL语句被调用，都会清空本地缓存和二级缓存 |
+|   useCache    | 用于控制二级缓存的开启和关闭。其值为布尔类型（true\|false），默认值true，表示将查询结果存入二级缓存 |
+|    timeout    |  用于设置超时参数，单位为秒。超时时将抛出异常（数字123456）  |
+|   fetchSize   |     获取记录的总条数设定，其默认值是unset（依赖于驱动）      |
+| statementType | 用于设置MyBatis使用哪个JDBC的Statement工作，其值为STATEMENT、PREPARED（默认值）或CALLABLE，分别对应JDBC中的Statement、PreparedStatement和CallableStatement |
+| resultSetType | 表示结果集的类型。其值可设置为FORWARD_ONLY、SCROLL_SENSITIVE或SCROLL_INSENSITIVE，它的默认值是unset（依赖于驱动） |
+
+### 6.4.3&lt;insert&gt;元素
+
+<center><b>表6.3 &lt;insert&gt;元素中的属性</b></center>
+
+|       属性       |                             说明                             |
+| :--------------: | :----------------------------------------------------------: |
+|   keyProperty    | （仅对insert和update有用）此属性的作用是将插入或更新操作时的返回值赋给PO类的某个属性，通常会设置为主键对应的属性。如果需要设置联合主键，可以在多个值之间用逗号隔开（`用于接收自增长id值并返回到指定的PO类的属性`） |
+|    keyColumn     | （仅对insert和update有用）此属性用于设置第几列时主键，当主键列不是表中的第一列时需要设置。在需要主键联合时，值可以用逗号隔开（`比keyProperty只有指定作用吧`（==大概==）） |
+| useGeneratedKeys | （仅对insert和update有用）此属性会使MyBatis使用JDBC的getGeneratedKeys()方法来获取由`数据库内部生产`的主键，如MySQL和SQL Server等自动递增的字段，其默认值为false |
+
+### 6.4.4&lt;update&gt;元素
+
+```xml
+<update id="updateRoleInfoById" parameterType="com.framework.modules.member.entity.RoleInfoEntity">
+        update t_role_info
+        set
+        role_name=#{role_name},status=#{status},scribe=#{scribe},update_time=sysdate()
+        where role_id=#{role_id}
+    </update>
+```
+
+
+
+### 6.4.5&lt;delete&gt;元素
+
+```xml
+<delete id="mulDeleteRoleInfoById" parameterType="java.util.List">
+    delete from t_role_info
+    where 1=1 and
+    <foreach collection="list" item="item" separator=" or ">
+        role_id=#{item}
+    </foreach>
+</delete>
+```
+
+### 6.4.6&lt;sql&gt;元素
+
+抽取重复使用的列，提高效率。
+
+```xml
+<sql id="customerColumns">id,username,jobs,phone</sql>
+
+
+
+select <include refid="customerColumns"/> from t_customer
+where id=#{id}
+```
+
+### 6.4.7&lt;resultMap&gt;元素
+
+它表示结果映射集，主要作用是`定义映射规则`、`级联的更新`以及`定义类型转化器`等。
+
+<resultMap>中的一些子元素：
+
+```xml
+<resultMap>
+    <constructor>类在实例化时，用来注入结果岛构造方法中
+        <idArg/>ID参数；标记结果作为ID
+        <arg/>注入到构造方法的一个普通结果
+    </constructor>
+    <id/>用于表示哪个列是主键
+    <result/>注入到字段或JavaBean属性的普遍结果
+    <association property=""/>用于一对一关联
+    <collection property=""/>用于一对多关联
+    <discriminator jaaType="">使用结果值来决定使用哪个结果映射
+        <case value=""/>基于某些值的结果映射
+    </discriminator>
+</resultMap>
+```
+
+例子如下：
+
+```xml
+<resultMap type="con.itheima.mapper.UserMapper" id="resultMap">
+    <id property="id" column="t_id"/>
+    <result property="name" column="t_name"/>
+    <result property="age" column="t_age"/>
+</resultMap>
+
+<select id="findAllUser" resultMap="resultMap">
+    select * from t_user
+</select>
+```
+
+#### 1. &lt;association&gt;子元素：
+
+属性如下：
+
+|   属性    |                             说明                             |
+| :-------: | :----------------------------------------------------------: |
+| property  |          指定映射到实体类对象属性，与表字段一一对应          |
+|  column   |                      指定表中对应的字段                      |
+| javaType  |                 指定映射到实体对象属性的类型                 |
+|  select   | 指定引入嵌套查询的子SQL语句，该属性用于关联映射中的嵌套查询  |
+| fetchType | 指定在关联查询时是否启用延迟加载。值为lazy和eager。默认为lazy |
+
+使用方式为：
+
+```xml
+嵌套查询 效率不高，多执行一个sql语句
+<association property="idcard" column="card_id" javaType="idCard"
+	select="com.itheima.mapper.IdCardMapper.findCodeById"/>
+嵌套结果
+<association property="idcard" column="card_id" javaType="idCard">
+	<id property="id" column="card_id"/>
+    <result property="code" column="code"/>
+</association>
+```
+
+#### 2. &lt;collection&gt;元素：
+
+
+
+
+
+待扩展
+
+
+
+
+
+### 6.4.8&lt;selectKey&gt;元素
+
+通过之定义的语句来设置数据中的主键。(自定义生成主键)
+
+属性如下：
+
+```xml
+<selectKey
+    keyProperty=
+    resultType=
+    order=
+    statementType=
+>
+```
+
+实例如下：
+
+```xml
+<insert id-"insertCustomer" parameterType="com.itheima.po.Customer">
+    <selectKey keyProperty="id" resultType="Integer" order="BEFORE">
+        select if(max(id) is null,1,max(id)+1) as newId from t_customer
+    </selectKey>
+    insert into t_customer(id,username,jobs,phone)
+    values(#{id},#{username},#{jobs},#{phone})
+</insert>
+```
+
+# 六-2、MyBatis动态SQL
+
+MyBatis 3采用了功能强大的基于[OGNL](####OGNL)的表达式来完成动态SQL。
+
+主要元素如下：
+
+|            元素             |                             说明                             |
+| :-------------------------: | :----------------------------------------------------------: |
+|            <if>             |                             判断                             |
+| <choose>(<when><otherwise>) |                            switch                            |
+|   <where>、<trim>、<set>    |         辅助元素，用于处理一些SQL拼装、特殊字符问题          |
+|          <foreach>          |                           循环语句                           |
+|           <bind>            | 从OGNL表达式中创建一个变量，并将其绑定到上下文，常用于模糊查询的sql中 |
+
+元素使用如下：
+
+## 6-2.1 &lt;if&gt;元素
+
+```xml
+<if test="username != null and username !='' "></if>
+```
+
+**<choose>(<when><otherwise>)元素**：
+
+```xml
+<choose>
+    <when text="username != null and username !=''">
+        and username like concat('%',#{username},'%')
+    </when>
+    <otherwise>
+        and phone is not null
+    </otherwise>
+</choose>
+```
+
+## 6-2.2 &lt;where&gt;元素
+
+`只有<where>元素内条件成立时，才会在拼接SQL中加入where关键字，否则将不会添加,即使where之后又多余的and 或 or 它也会自动将它们去除。`
+
+```xml
+select * from t_customer
+<where>
+    <if test="username != null and username !='' ">
+        and username like concat('%',#{username},'%')
+    </if>
+    <if test="jobs != null and jobs !='' ">
+        and jobs like concat('%',#{jobs},'%')
+    </if>
+
+</where>
+```
+
+## 6-2.3 &lt;trim&gt;元素
+
+mybatis的**trim**标签一般用于去除sql语句中多余的and关键字，逗号，或者给sql语句前拼接 “where“、“set“以及“values(“ 等前缀，或者添加“)“等后缀，可用于选择性插入、更新、删除或者条件查询等操作。
+
+|    **属性**     |                           **描述**                           |
+| :-------------: | :----------------------------------------------------------: |
+|     prefix      |                     给sql语句拼接的前缀                      |
+|     suffix      |                     给sql语句拼接的后缀                      |
+| prefixOverrides | 去除sql语句前面的关键字或者字符，该关键字或者字符由prefixOverrides属性指定，假设该属性指定为"AND"，当sql语句的开头为"AND"，trim标签将会去除该"AND" |
+| suffixOverrides | 去除sql语句后面的关键字或者字符，该关键字或者字符由suffixOverrides属性指定 |
+
+```xml
+select * from t_customer
+<trim  prefix="where" prefixOverrides="and">
+    <if test="username != null and username !='' ">
+        and username like concat('%',#{username},'%')
+    </if>
+    <if test="jobs != null and jobs !='' ">
+        and jobs like concat('%',#{jobs},'%')
+    </if>
+</trim>
+```
+
+## 6-2.4 &lt;set>元素
+
+主要作用是在动态包含的SQL语句钱输出一个SET关键字，并将SQL语句中最后一个多余的逗号去除。shilie示例如下：
+
+
+
+```xml
+update t_customer
+<set>
+    <if test="username != null and username !='' ">
+         username=#{username},
+    </if>
+    <if test="jobs != null and jobs !='' ">
+        jobs=#{jobs},
+    </if>
+</set>
+where id=#{id}
+```
+
+## 6-2.5 &lt;foreach&gt;元素
+
+```xml
+ <update id="mulUpdate_statusToCloseByIds" parameterType="java.util.List">
+        update t_role_info
+        SET
+        status='禁用', update_time=sysdate()
+        where 1=1
+        and role_id in
+        <foreach collection="list" index="index" separator="," item="item" open="(" close=")">
+            #{item}
+        </foreach>
+    </update>
+```
+
+collection：属性值有list or array or collection，也可以对应参入的参数名。
+
+index：指当前元素在集合位置的索引。
+
+## 6-2.6 &lt;bind&gt;元素
+
+它是用于模糊查询中不同数据库的不同实现方式而存在的同一口径元素。
+
+其属性有：
+
+* name
+* value：值为[OGNL](####OGNL)表达式。
+
+使用如下：
+
+```xml
+<bind name="patter_name" value="'%'+username+'%'"/>
+select * from t_customer
+where
+username = #{patter_name}
+```
+
+# 六-3、MyBatis关联映射
+
+MyBatis关联映射主要用来处理Java对象中的三种映射关系。
+
+java对象关系概述：
+
+**一对一**：
+
+```java
+class A{
+    B b;
+}
+class B{
+   B b;
+}
+实际只需要一个关系
+```
+
+**一对多：**
+
+```java
+class A{
+    List<B> b;
+}
+class{
+    A a;
+}
+实际只需要List关系
+```
+
+**多对多：**
+
+```java
+class A{
+    List<B> b;
+}
+class B{
+    List<A> a;
+}
+```
+
+
+
+## 6-3.1 一对一关联
+
+关联数据库如下：
+
+```mysql
+create table tb_idcard(
+	id int primary key auto_increment,
+    CODE varchar(18)
+);
+
+insert into tb_idcard(CODE) values ('152221198711020624'),('152201199008150317');
+
+create table tb_person(
+    id int primary key auto_increment,
+    name varchar(32),
+    age int,
+    sex varchar(8),
+    card_id int unique,
+    foreign key(card_id) references tb_idcard(id)
+);
+
+insert into tb_person(name,age,sex,card_id) values
+('Rose',29,'女',1),('tom',27,'男',2);
+
+```
+
+对象如下：
+
+```java
+public class Person {
+	private Integer id;
+	private String name;
+	private Integer age;
+	private String sex;
+	private IdCard	idcard;
+}
+
+public class IdCard {
+	private Integer id;
+	private String code;
+}
+```
+
+mapper.xml如下：
+
+```xml
+IdCardMapper
+ <select id="findCodeById" parameterType="idCard" resultType="idCard">
+ 		select * from tb_idcard where id=#{id}
+ </select>
+ </mapper>
+
+
+PersonMapper
+<select id="oneToOneByIdNest1" parameterType="Integer" resultMap="IdCardWithPersonResult">
+    select * from tb_person where id=#{id}
+</select>
+
+<resultMap type="person" id="IdCardWithPersonResult">
+ 	<id property="id" column="id" />
+ 	<result property="name" column="name"/>
+ 	<result property="age" column="age"/>
+ 	<result property="sex" column="sex"/>
+    嵌套查询 效率不高，执行了两条SQL 应使用嵌套结果
+ 	<association property="idcard" column="card_id" javaType="idCard"
+ 		select="com.itheima.mapper.IdCardMapper.findCodeById"/>
+</resultMap>
+测试结果如下：
+    DEBUG [main] - ==>  Preparing: select * from tb_person where id=? 
+    DEBUG [main] - ==> Parameters: 1(Integer)
+    DEBUG [main] - ====>  Preparing: select * from tb_idcard where id=? 
+    DEBUG [main] - ====> Parameters: 1(Integer)
+    DEBUG [main] - <====      Total: 1
+    DEBUG [main] - <==      Total: 1
+    Person [id=1, name=Rose, age=29, sex=女, idcard=IdCard [id=1, code=152221198711020624]]
+
+```
+
+## 6-3.2 一对多关联
+
+关联数据库：
+
+```mysql
+CREATE TABLE tb_user (
+               id int(32) PRIMARY KEY AUTO_INCREMENT,
+               username varchar(32),
+							 address varchar(256)
+        ); 
+ INSERT INTO tb_user VALUES (1,'詹姆斯','克利芙兰'); 
+ INSERT INTO tb_user VALUES (2,'科比','洛杉矶'); 
+ INSERT INTO tb_user VALUES (3,'保罗','洛杉矶'); 
+ 
+ 
+  CREATE TABLE tb_orders (
+               id int(32) PRIMARY KEY AUTO_INCREMENT,
+               number varchar(32) not null,
+							 user_id int(32)  not null ,
+							 FOREIGN KEY(user_id) REFERENCES tb_user(id) 
+); 
+
+ INSERT INTO tb_orders VALUES (1,'1000011','1'); 
+ INSERT INTO tb_orders VALUES (2,'1000012','1'); 
+ INSERT INTO tb_orders VALUES (3,'1000013','2'); 
+
+```
+
+POJO如下：
+
+```java
+public class User {
+		private Integer id;
+		private String username;
+		private String address;
+		private List<Orders> ordersList;
+}
+
+public class Orders {
+	private Integer id;
+	private String number;
+}
+```
+
+
+
+
+
 
 
 # 参考文献
@@ -1431,7 +2014,7 @@ JAVA反射机制是在运行状态中，对于任意一个类，都能够知道�
 
 要想解剖一个类,必须先要获取到该类的字节码文件对象。而解剖使用的就是Class类中的方法.所以先要获取到每一个字节码文件对应的Class类型的对象。
 
-<img src="F:\data\knowledge_data\md\pic\20170513133210763" alt="img" style="zoom: 200%;" />
+<img src="F:\data\knowledge_data\知识\md\pic\20170513133210763" alt="img" style="zoom: 200%;" />
 
 
 
@@ -1463,7 +2046,7 @@ ASM是一个多用途的Java字节码操控和分析框架。
 
 #### 事务管理核心接口
 
-![image-20210809160557301](F:\data\knowledge_data\md\pic\image-20210809160557301.png)
+![image-20210809160557301](F:\data\knowledge_data\知识\md\pic\image-20210809160557301.png)
 
 ==**PlatformTransactionManager**==
 
@@ -1562,3 +2145,34 @@ MyBatis的二级缓存配置都是在每个具体的表-对象映射中进行详
 #### 二级缓存（待处理）
 
 #### 延迟加载（待处理）
+
+#### OGNL
+
+**对象导航图语言**（Object Graph Navigation Language），简称**OGNL**，是应用于[Java](https://baike.baidu.com/item/Java)中的一个[开源](https://baike.baidu.com/item/开源)的表达式语言（Expression Language），它被集成在[Struts2](https://baike.baidu.com/item/Struts2)等框架中，作用是对[数据](https://baike.baidu.com/item/数据)进行访问，它拥有[类型](https://baike.baidu.com/item/类型)转换、访问[对象](https://baike.baidu.com/item/对象)[方法](https://baike.baidu.com/item/方法)、操作[集合](https://baike.baidu.com/item/集合)对象等功能。
+
+#### SQL注入
+
+[SQL注入是什么，如何避免SQL注入？ (biancheng.net)](http://c.biancheng.net/view/8283.html)
+
+**原理：**
+
+SQL 注入（SQL Injection）是发生在 Web 程序中数据库层的安全漏洞，是网站存在最多也是最简单的漏洞。主要原因是程序对用户输入数据的合法性没有判断和处理，导致攻击者可以在 Web 应用程序中事先定义好的 SQL 语句中添加额外的 SQL 语句，在管理员不知情的情况下实现非法操作，以此来实现欺骗数据库服务器执行非授权的任意查询，从而进一步获取到数据信息。
+
+简而言之，SQL 注入就是在用户输入的字符串中加入 SQL 语句，如果在设计不良的程序中忽略了检查，那么这些注入进去的 SQL 语句就会被数据库服务器误认为是正常的 SQL 语句而运行，攻击者就可以执行计划外的命令或访问未被授权的数据。
+
+**预防之参数化查询：**
+
+参数化查询目前被视作是预防 SQL 注入攻击最有效的方法。参数化查询是指在设计与数据库连接并访问数据时，在需要填入数值或数据的地方，使用参数（Parameter）来给值。
+
+MySQL 的参数格式是以“?”字符加上参数名称而成，如下所示：
+
+```mysql
+UPDATE myTable SET c1 = ?c1, c2 = ?c2, c3 = ?c3 WHERE c4 = ?c4
+```
+
+在使用参数化查询的情况下，数据库服务器不会将参数的内容视为 SQL 语句的一部分来进行处理，`而是在数据库完成 SQL 语句的编译之后，才套用参数运行。因此就算参数中含有破坏性的指令，也不会被数据库所运行。`
+
+MyBatis怎么预防的？
+
+编写mybatis的映射语句时，尽量采用“#{xxx}”（`底层已经实现sql预编译在传入参数的`）这样的格式。若不得不使用“${xxx}”这样的参数，要手工地做好过滤工作，来防止sql注入攻击。
+
