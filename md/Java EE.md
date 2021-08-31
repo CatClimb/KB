@@ -3350,7 +3350,6 @@ public class LoginInterceptor implements HandlerInterceptor {
 		<mvc:exclude-mapping path="/login"/>
 		<bean class="com.itheima.interceptor.LoginInterceptor"/>
 	</mvc:interceptor>
- 
 </mvc:interceptors>
 ```
 
