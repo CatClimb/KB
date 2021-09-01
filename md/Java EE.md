@@ -1085,8 +1085,6 @@ User user= jdbcTemplate.queryForObject(sql, rowMapper,52);
 
 ### 5.2.1 基于XML方式的声明式事务
 
-
-
 applicationContext.xml：
 
 ```xml
@@ -1142,7 +1140,9 @@ public void annotationTest(){
 
 ### 5.2.2 基于注解方式的声明式事务♥♥♥♥
 
-`@EnableTransactionManagement`等同于<tx:annotation-driven transaction-manager=“transactionManager”/>,在SpringBoot中已经自动配置了。
+`@EnableTransactionManagement`等同于`<tx:annotation-driven transaction-manager=“transactionManager”/>`,在SpringBoot中已经自动配置了。
+
+==**@Transactional**==标注到Bean类上，则对所有方法有效，标注到方法上则只对该方法有效。
 
 目标方法：
 
@@ -2482,7 +2482,7 @@ MyBatis配置文件：
 </configuration>
 ```
 
-Spring配置文件：
+Spring MVC配置文件：
 
 ```xml
 <context:property-placehoder location="classpath:db.properties"/>
@@ -2521,7 +2521,7 @@ Mapper代理开发
 
 使用条件：Mapper.xml文件与Mapper接口的类 路径相同（同一包下）。
 
-### 7.3.2 基于MapperScannerConfigurer的整合
+### 7.3.2 基于MapperScannerConfigurer的整合♥♥♥♥
 
 MapperScannerConfigurer类在Spring配置文件中使用时可以配置以下几个属性：
 
@@ -2533,7 +2533,7 @@ MapperScannerConfigurer类在Spring配置文件中使用时可以配置以下几
 
 
 
-该整合针对上个的`Spring配置文件臃肿`进行改革，改革后的Spring配置文件如下：
+该整合针对上个的`Spring 配置文件臃肿`进行改革，改革后的Spring 配置文件如下：
 
 ```xml
 Mapper代理开发
@@ -2542,7 +2542,13 @@ Mapper代理开发
 </bean>
 ```
 
+`配置该扫描器后`，MyBatis配置文件中`无需在配置`以下信息：
 
+```xml
+<mappers>
+        <mapper resource="sqlmap/User.xml"/>
+    </mappers>
+```
 
 # 八、Spring MVC
 
@@ -2601,7 +2607,7 @@ servletName指的是在web.xml中的DispatcherServlet的名称，在如上代码
 
 ### 8.2.2 Controller (控制器)注解类型
 
-使用注解标注控制器类，在**spring配置文件**中加入:
+使用注解标注控制器类，在**Spring MVC配置文件**中加入:
 
 ```xml
 <context:component-scan base-package=“com.itheimacontroller”/>
@@ -2653,6 +2659,8 @@ servletName指的是在web.xml中的DispatcherServlet的名称，在如上代码
 ####  3. 请求处理方法的参数类型和返回类型
 
 扩展待处理
+
+==**String类型的返回值可以跳转视图，但不能携带数据。**==
 
 1. **redirect 重定向**
 
@@ -2708,7 +2716,7 @@ public class FirstController implements Controller{
 }
 ```
 
-并在**spring配置文件**中加入：
+并在**Spring MVC配置文件**中加入：
 
 ```xml
 配置处理器Handle，映射“/firstController”请求
@@ -2724,7 +2732,7 @@ class="com.itheima.controller.FirstController"/>
 
 ==**使用注解时：**==
 
-**spring配置文件：**
+**Spring MVC配置文件：**
 
 ```xml
 <context:component-scan base-package="com.itheima.controller"/>
@@ -2815,9 +2823,7 @@ public String selectUser(Integer id){
 
 ==**注意**==
 
-当前端请求中参数名和后台控制器类方法中的形参名不一样时，会报错。
-
-需使用==**@RequestParam**==注解来进行`间接对应`。
+当前端请求中参数名和后台控制器类方法中的形参名不一样时，会报错，需使用==**@RequestParam**==注解来进行`间接对应`。
 
 例子如下：
 
@@ -2933,7 +2939,7 @@ public class DateConverter implements Converter<String,Date>{
 }
 ```
 
-**Spring配置文件加入：**
+**Spring MVC配置文件加入：**
 
 ```xml
 显示的装配自定义类型转换器
@@ -2985,7 +2991,7 @@ public class DateFormatter implements Formatter<Date>{
 }
 ```
 
-**Spring配置文件：**
+**Spring MVC配置文件：**
 
 ```xml
 显示的装配自定义类型转换器
@@ -3104,10 +3110,10 @@ MappingJackson2HttpMessageConverter是Spring MVC默认处理JSON格式请求响�
 | @RequestBody  | 用于将请求体中的数据绑定到方法的形参中。该注解用在`方法的形参上` |
 | @ResponseBody |          用于直接放回return对象。该注解用在`方法上`          |
 
-**Spring配置文件加入：**
+**Spring MVC配置文件加入：**
 
 ```xml
-配置注解驱动
+配置注解驱动 json and xml
 <mvc:annotation-driven/>
 配置静态资源的访问映射，此配置中的文件，将不被前端控制器拦截
 <mvc:resources location="/js/" mapping="/js/**"/>
@@ -3215,7 +3221,7 @@ public User selectUser(@PathVariable("id") String id)
 
 **@PathVariable：**
 
-将请求URL中的变量映射到方法的形参上。如果请求路径为“/user/{id}”，即请求参数中的id和方法形参名称id一样，则@PathVariable后面的“`("id")`”可以`省略`。
+将请求URL中的变量映射到方法的形参上。如果请求路径为“/user/{id}”，即请求参数中的id和方法形参名称id一样，则==@PathVariable==后面的“`("id")`”可以`省略`。
 
 # 十一、拦截器
 
@@ -3267,7 +3273,7 @@ public class CustomInterceptor implements HandleInterceptor{
 
 让自定义拦截器生效。
 
-**Spring配置文件：**
+**Spring MVC配置文件：**
 
 ```xml
 配置拦截器
@@ -3311,7 +3317,7 @@ public class CustomInterceptor implements HandleInterceptor{
 
 略
 
-**Interceptor：**
+**Interceptor类：**
 
 ```java
 public class LoginInterceptor implements HandlerInterceptor {
@@ -3341,7 +3347,7 @@ public class LoginInterceptor implements HandlerInterceptor {
 }
 ```
 
-**Spring配置文件：**
+**Spring MVC配置文件：**
 
 ```xml
 <mvc:interceptors>
@@ -3350,13 +3356,392 @@ public class LoginInterceptor implements HandlerInterceptor {
 		<mvc:exclude-mapping path="/login"/>
 		<bean class="com.itheima.interceptor.LoginInterceptor"/>
 	</mvc:interceptor>
- 
 </mvc:interceptors>
 ```
 
 
 
-# 文件上传和下载
+# 十二、文件上传和下载
+
+## 12.1 文件上传
+
+Spring MVC对文件上传进行支持，通过MultipartResolver（`多部解析器`）对象实现的。MultipartResovler是一个接口，需要它的实现类CommonsMultipartResolver来完成。在Spring MVC配置文件中定义即可：
+
+**Spring MVC配置文件：**
+
+```xml
+<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	<property name="defaultEncoding" value="UTF-8"/>
+	<property name="maxUploadSize" value="2097152"/>
+</bean>
+```
+
+CommonsMultipartResolver还可配置如下属性：
+
+==maxUploadSize：==上传文件最大长度（以字节为单位）
+
+==maxInMemorySize：==缓存中的最大尺寸
+
+==defaultEncoding：==默认编码格式
+
+==resolveLazily：==推迟文件解析，以便在Controller中捕获文件大小异常
+
+（继上回Spring MVC配置文件）应用案例如下：
+
+**fileUpload.jsp：**
+
+```jsp
+<html>
+    <head>
+        <script>
+        	function check(){
+                var name=document.getElementById("name").value;
+                var file=document.getElementById("file").value;
+            }
+        </script>
+    </head>
+    <body>
+        <form action="${pageContext.request.contextPath}/fileUpload" method="post" enctype="multipart/form-data" onsubmit="return  check()">
+			上传人：<input id="file" type="text" name="name" /><br/>
+			请选择文件：<input id="file" type="file" name="uploadfile" multiple="multiple"/><br/>
+			<input type="submit" value="上传"/>
+        </form>
+    </body>
+</html>
+```
+
+**FileUploadController类：**
+
+```java
+@Controller
+@requestMapping("fileUpload")
+public String handlerFormUpload(@RequestParam("name") String name,@RequestParam("uploadfile") List<MultipartFile> uploadfile,HttpServletRequest request){
+    if(!uploadfile.isEmpty()&&uploadfile.size()>0){
+        for(MultipartFile file :uploadfile){
+            String originalFilename=file.getOriginalFilename();
+            String dirPath=request.getServletContext().getRealPath("/upload/");
+            File filePath=new File(dirPath);
+            if(!filePath.exists()){
+                filePath.mkdirs();
+            }
+            String newFileName=name+"_"+UUID.randomUUID()+"_"+originalFilename;
+            try{
+                file.transferTo(new File(dirPath+newFilename));
+            }catch(Exception e){
+                
+				e.printStackTrace();
+				return "error";
+            }
+        }
+        return "success";
+    }else{
+        return "error";
+    }
+    
+}
+```
+
+文件被封装在org.springframework.web.multipart.MultipartFile接口的实现类中。
+
+
+
+<center><b>表 12.1 MultipartFile接口中的主要方法</b></center>
+
+|             方法             |                说明                 |
+| :--------------------------: | :---------------------------------: |
+|      byte[] getBytes()       |   以字节数组的形式返回文件的内容    |
+|   String getContentType()    |         返回文件的内容类型          |
+| InputStream getInputStream() | 读取文件内容，返回一个InputStream流 |
+|       String getName()       |    获取多部件form表单的参数名称     |
+| String getOriginalFilename() |       获取上传文件的初始化名        |
+|        long getSize()        |    获取上传文件大小，单位是字节     |
+|      boolean isEmpty()       |        判断上传文件是否为空         |
+|  void transferTo(File file)  |     将上传文件保存到目标目录下      |
+
+默认上传文件所在目录：
+
+
+
+`workspace\.metadata\.plugins\org.eclipse.wst.server.core\tmp1\wtpwebapps\chapter16\upload`
+
+## 12.2 文件下载
+
+Spring MVC提供了`ResponseEntity`对象，使用它可以很方便地定义返回的`HttpHeaders`对象和`HttpStatus`对象，即可完成下载文件时所需的配置信息。
+
+应用如下：
+
+**download.jsp：**
+
+```jsp
+<a href="${pageContext.request.contextPath}/download?filename=<% =URLEncoder.encode("壁纸.jpg","UTF-8") %> ">
+	中文名称文件下载
+</a>
+```
+
+**FileUploadController类：**
+
+```java
+@RequestMapping("/download")
+public ResponseEntity<byte[]> fileDownload(HttpServletRequest request,String filename)throws Exception{
+    String path =request.getServletContext().getRealPath("/upload");
+    File file=new File(path+File.separator+filename);
+ 	 //解决文件名中文乱码  
+    filename=this.getFilename(request,filename);
+    HttpHeaders headers =new HttpHeaders();
+    //通知浏览器以下载方式打开
+    headers.setContentDispositionFormData("attachment",filename);
+    //定义以流的形式下载返回文件数据
+    headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+    return new ResponseEntity<byte []>(FileUtils.readFileToByteArray(file),headers,HttpStatus.OK);
+    
+}
+//根据浏览器的不同进行编码设置，返回编码后的文件名
+public String getFilename(HTTPServletRequest request,String filename)throws Exception{
+    String[] IEBrowserKeyWords={"MSIE","Trident","Edge"};
+    String userAgent=request.getHeader("User-Agent");
+    for(String keyWord:IEBrowserKeyWords){
+        if(userAgent.contains(keyWord)){
+            //IE内核浏览器，统一为UTF-8编码显示
+            return URLEncoder.encode(filename,"UTF-8");
+		}
+	}
+    //火狐等其他浏览器统一为ISO-88559-1
+    return new string(filename.getBytes("UTF-8"),"ISO-88559-1");
+}
+
+```
+
+# 十三、SSM框架整合
+
+SSM（Spring Spring MVC MyBatis）。由于Spring MVC 是Spring框架的一部分，所以Spring MVC与Spring不存在整合问题，因此只涉及到`Spring与MyBatis整合`，以及`Spring MVC与MyBatis整合`。
+
+开始整合：
+
+**db.properties文件：**
+
+```properties
+jdbc.user=root
+jdbc.password=123456
+jdbc.driverClass=com.mysql.jdbc.Driver
+jdbc.jdbcUrl=jdbc\:mysql\:///test
+jdbc.maxTotal=30
+jdbc.maxIdle=10
+jdbc.initialSize=5
+```
+
+**Spring配置文件（applicationContext.xml）：**
+
+```xml
+<beans>
+<context:property-placehoder location="classpath:db.properties"/>
+数据源
+<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+    <property name="driverClassName" value="${jbdc.driver}"/>
+    <property name="url" value="${jbdc.url}"/>
+    <property name="username" value="${jbdc.username}"/>
+    <property name="password" value="${jbdc.password}"/>
+    <property name="maxTatal" value="${jdbc.maxTotal}"/>
+    <property name="maxIdle" value="${jdbc.maxIdle}"/>
+    <property name="initialSize" value="${jdbc.initialSize}"/>         
+</bean>
+
+
+事务管理器
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    注入数据源
+    <property name="dataSource" ref="dataSource"/>
+</bean>
+开启事务注解
+<tx:annotation-driven transaction-manager="transactionManager" />
+
+
+配置MyBatis工厂
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    注入数据源
+    <property name="datasource" ref="dataSource"/>
+    指定mybatis配置文件位置
+    <property name="configLocation" value="classpath:mybatis-config.xml"/>
+</bean>
+
+
+Mapper代理开发
+<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+	<property name="basePackage" value="com.itheima.dao"/>
+</bean>
+
+
+扫描Service new！(属于扫描bean注解)
+<context:component-scan base-package="com.itheima.service"/>
+</beans>
+```
+
+**MyBatis配置文件（mybatis-config.xml）：**
+
+```xml
+<configuration>
+    <typeAliases>
+    	<package name="com.itheima.po"/>
+    </typeAliases>
+</configuration>
+```
+
+**Spring MVC配置文件（springmvc-config.xml）：**
+
+```xml
+<beans>
+<context:component-scan base-package="com.itheima.controller"/>
+<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+	<property name="prefix" value="/WEB-INF/jsp/"/>
+	<property name="suffix" value=".jsp"/>
+</bean>
+</beans>
+
+```
+
+**web.xml（文件监听器、编码过滤器以及Spring MVC的前端控制器）：**
+
+```xml
+配置加载Spring文件监听器
+<context-param>
+	<param-name>contextConfigLocation</param-name>
+	<param-value>classpath:applicationContext.xml</param-value>
+</context-param>
+<listener>
+	<listener-class>
+		org.springframework.web.context.ContextLoaderListener
+	</listener-class>
+</listener>
+
+编码过滤器
+<filter>
+    <filter-name>encoding</filter-name>
+    <filter-class>
+        org.springframework.web.filter.CharacterEncodingFilter
+    </filter-class>
+    <init-param>
+    	<param-name>encoding</param-name>
+		<param-value>UTF-8</param-value>
+    </init-param>
+</filter>
+<filter-mapping>
+	<filter-name>encoding</filter-name>
+	<url-pattern>*.action</url-pattern>
+    扩展名匹配
+</filter-mapping>
+
+
+<servlet>
+    配置前端过滤器
+    <servlet-name>springmvc</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    初始化时加载配置文件
+    <init-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:springmvc-config.xml</param-value>
+    </init-param>
+    表示容器在启动时立即加载
+    <load-on-startup>1</load-on-startup>
+</servlet>
+<servlet-mapping>
+    <servlet-name>springmvc</servlet-name>
+    <url-pattern>/</url-pattern>
+</servlet-mapping>
+```
+
+**Customer类：**
+
+```java
+package com.itheima.po;
+public class Customer{
+    private Integer id;
+    private String username;
+    private String jobs;
+    private String phone;
+}
+```
+
+**CustomerDao接口：**
+
+```java
+package com.itheima.dao;
+public interface CustomerDao{
+    public Customer findCustomerById(Integer id);
+}
+```
+
+**映射文件（CustomerDao.xml）：**
+
+```xml
+<mapper namespace="com.itheima.dao.CustomerDao">
+	<select id="findCustomerById" parameterType="Integer" resultType="Customer">
+		select * from t_customer where id = #{id}
+	</select>
+</mapper>
+```
+
+**CustomerService接口：**
+
+```java
+package com.itheima.service;
+public interface CustomerService{
+    public Customer findCustomerById(Integer id);
+}
+```
+
+**CustomerServiceImpl类：**
+
+```java
+package com.itheima.service.impl;
+@Service
+@Transactional
+public class CustomerServiceImpl implements CusomterService{
+    @Autowired
+    private CustomerDao customerDao;
+    public Customer findCustomerById(Integer id){
+        return this.customerDao.findcustomerById(id);
+    }
+}
+```
+
+**CustomerController类：**
+
+```java
+package com.itheima.controller;
+@Controller
+public class customerController{
+    @AutoWired
+    private CustomerService customerService;
+    @RequestMapping("/findCustomerById")
+    public String findCustomerById(Integer id,Model model){
+		Cutomer customer=customerService.findCustomerById(id);
+		model.addAttribute("customer",customer);
+		return "customer";
+    }
+}
+```
+
+**customer.jsp：**
+
+```jsp
+<body>
+    <table border=1>
+    	<tr>
+            <td>编号</td>
+            <td>名称</td>
+            <td>职业</td>
+            <td>电话</td>
+		</tr>
+       <tr>
+            <td>${customer.id}</td>
+            <td>${customer.username}</td>
+            <td>${customer.jobs}</td>
+            <td>${customer.phone}</td>
+		</tr> 
+    </table>
+</body>
+```
+
+
 
 # 参考文献
 
@@ -3616,6 +4001,10 @@ Spring MVC会根据客户端请求参数的不同，将`请求消息中`的`信�
 #### MVVM
 
 待处理
+
+
+
+
 
 
 
