@@ -101,6 +101,22 @@ javac Friut.java
 java com.company.Friut
 ```
 
+
+
+> appletviewel.exe(小程序浏览器)：一种执行HTML文件上的Java小程序类的Java浏览器;
+>
+> javadoc.exe：根据Java源代码及其说明语句生成的HTML文档;
+>
+> jdb.exe：Java调试器，可以逐行地执行程序、设置断点和检查变量;
+>
+> javah.exe：产生可以调用Java过程的C过程，或建立能被Java程序调用的C过程的头文件;
+>
+> ==javap.exe==：Java反汇编器，显示编译类文件中的可访问功能和数据，同时显示字节代码含义;
+>
+> javac.exe：Java编译器，将Java源代码换成字节代;
+>
+> java.exe：Java解释器，直接从类文件执行Java应用程序代码;
+
 ### 1.5.1 虚拟机中的类加载器
 
 #### 1. 层级结构
@@ -666,8 +682,6 @@ public A(int a){}
 
 ==**public、protected**==修饰的方法可以被子类继承，同一个包下，默认的也可以被继承。如果子类重写，要修改方法的访问权限，==**子类方法的访问权限必须比父类大**==
 
-static 另算
-
 ## 3.3 内部类
 
 在Java中，可以将一个类定义在另一个类里面或者一个方法里面，这样的类称为`内部类`。广泛意义上的内部类一般来说包括这四种：`成员内部类`、`局部内部类`、`匿名内部类`和`静态内部类`。
@@ -708,7 +722,7 @@ public class Main {
 
 ### 3.3.2 局部内部类
 
-局部内部类是定义`在一个方法或者一个作用域里面的类`，它和成员内部类的区别在于局部内部类的`访问仅限`于`方法内`或者`该作用域内`。局部内部类就像是方法里的一个局部变量一样，不能拥有访问修饰符public、protected、private以及static修饰符。
+局部内部类是定义`在一个方法或者一个作用域里面的类`，它和成员内部类的区别在于局部内部类的`访问仅限`于`方法内`或者`该作用域内`。局部内部类就像是方法里的一个局部变量一样，==**不能拥有访问修饰符public、protected、private以及static修饰符。**==
 
 ```java
 class People{
@@ -794,7 +808,7 @@ public class HelloWorldTest {
 
 ### 3.3.4 静态内部类
 
-静态内部类也是定义在另一个类里面的类，只不过在类的前面多了一个关键字static。静态内部类是不需要依赖于外部类的，这点和类的静态成员属性有点类似，并且它不能使用外部类的非static成员变量或者方法。
+静态内部类也是定义在另一个类里面的类，只不过在类的前面多了一个关键字static。静态内部类是==**不需要依赖于外部类的**==，这点和类的静态成员属性有点类似，并且它不能使用外部类的非static成员变量或者方法。
 
 ```java
 public class Test {
@@ -828,7 +842,7 @@ class Outter {
 
 收集机制为：被确认不存在任何引用的对象。
 
-Java运行系统中的垃圾收集器周期性地释放不再被引用的对象所占有的内存，自动执行内存回收。但垃圾收集器却以`较低优先级`在系统空闲周期中执行，因此`垃圾收集速度比较慢`。在某些情况下，也可以通过调用System类的gc（）方法，即调用System.gc（）显示执行垃圾收集。**例如：在产生大量废弃对象的代码段后或在需要大量内存的代码段前，可以显示进行垃圾收集。**
+Java运行系统中的垃圾收集器周期性地释放不再被引用的对象所占有的内存，自动执行内存回收。但垃圾收集器却以`较低优先级`在系统空闲周期中执行，因此`垃圾收集速度比较慢`。在某些情况下，也可以通过调用System类的gc（）方法，即调用`System.gc（）`显示执行垃圾收集。**例如：在产生大量废弃对象的代码段后或在需要大量内存的代码段前，可以显示进行垃圾收集。**
 
 2. ==**对象的最终初始化处理**==
 
@@ -841,7 +855,8 @@ protected finalize()throws throwable{
 }
 ```
 
-如果重写了该方法，则需要最后调用super.finalize()方法。
+> 如果重写了该方法，则需要最后调用super.finalize()方法。
+>
 
 ## 3.5 继承呈现
 
@@ -942,7 +957,7 @@ public class Test {
 
 
 
-# 四、Java高级特征
+# ==**四、Java高级特征**==
 
 ## 4.1 static关键字
 
@@ -990,9 +1005,11 @@ class A{
 
 
 
-静态类。。
+### 4.1.4 静态类
 
-静态内部类。。。 待处理
+==**静态类只能是静态内部类**==，==**静态类在外部声明不通过。**==
+
+
 
 ## 4.2 final 关键字
 
@@ -1008,9 +1025,9 @@ final修饰的方法不能被重写。
 
 final修饰的变量一赋值就不能更改
 
+### 4.2.4 其他
 
-
-应该还有一些 待处理
+==**接口**==和==**抽象类**==不能被final修饰。（无意义）
 
 ## 4.3 抽象类/方法 abstract
 
@@ -1030,16 +1047,18 @@ final修饰的变量一赋值就不能更改
 ### 4.4.1 接口定义
 
 ```java
-[public] interface InterfaceName [extends listofSuperInterface]{}
+[public | abstract(本身是抽象的加不加无所谓)] interface InterfaceName [extends listofSuperInterface]{}
 ```
 
 特点：
 
-* 在接口中定义的常量默认拥有==**public、final、static属**==性。
+* ==**接口是一种特殊的抽象类**==
+
+* 在接口中定义的常量默认拥有==**public、static、final属**==性。
 * 在接口中声明的方法默认具有==**public、abstract属性。**==
 *  如果子接口定义了和父接口相同的变量和相同的方法，则父接口中的常量被隐藏，方法被重写。
 * 接口中的成员不能使用的修饰符：transient，volatile，synchronized。private，protected。
-* 实现该接口的类都可认为是接口的“子类”，因此声明为某个接口类型的变量，可以指向该接口“子类”的实例。
+* 实现该接口的类都可认为是接口的“子类”，因此声明为某个接口类型的变量，==**可以指向该接口“子类”的实例。**==
 * 可以多重继承接口
 
 接口方法声明如下：
@@ -1150,26 +1169,41 @@ Cage<?>   可认为是Cage<Animal>,Cage<Butterfly>,Cage<Fruit>的父类
 
 ### 4.6.5 泛化方法
 
-* Java中，不仅可以对实例方法进行泛化，也可以对静态方法、构造方法进行泛化，即所有方法都可以定义为泛化方法。
+* Java中，不仅可以对实例方法进行泛化，也可以对静态方法、构造方法进行泛化，即==**所有方法**==都可以定义为泛化方法。
 
 * Java编译器具有类型推理的能力，他根据调用方法时实参的类型，推理得出被调用方法中类型变量的具体类型并据此检查方法调用中类型的正确性。
 
-* 泛化方法中类型参数的优势时可以表达多个参数后返回值之间的类型依赖关系。如果方法中并不存在类型之间的依赖关系，则可以不适用泛化方法，而使用通配符。
+* 泛化方法中类型参数的优势是可以表达==**多个参数**==或==**返回值**==之间的类型==**依赖关系**==。如果方法中并不存在类型之间的依赖关系，则可以不适用泛化方法，而使用通配符。
 
 例如：
 
 ```java
-interface Collection<E>{
-    <T>boolean containsAll(Collection<T> c);
-    <T extends E> boolean addAll(Collection<T> c);
-}
-
 根据第二条通配符如下：
 interface Collection<E>{
     boolean containsAll(Collection<?> c);
     boolean addAll(Collection<? extends E> c);
 }
+
+泛化方法
+interface Collection<E>{
+    <T>boolean containsAll(Collection<T> c);
+    <T extends E> boolean addAll(Collection<T> c);
+}
+
+
 ```
+
+==**区别**==
+
+**通配符**
+
+?泛型对象是==**只读的**==，不可修改，因为?类型是不确定的，可以代表范围内任意类型；
+
+**泛化方法**
+
+而泛型方法中的泛型参数对象==**是可修改的**==，因为类型参数T是确定的（在调用方法时确定），因为T可以用范围内任意类型指定；
+
+
 
 ### 4.6.6 类型擦除
 
@@ -1211,7 +1245,7 @@ public class MyBox{
 
   
 
-## 5.7 集合类 
+## 4.7 集合类 
 
 一个集合对象或一个容器表示了一组对象，集合中的对象称为元素。集合框架图如下： 
 
@@ -1263,7 +1297,7 @@ public class MyBox{
    
    * AbstractMap
      * TreeMap
-     * HashMap：散列表，内容是键值对(key-value)映射。是无序的，即不会记录插入的顺序。非同步。
+     * HashMap：散列表，内容是键值对(key-value)映射。是无序的，即不会记录插入的顺序。==非同步==。
    
 3. 使用例子如下：
 
@@ -1292,7 +1326,7 @@ public class MyBox{
    * Map
    * Queue  待处理
 
-## 5.8枚举类
+## 4.8枚举类
 
 ==**定义：**==
 
@@ -1388,9 +1422,9 @@ public class CoinTest{
 
 
 
-## 5.9 包装类和自动装箱拆箱
+## 4.9 包装类和自动装箱拆箱
 
-### 5.9.1 包装类
+### 4.9.1 包装类
 
 Wrapper类即包装类用来把基本数据类型表示成类。基本数据类型的包装类如下：
 
@@ -1406,7 +1440,7 @@ Wrapper类即包装类用来把基本数据类型表示成类。基本数据类�
 |    double    |  Double   |
 |              |           |
 
-### 5.9.2 自动装箱与拆箱
+### 4.9.2 自动装箱与拆箱
 
 实例：
 
@@ -1432,6 +1466,106 @@ public class AutoBoxingTest{
     }
    }
 ```
+
+## 4.10 ==**常量池**==
+
+JVM常量池主要分为**Class文件常量池、运行时常量池，全局字符串常量池，以及基本类型包装类对象常量池**。
+
+### 4.10.1==**class文件常量池**==
+
+主要存放两大常量：==**字面量**==和==**符号引用**==。
+
+1. ==**字面量**==：
+
+   ```java
+   public String s = "abc";
+   ```
+
+   以及用final修饰的成员变量，包括静态变量、实例变量和局部变量。
+
+2. ==**符号引用**==：
+   * 类和接口的全限定名，也就是`java/lang/String;`将类名中原来的"."替换为"/"得到的
+   * 字段的名称和描述符
+   * 方法和参数描述符，也即参数类型+返回值
+
+### 4.10.2==**运行时常量池**==
+
+当类被加载时，就包含了class文件常量池进入运行时常量池的过程。该过程执行常量池优化（class文件常量池相同的数据合并成一份）、符号引用翻译成直接引用、使其具有动态性。
+
+可使用代码生成常量放入运行时常量池：
+
+```java
+String.intern()
+```
+
+### 4.10.3 ==**全局字符串常量池**==
+
+##### （1）Java中创建字符串对象的两种方式
+
+```java
+String s1="ss"; //编译时期已经确定，堆上
+
+String s2=new String("ss");//运行时期确定，堆上
+
+System.out.println(s1 == s2);//false 地址不同
+```
+
+常见题目：
+
+```java
+String s1 = "Hello";
+String s2 = "Hello";
+String s3 = "Hel" + "lo";
+String s4 = "Hel" + new String("lo");
+String s5 = new String("Hello");
+String s7 = "H";
+String s8 = "ello";
+String s9 = s7 + s8;
+
+System.out.println(s1 == s2);  // true
+System.out.println(s1 == s3);  // true
+System.out.println(s1 == s4);  // false
+System.out.println(s1 == s9);  // false
+```
+
+##### （2）String"字面量" 是何时进入字符串常量池的?
+
+JVM规范里Class文件的常量池项的类型，有两种东西：
+
+- `CONSTANT_Utf8_info`
+- `CONSTANT_String_info`
+
+![w40okmlaqz](Java.assets/w40okmlaqz.jpeg)
+
+![rn68z0aktc](Java.assets/rn68z0aktc.jpeg)
+
+> CONSTANT_Utf8会在类加载的过程中就全部创建出来，而CONSTANT_String则是lazy resolve的，在第一次引用该项的ldc指令被第一次执行到的时候才会resolve。在尚未resolve的时候，HotSpot VM把它的类型叫做JVM_CONSTANT_UnresolvedString，内容跟Class文件里一样只是一个index；等到resolve过后这个项的常量类型就会变成最终的JVM_CONSTANT_String。
+
+> 字面量在运行时常量池，不会进入字符串常量池，在执行Idc指令时，会触发lazy resolution这个动作
+
+> 在遇到String类型常量时，resolve的过程如果发现StringTable已经有了内容匹配的java.lang.String的引用，则直接返回这个引用，反之，如果StringTable里尚未有内容匹配的String实例的引用，则会在Java堆里创建一个对应内容的String对象，然后在StringTable记录下这个引用，并返回这个引用出去。
+
+##### （3）String.intern()的用法
+
+实际上，就是去拿String的内容去Stringtable里查表，如果存在，则返回引用，不存在，就把该对象的"引用"存在Stringtable表里。
+
+### 4.10.4==**基本类型包装类对象常量池**==
+
+> 基本类型的包装类（以下是包装类得范围）
+>
+> Boolean，Byte，Short，Integer，Long，Character，Float，Double
+>
+> Boolean：==true，false==
+>
+> Byte，Character：==\u0000--\u007f (0——127)==
+>
+> Short，Integer，Long：==-128~127==
+>
+> Float，Double：没有缓存==（没有常量池）==
+
+## 4.11 Object类
+
+
 
 # 五、异常处理
 

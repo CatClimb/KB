@@ -146,7 +146,7 @@ DI：从Spring容器的角度描述。Spring容器负责将被依赖的对象赋
 
 [Spring Bean和Java Bean的区别](####Spring Bean和Java Bean的区别)
 
-## 2.2 pring Bean的实例化
+## 2.2 Spring Bean的实例化
 
 ==构造器实例化==
 
