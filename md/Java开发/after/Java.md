@@ -1,5 +1,3 @@
-
-
 # 一、Java
 
 ## 1.1 Java程序运行原理
@@ -682,7 +680,9 @@ public A(int a){}
 
 ==**public、protected**==修饰的方法可以被子类继承，同一个包下，默认的也可以被继承。如果子类重写，要修改方法的访问权限，==**子类方法的访问权限必须比父类大**==
 
-## 3.3 内部类
+## 3.3 ==**内部类**==
+
+丰富待处理
 
 在Java中，可以将一个类定义在另一个类里面或者一个方法里面，这样的类称为`内部类`。广泛意义上的内部类一般来说包括这四种：`成员内部类`、`局部内部类`、`匿名内部类`和`静态内部类`。
 
@@ -1245,85 +1245,296 @@ public class MyBox{
 
   
 
-## 4.7 集合类 
+## ==**4.7 集合类**== 
 
-一个集合对象或一个容器表示了一组对象，集合中的对象称为元素。集合框架图如下： 
+一个集合对象或一个容器表示了一组对象，集合中的对象称为元素。集合框架图如下： （←不知道是啥，可忽略）
 
 ![](Java.assets/src=http _www.sguotao.top_20181031154096967157812.png&refer=http _www.sguotao.top&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg.jpg)
 
+下图是对上图Queue相关的体系结构进行的补充 丰富待处理
+
+![MZUR6LW@R$LD[27QY]~8F_R](Java.assets/MZUR6LW@R$LD[27QY]~8F_R.png)
+
 ==**接口**==：是代表集合的抽象数据类型。例如**`Collection`**、**`List`**、`Set`、`Map`等，以便于以不同的方式操作集合对象。
 
-==**实现类：**==是集合接口的具体实现。例如：`ArrayList`、`LinkedList`、`HashSet`、`HashMap`。
+==**实现类：**==是集合接口的具体实现。例如：`Vector`、`ArrayList`、`LinkedList`、`HashSet`、`HashMap`。
 
 ==**算法：**==实现集合接口对象的方法执行一些有用的计算，如搜索和排序。
 
-1. **对`接口`的作用进行描述**：
+1. 对`接口`、**抽象类**、==**实现类**==的作用进行描述：
 
-   * iterator：不是一个集合，它是一种用于访问集合的方法，可用于迭代 ArrayList 和 HashSet 等集合。
-
-   * Collection：集合接口的根。
-
-   * Map：实现键值到值得映射。
-
-   * ListIterator：用于允许程序员沿任一方向遍历列表的列表的迭代器
-
-   * List：是一个==**有序集合**==，称为列表或序列。==**元素可重复**==。
-
-   * Set：==**不能包含重复的元素**==，==**无序对象**==。
-
-   * Queue：有关队列的数据结构。
-
+   * `iterator`：不是一个集合，它是一种用于==访问集合的方法==，可用于迭代 ArrayList 和 HashSet 等集合。（使用的是游标遍历）
+     * `ListIterator`： 用于允许程序员沿任一方向遍历列表的列表的迭代器
      
+   * `Collection`：集合接口的根。
+     * `List`：是一个`有序集合`，称为列表或序列。`元素可重复`。
+       * **AbstractList** (其下实现类 extends **AbstractCollection**)
+         * ==**Vector**==：==是同步的（支持并发）也就是线程安全的==。顺序表 （不常用）
+           * ==**Stack**==：栈 （不常用）
+         * ==**ArrayList**==：==非同步== 顺序表  
+     * **AbstractCollection**
+     * `Set`：`不能`包含`重复的元素`，`无序对象`。
+       * **AbstractSet **(**其下实现类 extends  AbstractCollection**)
+         * ==**HashSet**==：只允许一个值为`null`的元素。==非同步== ==不是键值对== 数组+单向链表+红黑树
+           * ==**LinkedHashSet**==：  ==可预测的迭代顺序==  ==非同步==。==有序无索引== 数组+双向链表+红黑树
+           
+         * ==**TreeSet**==：(**该类 implements** `SortedSet`) 红黑树 ==有序无索引==
+     * `Queue`：有关队列的数据结构。
+       * `Deque`
+         * **AbstractSequentialList**：**只支持按次序访问**
+           * ==**LinkedList**==： ==非同步==  双向链表 
+       * **AbstractQueue**
+         * ==**PriorityQueue**==
 
-2. 对`抽象类`和`实现类`的作用进行描述：
+   * `Map`：实现键值到值得映射。
+     * **AbstractMap**  
+       * ==**TreeMap**== **(该类 implements** `SortedMap`)
+       * ==**HashMap**==：散列表，内容是键值对(key-value)映射。是无序的，即不会记录插入的顺序。==非同步==。
+         * ==**LinkedHashMap**==：
+       * ==**WeakMapHashMap**==：
+       * ==**HashTable**==：
+       * ==**IdentityHashMap**==：
 
-   * AbstractList
 
-     * Vector：动态数组，==是同步的==（支持并发）。
-       * Stack：栈
-     * AbstractSequentialList（抽象类）：**只支持按次序访问**，是 List 接口 的简化版实现。
-       * LinkedList：链表
+   其它：：：
 
-     * LinkedList：双向链表
+   ==**Conllections**==
 
-     * ArrayList：可以动态修改的数组，==非同步==
-   
-   * AbstractSet
-   
-     * HashSet：==**不包含重复的元素**==，==**无序对象**==。只允许一个值为null的元素。
-       * LinkedHashSet双向链表实现。可预测的迭代顺序，记录插入的顺序。。一个非线程安全的集合。
-   
-     * TreeSet
-   
-   * AbstractMap
-     * TreeMap
-     * HashMap：散列表，内容是键值对(key-value)映射。是无序的，即不会记录插入的顺序。==非同步==。
-   
-3. 使用例子如下：
+   ==**Arrays**==
 
-   * Set：
+   `Comparable`
 
-     ```java
-     public class Main {
-          static Set<String> s=new HashSet<String>();
-         public static void main(String[] args) {
-             for(String a:args){
-                 s.add(a);
-                 System.out.println(a);
+   `Comparator`
+
+2. `实现类`的方法和`接口`的方法进行描述：
+
+   * `Iterable` 
+
+      * Iterator() 返回迭代器  待处理
+
+   * `Iterator` （建立在所有集合）
+
+      
+
+      * void forEachRemaining(Consumer<? super E> action) 在集合上执行给定操作  （跟1.8的 new java.util.stream有关） 类似如下 待处理
+
+      * ```java
+          public static void main(String[] args) {
+         
+                 Stream<String> stream = Stream.of("Java", "C", "Python", "Hadoop", "Spark");
+         
+                 stream.forEach(name-> System.out.println(name));
+             
              }
-             System.out.println(s.size()+"Collection:"+s);
-         }
-     }
-     restult：
-     1
-     2
-     3
-     4
-     4Collection:[1, 2, 3, 4]
-     ```
+         ```
 
-   * List
-   * Map
+      * E next()  返回迭代中的下一个元素。 
+
+      * boolean hasNext()  检测集合中是否有元素。
+
+      - void remove()  从底层集合中删除此迭代器返回的最后一个元素（可选操作）。 
+
+      * ```java
+        public static void main(String args[]){
+                  //线程安全 这种同步效率低，不建议使用
+                List lists = Collections.synchronizedList(new ArrayList<String>());
+                //List lists = new ArrayList<String>();
+                lists.add("s1");
+                lists.add("s2");
+                lists.add("s3");
+                Iterator<String> it=lists.iterator();
+               while(it.hasNext()){
+                   System.out.println(it.next());
+                   it.remove();
+               }
+                System.out.println(it);
+                System.out.println(lists);
+            }
+        ```
+
+   * `ListIterator`（建立在所有集合）
+
+      * void add(E) 在游标 前面 插入一个元素
+
+      * void set(E e)  用 指定的元素替换由 [`next()`](../../java/util/ListIterator.html#next--)或 [`previous()`](../../java/util/ListIterator.html#previous--)返回的元素。 
+
+      * boolean hasPrevious()  返回 `true`如果遍历反向列表，列表迭代器有多个元素。
+
+      * E previous()  返回列表中的上一个元素，并向后移动光标位置。 
+
+      * int nextIndex()  返回调用 [`next()`](../../java/util/ListIterator.html#next--)返回的元素的索引。 
+
+      * int previousIndex()  返回调用 [`previous()`](../../java/util/ListIterator.html#previous--)返回的元素的索引。 
+
+      * 其它的和Iterator一样
+
+      * ```java
+         public static void main(String args[]){
+                 //线程安全 这种同步效率低，不建议使用
+                 List lists = Collections.synchronizedList(new ArrayList<String>());
+                 //List lists = new ArrayList<String>();
+                 lists.add("s1");
+                 lists.add("s2");
+                 lists.add("s3");
+                 ListIterator<String> it=lists.listIterator();
+                 while(it.hasNext()){
+                     System.out.println();
+                     System.out.println(it.nextIndex()+"  "+it.previousIndex());
+                     System.out.println(it.next());
+                 }
+                 System.out.println();
+                 while(it.hasPrevious()){
+                     System.out.println(it.previous());
+                     //it.add("0"); 会无限循环
+                 }
+                 System.out.println(it);
+                 System.out.println(lists);
+                 it.set("ssr");
+                 it.add("sss");
+                 System.out.println(lists);
+             }
+         ```
+
+   * `List`  Vector 过时
+
+   * `List`  Stack 过时 替代： `Deque` LinkedList
+
+   * `List`  ArrayList 
+
+      * boolean add(E e) 添加末尾
+
+      * void clear()  删除所有元素。 
+
+      * E get(int index)  返回指定位置元素。 
+
+      * E set(int index, E element)  用指定元素替换指定位置元素。 返回被替换的元素
+
+      * E  remove(int index)  删除该列表中指定位置的元素。
+
+      * E  remove(Object o)  从列表中删除指定元素的第一个出现（如果存在）。 
+
+      * ```java
+         public static void main(String args[]){
+                 //线程安全 这种同步效率低，不建议使用
+                List lists = Collections.synchronizedList(new ArrayList<String>());
+                //List lists = new ArrayList<String>();
+                System.out.println(lists.add("ss"));
+                System.out.println(lists.add("ss"));
+                System.out.println(lists.add(null));
+                System.out.println(lists.add("null"));
+                System.out.println(lists.toString());
+                System.out.println(lists.remove(null));
+                System.out.println(lists.remove(null));
+                System.out.println(lists.remove("null"));
+                System.out.println(lists.toString());
+                System.out.println(lists.set(1,"aa"));
+                System.out.println(lists.get(1));
+                System.out.println(lists.toString());
+                lists.clear();
+                System.out.println(lists.toString());
+            }
+        ```
+
+   * `List`  LinkedList
+
+     * 待处理 多了个 E remove() 移除头元素
+
+   * `Queue`  LinkedList
+
+     * boolean offer(E e)  添加元素 （比add(E e)好，不抛异常）（入队）
+
+     * E peek()  检索但不删除此队列的头，如果此队列为空，则返回 `null` 。 （查看队头元素）
+
+     * E poll()  检索并删除此队列的头，如果此队列为空，则返回 `null` 。（出队）
+
+     * E element()  检索，但不删除，这个队列的头。 
+
+     * ```java
+         public static void main(String[] args) {
+                //add()和remove()方法在失败的时候会抛出异常(不推荐)
+                Queue<String> queue = new LinkedList<String>();
+                //添加元素
+                queue.offer("a");
+                queue.offer("b");
+                queue.offer("c");
+                queue.offer("d");
+                queue.offer("e");
+                for(String q : queue){
+                    System.out.println(q);
+                }
+                System.out.println("===");
+                System.out.println("poll="+queue.poll()); //返回第一个元素，并在队列中删除
+                for(String q : queue){
+                    System.out.println(q);
+                }
+                System.out.println("===");
+                System.out.println("element="+queue.element()); //返回第一个元素 
+                for(String q : queue){
+                    System.out.println(q);
+                }
+                System.out.println("===");
+                System.out.println("peek="+queue.peek()); //返回第一个元素 
+                for(String q : queue){
+                    System.out.println(q);
+                }
+            }
+        }
+        ```
+
+   *   `Deque` LinkedList
+
+     * void push(E e) （压栈）
+
+     * E pop()（出栈）
+
+     * E peek()（查看栈头）
+
+     * ```java
+       public static void main(String args[]){
+           Deque<String> stack =new LinkedList<String>();
+           stack.push("a");
+           stack.push("b");
+           stack.push("c");
+           stack.push("d");
+           System.out.println(stack);
+           stack.pop();
+           System.out.println(stack);
+           System.out.println(stack.peek());
+       }
+       ```
+
+   * `Set`
+
+   * HashSet
+
+     * boolean  add(E e) 添加重复元素不报错，返回false，可以插入null；
+
+     * remove(E e) 删除指定元素
+
+     * size() 返回元素数
+
+     * clear()  删除所有元素。
+
+     * ```java
+        public static void main(String args[]){
+               //线程安全
+               Set setLists = Collections.synchronizedSet(new HashSet<String>());
+               //Set setLists = new HashSet<String>();
+               System.out.println(setLists.add("ss"));
+               System.out.println(setLists.add("ss"));
+               System.out.println(setLists.add(null));
+               System.out.println(setLists.add("null"));
+               System.out.println(setLists.toString());
+               System.out.println(setLists.remove(null));
+               System.out.println(setLists.remove(null));
+               System.out.println(setLists.remove("null"));
+               System.out.println(setLists.toString());
+           }
+       ```
+
+   * LinkedHashSet
+     * 和HashSet差不多
+     
    * Queue  待处理
 
 ## 4.8枚举类
