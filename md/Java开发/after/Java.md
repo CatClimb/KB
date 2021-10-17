@@ -311,15 +311,19 @@ byte 8位 short 16位 int 32位 long 64位
 
 ### 2.3.4 浮点型
 
-float double
+float 16位 double 64位
 
 `浮点常量`默认double类型
 
-### 2.3.5 复合数据类型
+### 2.3.5 字符类型
+
+char 16位
+
+### 2.3.6 复合数据类型
 
 一般地将用户定义的新类型称为复合数据类型，新类型以`类`和`接口`的形式定义。
 
-### 2.3.6 ==**类型转换**==
+### 2.3.7 ==**类型转换**==
 
 设`低优先级类型`为`位数低`的`类型`，则：
 
@@ -506,9 +510,10 @@ a[1]=new int[5];
 
 ## 3.1 OOP（**面向对象程序设计**）描述
 
+* ==**抽象**==
 * ==**封装**==
 
-封装的同时实现了数据隐藏
+ 隐藏对象的属性和实现细节，仅对外公开接口，控制在程序中属性的读和修改的访问级别
 
 * ==**继承**==
 
@@ -830,7 +835,7 @@ class Outter {
 }
 ```
 
-### 3.3.5Lambda表达式
+### ==**3.3.5Lambda表达式**==
 
 有空先 待处理
 
@@ -900,47 +905,116 @@ super关键字指向所在类的父类。super([args])指调用父类的构造�
 
 
 
-## 3.6 多态呈现
+## ==**3.6 多态呈现**==
 
-什么是运行时多态？
+==**什么是多态？**==
+
+同一操作作用于不同的对象，可以有不同的解释，产生不同的执行结果，这就是多态性。
+
+==**什么是编译时多态？**==
+
+Java在编译时能够确定执行**重载**方法中的哪一个。
+
+==**什么是运行时多态？**==
 
 **只能在运行时刻根据该变量指向的具体对象类型确定，这就是运行时多态。比如父类变量存放子类对象。**
 
 final关键字能够影响晚[联编](####联编)。
 
+***\*编译时类型\****：由声明该变量时使用的类型决定
 
+***\*运行时类型\****：由该变量指向的对象类型决定
 
-### 3.6.1 上塑造型
+==**代码上。运行时多态怎么实现？**==
 
-**将一种类型（子类）对象的引用转换成另一种类型（父类对象引用），就称为上塑造型**。
+**方法重写**和**上塑造型**
+
+==**代码上。编译时多态怎么实现？**==
+
+### 3.6.1 隐藏和覆盖
+
+接口、抽象类、类的隐藏和覆盖讨论  待处理
+
+==**覆盖**==：子类`重写`父类的`实例方法`
+
+（1）==**方法不能交叉覆盖**==：子类实例方法不能覆盖父类的静态方法（编译时报错）；
+
+==**隐藏**==：父类和子类拥有`相同名字`的`属性`和子类`重写`父类的`静态方法`
+
+（1）==**当发生隐藏的时候，声明类型是什么类，就调用对应类的属性或者方法，而不会发生动态绑定**==
+
+（2） ==**属性只能被隐藏，不能被覆盖**==
+
+（3）==**变量可以交叉隐藏**==：子类实例变量/静态变量可以隐藏父类的实例/静态变量
+
+3、隐藏和覆盖的区别
+
+（1）`被隐藏的属性或静态方法`，上塑造型后，==**访问**==的是==**父类中的属性**==
+
+  在无强制转换时子类要访问父类的属性使用super关键字
+
+（2）被覆盖的实例方法，上塑造型后，==**访问**==的是==**子类中的方法**==
+
+     子类要是想访问父类的方法，可以使用super关键字
+
+RTTI(run time type identification，运行时类型检查)
+
+RTTI只针对覆盖，不针对隐藏：因为覆盖是动态绑定，是受RTTI约束的，隐藏不受RTTI约束
+
+运行时类型为引用变量所指向的对象的类型，编译时类型是引用变量自身的类型
+### 3.6.2 上塑造型
+
+**将一种类型（子类）对象的引用转换成另一种类型（父类对象引用），就称为上塑造型**。（子类特有的部分（方法和属性）会被隐藏，下塑造型回到原来类型可恢复）
 
 ```java
+package com.example;
+
+import java.util.Set;
+import java.util.TreeSet;
+
 class Father {
-    
     public int i = 1;
+    public static String name="Father";
     public void say(){
-        System.out.println("我是杜江");
+        System.out.println("case Father");
+    }
+    public static void toPrint(){
+        System.out.println("static Father");
     }
 }
 class Son extends Father{
+    public int a = 3;
     public int i = 2;
+    public  String name="Son";
     public void say(){
-        System.out.println("我是嗯哼");
+        System.out.println("case Son");
+    }
+    public static void toPrint(){
+        System.out.println("static Son");
     }
 }
 public class Test {
     public static void main(String[] args) {
-               Father f = new Son();
-               Son s = (Son)f;
-               System.out.println(s.i);
-               s.say();
+        Father f = new Father();
+        Son s=(Son)f;
+        System.out.println(f.i);//属性隐藏
+        f.say();//实例方法覆盖
+        System.out.println(f.name);//属性交叉隐藏
+        f.toPrint();//静态方法隐藏
+        //System.out.println(f.a); 子类特有部分被隐藏
+        System.out.println(s.i);
+        s.say();
+        System.out.println(s.name);
+        s.toPrint();
+        System.out.println(s.a);
+
     }
 }
 ```
 
-上塑造类型会使子类`特有`（==**指独一无二的**==）的部分被隐藏，下塑造型可以解决。
+### 3.6.3 下塑造型（对象类型强制转换）
 
-### 3.6.2 下塑造型（对象类型强制转换）
+**必须先上塑造型再向下塑造型**
 
 ```java
 public class Test {
@@ -952,10 +1026,6 @@ public class Test {
     }
 }
 ```
-
-
-
-
 
 # ==**四、Java高级特征**==
 
@@ -1025,7 +1095,7 @@ final修饰的方法不能被重写。
 
 final修饰的变量一赋值就不能更改
 
-### 4.2.4 其他
+### 4.2.4 ==**其他**==
 
 ==**接口**==和==**抽象类**==不能被final修饰。（无意义）
 
@@ -1053,13 +1123,13 @@ final修饰的变量一赋值就不能更改
 特点：
 
 * ==**接口是一种特殊的抽象类**==
-
 * 在接口中定义的常量默认拥有==**public、static、final属**==性。
 * 在接口中声明的方法默认具有==**public、abstract属性。**==
 *  如果子接口定义了和父接口相同的变量和相同的方法，则父接口中的常量被隐藏，方法被重写。
 * 接口中的成员不能使用的修饰符：transient，volatile，synchronized。private，protected。
 * 实现该接口的类都可认为是接口的“子类”，因此声明为某个接口类型的变量，==**可以指向该接口“子类”的实例。**==
 * 可以多重继承接口
+* ==**静态方法只能被接口调用**==
 
 接口方法声明如下：
 
@@ -1249,9 +1319,11 @@ public class MyBox{
 
 一个集合对象或一个容器表示了一组对象，集合中的对象称为元素。集合框架图如下： （←不知道是啥，可忽略）
 
-![](Java.assets/src=http _www.sguotao.top_20181031154096967157812.png&refer=http _www.sguotao.top&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg.jpg)
+![](Java.assets/123.jpg)
 
-下图是对上图Queue相关的体系结构进行的补充 丰富待处理
+
+
+下图是对上图Queue、Set相关的体系结构进行的更改、补充 丰富待处理
 
 ![MZUR6LW@R$LD[27QY]~8F_R](Java.assets/MZUR6LW@R$LD[27QY]~8F_R.png)
 
@@ -1261,39 +1333,98 @@ public class MyBox{
 
 ==**算法：**==实现集合接口对象的方法执行一些有用的计算，如搜索和排序。
 
-1. 对`接口`、**抽象类**、==**实现类**==的作用进行描述：
+### 4.7.1集合类描述
 
-   * `iterator`：不是一个集合，它是一种用于==访问集合的方法==，可用于迭代 ArrayList 和 HashSet 等集合。（使用的是游标遍历）
-     * `ListIterator`： 用于允许程序员沿任一方向遍历列表的列表的迭代器
-     
-   * `Collection`：集合接口的根。
-     * `List`：是一个`有序集合`，称为列表或序列。`元素可重复`。
-       * **AbstractList** (其下实现类 extends **AbstractCollection**)
-         * ==**Vector**==：==是同步的（支持并发）也就是线程安全的==。顺序表 （不常用）
-           * ==**Stack**==：栈 （不常用）
-         * ==**ArrayList**==：==非同步== 顺序表  
-     * **AbstractCollection**
-     * `Set`：`不能`包含`重复的元素`，`无序对象`。
-       * **AbstractSet **(**其下实现类 extends  AbstractCollection**)
-         * ==**HashSet**==：只允许一个值为`null`的元素。==非同步== ==不是键值对== 数组+单向链表+红黑树
-           * ==**LinkedHashSet**==：  ==可预测的迭代顺序==  ==非同步==。==有序无索引== 数组+双向链表+红黑树
-           
-         * ==**TreeSet**==：(**该类 implements** `SortedSet`) 红黑树 ==有序无索引==
-     * `Queue`：有关队列的数据结构。
-       * `Deque`
-         * **AbstractSequentialList**：**只支持按次序访问**
-           * ==**LinkedList**==： ==非同步==  双向链表 
-       * **AbstractQueue**
-         * ==**PriorityQueue**==
+#### 接口与类的结构
 
-   * `Map`：实现键值到值得映射。
-     * **AbstractMap**  
-       * ==**TreeMap**== **(该类 implements** `SortedMap`)
-       * ==**HashMap**==：散列表，内容是键值对(key-value)映射。是无序的，即不会记录插入的顺序。==非同步==。
-         * ==**LinkedHashMap**==：
-       * ==**WeakMapHashMap**==：
-       * ==**HashTable**==：
-       * ==**IdentityHashMap**==：
+（   表示格式： `接口`、**抽象类**、==**实现类**== 不常用类 ）
+
+* `iterator`：不是一个集合，它是一种用于==访问集合的方法==，可用于迭代 ArrayList 和 HashSet 等集合。（使用的是游标遍历）
+  
+  * `ListIterator`： 用于允许程序员沿任一方向遍历列表的列表的迭代器
+  
+* `Iterable`
+
+  * `Collection`
+    * `List` 是一个`有序集合`，称为列表或序列。`元素可重复`。
+      * Vector
+      * Stack
+      * ==**ArrayList**==
+      * AttributeList 
+      * RoleList 
+      * RoleUnresolvedList 
+      * CopyOnWriteArrayList
+    * `Set` `不能`包含`重复的元素`，`无序对象`。
+      * ==**HashSet**==
+      * ==**LinkedHashSet**==
+      * JobStateReasons 
+      * CopyOnWriteArraySet
+      * EnumSet
+      * `SortedSet`
+        * `NavigableSet`
+          * ConcurrentSkipListSet
+          * ==**TreeSet**==
+      * ConcurrentHashMap.KeySetView<K,V>  静态
+    * `Queue`
+      * PriorityQueue
+      * `Deque` 和 `List`
+        * ==**LinkedList**==
+
+* `Map`
+
+  * `SortedMap`
+
+    * `NavigableMap`
+      * ==**TreeMap**==
+
+  * ==**HashMap**==
+
+  * ==**LinkedHashMap**==
+
+  * Hashtable
+
+    
+
+* #### 抽象类与类的结构
+
+  （   表示格式： `接口`、**抽象类**、==**实现类**== 不常用类 ）
+
+* Object
+
+  * 
+  * ConcurrentHashMap.KeySetView<K,V>  静态
+  * CopyOnWriteArrayList
+  * **AbstractCollection**
+    * **AbstractList**
+      * Vector：是同步的（支持并发）也就是线程安全的。顺序表 （不常用）
+        * Stack：栈 （不常用）
+      * ==**ArrayList**==：==非同步== 顺序表  
+        * AttributeList 
+        * RoleList 
+        * RoleUnresolvedList 
+      * **AbstractSequentialList**：**只支持按次序访问**
+        * ==**LinkedList**==： ==非同步==  双向链表 
+    * **AbstractSet **
+      * ==**HashSet**==：只允许一个值为`null`的元素。==非同步== ==不是键值对== ==无序无索引== 哈希表（数组+单向链表+红黑树）**空间换时间的玩意，占地面积大，存取速度快。(哈希表)**
+        * ==**LinkedHashSet**==：  ==可预测的迭代顺序==  ==非同步==。==有序无索引== 哈希表（数组+双向链表+红黑树）当链表长度超过阈值（8）时，链表将转换为红黑树。（数组弄哈希冲突）
+        * JobStateReasons 
+      * ConcurrentSkipListSet
+      * CopyOnWriteArraySet
+      * EnumSet
+      * ==**TreeSet**==： 红黑树 ==有序无索引==
+    * **AbstractQueue**
+      * PriorityQueue
+    * **AbstractMap**   ==key不允许重复但可以为null，value可以重复。==
+      * ==**TreeMap**== **(该类 implements** `SortedMap`)  ==有序==
+      * ==**HashMap**==：散列表，内容是键值对(key-value)映射。是无序的，即不会记录插入的顺序。==非同步== ==无序== 。哈希表（数组+单向链表+红黑树）
+        * ==**LinkedHashMap**==：==有序== 哈希表（数组+双向链表+红黑树）
+      * WeakMapHashMap：
+      * **Dictionary**
+        * Hashtable： 过时不用
+      * IdentityHashMap：
+
+* `Map`：实现键值到值得映射。
+  * * 
 
 
    其它：：：
@@ -1306,236 +1437,316 @@ public class MyBox{
 
    `Comparator`
 
-2. `实现类`的方法和`接口`的方法进行描述：
+### 4.7.2集合类运用
 
-   * `Iterable` 
+（   表示格式： `接口`、**抽象类**、==**实现类**== 不常用类 ）
 
-      * Iterator() 返回迭代器  待处理
+* `Iterator` （建立在所有集合）
 
-   * `Iterator` （建立在所有集合）
+   * [default](####虚拟扩展方法 ) void forEachRemaining(Consumer<? super E> action) 在集合上执行给定操作  
+   * E next()  返回迭代中的下一个元素。 
+   * boolean hasNext()  检测集合中是否有元素。
 
-      
+   - [default](####虚拟扩展方法 )  void remove()  从底层集合中删除此迭代器返回的最后一个元素（可选操作）。 
+   - [default](####虚拟扩展方法 ) void forEachRemaining(Consumer<? super E> action) 
+     对每个剩余元素执行给定的操作，直到所有元素都被处理或动作引发异常。  
+   - boolean hasNext() 
+     如果迭代具有更多元素，则返回 true 。  
+   - E next() 
+     返回迭代中的下一个元素。  
+   - [default](####虚拟扩展方法 ) void remove() 
+     从底层集合中删除此迭代器返回的最后一个元素（可选操作）。  
 
-      * void forEachRemaining(Consumer<? super E> action) 在集合上执行给定操作  （跟1.8的 new java.util.stream有关） 类似如下 待处理
+   * ```java
+     public static void main(String args[]){
+               //线程安全 这种同步效率低，不建议使用
+             List lists = Collections.synchronizedList(new ArrayList<String>());
+             //List lists = new ArrayList<String>();
+             lists.add("s1");
+             lists.add("s2");
+             lists.add("s3");
+             Iterator<String> it=lists.iterator();
+            while(it.hasNext()){
+                System.out.println(it.next());
+                it.remove();
+            }
+             System.out.println(it);
+             System.out.println(lists);
+         }
+     ```
 
-      * ```java
-          public static void main(String[] args) {
-         
-                 Stream<String> stream = Stream.of("Java", "C", "Python", "Hadoop", "Spark");
-         
-                 stream.forEach(name-> System.out.println(name));
-             
+* `Iterator` `ListIterator`（建立在所有集合）
+
+   * void add(E) 在游标 前面 插入一个元素
+
+   * void set(E e)  用 指定的元素替换由 [next()](../../java/util/ListIterator.html#next--)或 [previous()](../../java/util/ListIterator.html#previous--)返回的元素。 
+
+   * boolean hasPrevious()  返回 true如果遍历反向列表，列表迭代器有多个元素。
+
+   * E previous()  返回列表中的上一个元素，并向后移动光标位置。 
+
+   * int nextIndex()  返回调用 [next()](../../java/util/ListIterator.html#next--)返回的元素的索引。 
+
+   * int previousIndex()  返回调用 [previous()](../../java/util/ListIterator.html#previous--)返回的元素的索引。 
+
+   * boolean hasNext() 
+      返回 true如果遍历正向列表，列表迭代器有多个元素。  
+
+   * boolean hasPrevious() 
+      返回 true如果遍历反向列表，列表迭代器有多个元素。  
+
+   * E next() 
+      返回列表中的下一个元素，并且前进光标位置。  
+
+   * void remove() 
+      从列表中删除由 next()或 previous()返回的最后一个元素（可选操作）。  
+
+   * ```java
+      public static void main(String args[]){
+              //线程安全 这种同步效率低，不建议使用
+              List lists = Collections.synchronizedList(new ArrayList<String>());
+              //List lists = new ArrayList<String>();
+              lists.add("s1");
+              lists.add("s2");
+              lists.add("s3");
+              ListIterator<String> it=lists.listIterator();
+              while(it.hasNext()){
+                  System.out.println();
+                  System.out.println(it.nextIndex()+"  "+it.previousIndex());
+                  System.out.println(it.next());
+              }
+              System.out.println();
+              while(it.hasPrevious()){
+                  System.out.println(it.previous());
+                  //it.add("0"); 会无限循环
+              }
+              System.out.println(it);
+              System.out.println(lists);
+              it.set("ssr");
+              it.add("sss");
+              System.out.println(lists);
+          }
+      ```
+   
+* `Iterable` 
+
+   * [default](####虚拟扩展方法 ) void forEach(Consumer<? super T> action)  在集合上执行给定操作 跟1.8的 new java.util.stream有关） 类似如下 待处理
+
+   * ```java
+      public static void main(String[] args) {
+             Stream<String> stream = Stream.of("Java", "C", "Python", "Hadoop", "Spark");
+             stream.forEach(name-> System.out.println(name));
+         }
+     ```
+
+   * **Iterator<T> Iterator() 返回迭代器**  
+
+   * [default](####虚拟扩展方法 ) Spliterator<T> spliterator()  在[Iterable描述](../../java/util/Spliterator.html)的元素上创建一个`Iterable`。 ？？待处理 在流那块
+
+* 使用List接口变量指向 Vector 过时
+
+* List  Stack 过时    替代它的是： `Deque` ==**LinkedList**==
+
+* `List`  ==**ArrayList**== 
+
+   * ```java
+      public static void main(String args[]){
+              //线程安全 这种同步效率低，不建议使用
+             List lists = Collections.synchronizedList(new ArrayList<String>());
+             //List lists = new ArrayList<String>();
+             System.out.println(lists.add("ss"));
+             System.out.println(lists.add("ss"));
+             System.out.println(lists.add(null));
+             System.out.println(lists.add("null"));
+             System.out.println(lists.toString());
+             System.out.println(lists.remove(null));
+             System.out.println(lists.remove(null));
+             System.out.println(lists.remove("null"));
+             System.out.println(lists.toString());
+             System.out.println(lists.set(1,"aa"));
+             System.out.println(lists.get(1));
+             System.out.println(lists.toString());
+             lists.clear();
+             System.out.println(lists.toString());
+         }
+     ```
+
+* `List`  ==**LinkedList**== 略
+
+* `Queue`  ==**LinkedList**==
+
+  * boolean offer(E e)  添加元素 （入队）
+
+  * E peek()  检索但不删除此队列的头，如果此队列为空，则返回 `null` 。 （查看队头元素）
+
+  * E poll()  检索并删除此队列的头，如果此队列为空，则返回 `null` 。（出队）
+
+  * ```java
+      public static void main(String[] args) {
+             //add()和remove()方法在失败的时候会抛出异常(不推荐)
+             Queue<String> queue = new LinkedList<String>();
+             //添加元素
+             queue.offer("a");
+             queue.offer("b");
+             queue.offer("c");
+             queue.offer("d");
+             queue.offer("e");
+             for(String q : queue){
+                 System.out.println(q);
              }
-         ```
-
-      * E next()  返回迭代中的下一个元素。 
-
-      * boolean hasNext()  检测集合中是否有元素。
-
-      - void remove()  从底层集合中删除此迭代器返回的最后一个元素（可选操作）。 
-
-      * ```java
-        public static void main(String args[]){
-                  //线程安全 这种同步效率低，不建议使用
-                List lists = Collections.synchronizedList(new ArrayList<String>());
-                //List lists = new ArrayList<String>();
-                lists.add("s1");
-                lists.add("s2");
-                lists.add("s3");
-                Iterator<String> it=lists.iterator();
-               while(it.hasNext()){
-                   System.out.println(it.next());
-                   it.remove();
-               }
-                System.out.println(it);
-                System.out.println(lists);
-            }
-        ```
-
-   * `ListIterator`（建立在所有集合）
-
-      * void add(E) 在游标 前面 插入一个元素
-
-      * void set(E e)  用 指定的元素替换由 [`next()`](../../java/util/ListIterator.html#next--)或 [`previous()`](../../java/util/ListIterator.html#previous--)返回的元素。 
-
-      * boolean hasPrevious()  返回 `true`如果遍历反向列表，列表迭代器有多个元素。
-
-      * E previous()  返回列表中的上一个元素，并向后移动光标位置。 
-
-      * int nextIndex()  返回调用 [`next()`](../../java/util/ListIterator.html#next--)返回的元素的索引。 
-
-      * int previousIndex()  返回调用 [`previous()`](../../java/util/ListIterator.html#previous--)返回的元素的索引。 
-
-      * 其它的和Iterator一样
-
-      * ```java
-         public static void main(String args[]){
-                 //线程安全 这种同步效率低，不建议使用
-                 List lists = Collections.synchronizedList(new ArrayList<String>());
-                 //List lists = new ArrayList<String>();
-                 lists.add("s1");
-                 lists.add("s2");
-                 lists.add("s3");
-                 ListIterator<String> it=lists.listIterator();
-                 while(it.hasNext()){
-                     System.out.println();
-                     System.out.println(it.nextIndex()+"  "+it.previousIndex());
-                     System.out.println(it.next());
-                 }
-                 System.out.println();
-                 while(it.hasPrevious()){
-                     System.out.println(it.previous());
-                     //it.add("0"); 会无限循环
-                 }
-                 System.out.println(it);
-                 System.out.println(lists);
-                 it.set("ssr");
-                 it.add("sss");
-                 System.out.println(lists);
+             System.out.println("===");
+             System.out.println("poll="+queue.poll()); //返回第一个元素，并在队列中删除
+             for(String q : queue){
+                 System.out.println(q);
              }
-         ```
+             System.out.println("===");
+             System.out.println("element="+queue.element()); //返回第一个元素 
+             for(String q : queue){
+                 System.out.println(q);
+             }
+             System.out.println("===");
+             System.out.println("peek="+queue.peek()); //返回第一个元素 
+             for(String q : queue){
+                 System.out.println(q);
+             }
+         }
+     }
+     ```
+  
+*   `Deque` ==**LinkedList**==             Stack
 
-   * `List`  Vector 过时
+  * void push(E e) （压栈） addFirst
 
-   * `List`  Stack 过时 替代： `Deque` LinkedList
+  * E peek()（查看栈头）
 
-   * `List`  ArrayList 
+  * E pop()（出栈）removeFirst
 
-      * boolean add(E e) 添加末尾
+  * ```java
+    public static void main(String args[]){
+        Deque<String> stack =new LinkedList<String>();
+        stack.push("a");
+        stack.push("b");
+        stack.push("c");
+        stack.push("d");
+        System.out.println(stack);
+        stack.pop();
+        System.out.println(stack);
+        System.out.println(stack.peek());
+    }
+    ```
 
-      * void clear()  删除所有元素。 
+* 
 
-      * E get(int index)  返回指定位置元素。 
+* `Set` ==**HashSet**==  **无序集合实现** 
 
-      * E set(int index, E element)  用指定元素替换指定位置元素。 返回被替换的元素
-
-      * E  remove(int index)  删除该列表中指定位置的元素。
-
-      * E  remove(Object o)  从列表中删除指定元素的第一个出现（如果存在）。 
-
-      * ```java
-         public static void main(String args[]){
-                 //线程安全 这种同步效率低，不建议使用
-                List lists = Collections.synchronizedList(new ArrayList<String>());
-                //List lists = new ArrayList<String>();
-                System.out.println(lists.add("ss"));
-                System.out.println(lists.add("ss"));
-                System.out.println(lists.add(null));
-                System.out.println(lists.add("null"));
-                System.out.println(lists.toString());
-                System.out.println(lists.remove(null));
-                System.out.println(lists.remove(null));
-                System.out.println(lists.remove("null"));
-                System.out.println(lists.toString());
-                System.out.println(lists.set(1,"aa"));
-                System.out.println(lists.get(1));
-                System.out.println(lists.toString());
-                lists.clear();
-                System.out.println(lists.toString());
-            }
-        ```
-
-   * `List`  LinkedList
-
-     * 待处理 多了个 E remove() 移除头元素
-
-   * `Queue`  LinkedList
-
-     * boolean offer(E e)  添加元素 （比add(E e)好，不抛异常）（入队）
-
-     * E peek()  检索但不删除此队列的头，如果此队列为空，则返回 `null` 。 （查看队头元素）
-
-     * E poll()  检索并删除此队列的头，如果此队列为空，则返回 `null` 。（出队）
-
-     * E element()  检索，但不删除，这个队列的头。 
-
-     * ```java
-         public static void main(String[] args) {
-                //add()和remove()方法在失败的时候会抛出异常(不推荐)
-                Queue<String> queue = new LinkedList<String>();
-                //添加元素
-                queue.offer("a");
-                queue.offer("b");
-                queue.offer("c");
-                queue.offer("d");
-                queue.offer("e");
-                for(String q : queue){
-                    System.out.println(q);
-                }
-                System.out.println("===");
-                System.out.println("poll="+queue.poll()); //返回第一个元素，并在队列中删除
-                for(String q : queue){
-                    System.out.println(q);
-                }
-                System.out.println("===");
-                System.out.println("element="+queue.element()); //返回第一个元素 
-                for(String q : queue){
-                    System.out.println(q);
-                }
-                System.out.println("===");
-                System.out.println("peek="+queue.peek()); //返回第一个元素 
-                for(String q : queue){
-                    System.out.println(q);
-                }
-            }
-        }
-        ```
-
-   *   `Deque` LinkedList
-
-     * void push(E e) （压栈）
-
-     * E pop()（出栈）
-
-     * E peek()（查看栈头）
-
-     * ```java
-       public static void main(String args[]){
-           Deque<String> stack =new LinkedList<String>();
-           stack.push("a");
-           stack.push("b");
-           stack.push("c");
-           stack.push("d");
-           System.out.println(stack);
-           stack.pop();
-           System.out.println(stack);
-           System.out.println(stack.peek());
+  * ```java
+    public static void main(String args[]){
+           //线程安全
+           Set setLists = Collections.synchronizedSet(new HashSet<String>());
+           //Set setLists = new HashSet<String>();
+           System.out.println(setLists.add("ss"));
+           System.out.println(setLists.add("ss"));
+           System.out.println(setLists.add(null));
+           System.out.println(setLists.add("null"));
+           System.out.println(setLists.toString());
+           System.out.println(setLists.remove(null));
+           System.out.println(setLists.remove(null));
+           System.out.println(setLists.remove("null"));
+           System.out.println(setLists.toString());
        }
-       ```
+    ```
 
-   * `Set`
+  `Set` ==**LinkedHashSet**==
 
-   * HashSet
+  * 和HashSet差不多
 
-     * boolean  add(E e) 添加重复元素不报错，返回false，可以插入null；
+* `NavigableSet` ==**TreeSet**==
 
-     * remove(E e) 删除指定元素
+   * ```java
+      public class HelloWorld {
+          public final static int a =1;
+      
+          public static void main(String[] args) {
+              TreeSet<String>  treeSet = new TreeSet<String>(new TreeSetComparator());
+              treeSet.add("First");
+              treeSet.add("Second");
+              treeSet.add("Third");
+              Iterator<String> itr = treeSet.iterator();
+              while (itr.hasNext()) {
+                 System.out.println(itr.next());
+              }
+              System.out.println(
+                      treeSet.comparator()
+                              .compare(treeSet.first(),treeSet.last())
+              );
+          }
+      }
+      class TreeSetComparator implements Comparator{
+      
+          @Override
+          public int compare(Object o1, Object o2) {
+              String s1=(String) o1;
+              String s2=(String) o2;
+              return s1.compareTo(s2);
+          }
+      }
+      ```
 
-     * size() 返回元素数
+* ==**TreeMap**==
 
-     * clear()  删除所有元素。
+   * ```java
+       public static void main(String[] args) {
+            System.out.println("TreeMap 实例！\n");
+            TreeMap tMap = new TreeMap();
+            tMap.put(1, "Sunday");
+            tMap.put(2, "Monday");
+            tMap.put(3, "Tuesday");
+            tMap.put(4, "Wednesday");
+            tMap.put(5, "Thursday");
+            tMap.put(6, "Friday");
+            tMap.put(7, "Saturday");
+            System.out.println("TreeMap 键：" 
+            + tMap.keySet());
+            System.out.println("TreeMap 值：" 
+            + tMap.values());
+            System.out.println("键为 5 的值为: " + tMap.get(5)+ "\n");
+            System.out.println("第一个键: " + tMap.firstKey() 
+            + " Value: " 
+            + tMap.get(tMap.firstKey()) + "\n");
+            System.out.println("最后一个键: " + tMap.lastKey() 
+            + " Value: "+ tMap.get(tMap.lastKey()) + "\n");
+            System.out.println("移除第一个数据: " 
+            + tMap.remove(tMap.firstKey()));
+            System.out.println("现在 TreeMap 键为: " 
+            + tMap.keySet());
+            System.out.println("现在 TreeMap 包含: " 
+            + tMap.values() + "\n");
+            System.out.println("移除最后一个数据: " 
+            + tMap.remove(tMap.lastKey()));
+            System.out.println("现在 TreeMap 键为: " 
+            + tMap.keySet());
+            System.out.println("现在 TreeMap 包含: " 
+            + tMap.values());
+         }
+      ```
 
-     * ```java
-        public static void main(String args[]){
-               //线程安全
-               Set setLists = Collections.synchronizedSet(new HashSet<String>());
-               //Set setLists = new HashSet<String>();
-               System.out.println(setLists.add("ss"));
-               System.out.println(setLists.add("ss"));
-               System.out.println(setLists.add(null));
-               System.out.println(setLists.add("null"));
-               System.out.println(setLists.toString());
-               System.out.println(setLists.remove(null));
-               System.out.println(setLists.remove(null));
-               System.out.println(setLists.remove("null"));
-               System.out.println(setLists.toString());
-           }
-       ```
+* ==**HashMap**==
 
-   * LinkedHashSet
-     * 和HashSet差不多
-     
-   * Queue  待处理
+  * ```java
+    public static void main(String args[]){
+        HashMap<Integer, String> Sites = new HashMap<Integer, String>();
+        // 添加键值对
+        Sites.put(1, "Google");
+        Sites.put(2, "Runoob");
+        Sites.put(3, "Taobao");
+        Sites.put(4, "Zhihu");
+        Sites.remove(4);
+        System.out.println(Sites.get(3));
+        System.out.println(Sites);
+    }
+    ```
+
+* ==**LinkedHashMap**== 略
 
 ## 4.8枚举类
 
@@ -1678,9 +1889,11 @@ public class AutoBoxingTest{
    }
 ```
 
-## 4.10 ==**常量池**==
+## 4.10 ==**常量池**== 待处理
 
 JVM常量池主要分为**Class文件常量池、运行时常量池，全局字符串常量池，以及基本类型包装类对象常量池**。
+
+[(14条消息) JVM常量池浅析_稚枭天卓-CSDN博客_jvm 常量池](https://blog.csdn.net/u013630349/article/details/102768581)
 
 ### 4.10.1==**class文件常量池**==
 
@@ -1711,12 +1924,14 @@ String.intern()
 
 ### 4.10.3 ==**全局字符串常量池**==
 
+[对String Intern()方法的理解 - he_jia - 博客园 (cnblogs.com)](https://www.cnblogs.com/hejiayang/p/14505366.html) 
+
 ##### （1）Java中创建字符串对象的两种方式
 
 ```java
-String s1="ss"; //编译时期已经确定，堆上
+String s1="ss"; //编译时期已经确定，堆的常量池上
 
-String s2=new String("ss");//运行时期确定，堆上
+String s2=new String("ss");//运行时期确定，堆上和堆的常量池上 两个对象
 
 System.out.println(s1 == s2);//false 地址不同
 ```
@@ -2267,17 +2482,23 @@ Applet是能够嵌入到HTML页面中，并能够在浏览器中运行的Java类
 
 ### 8.1.1 Applet运行过程
 
-
-
-
-
 # 九、线程编程
 
 # 十、网络编程
 
 # 十一、JDBC
 
+# 类、接口的应用与描述
 
+#### Consumer
+
+#### StringBuilder
+
+#### Spliterator
+
+#### Predicate
+
+#### Comparator
 
 # 项目文件详解
 
@@ -3004,3 +3225,15 @@ RRTI（Run-Time Type Identification）运行时类型识别
 #### static总结
 
 常量池 待处理
+
+#### 虚拟扩展方法
+
+**（Virtual extension methods）**。通常也称之为 **defender 方法**，它目前可以添加到接口中，为声明的方法提供默认的实现。
+
+简单地说，Java接口现在可以有非抽象方法了。*Default* 方法带来的好处是，往接口新增一个*Default* 方法，而不破坏现有的实现架构。
+
+*尽管如此，Default* 方法不适合过多使用，但是对于Java集合API的优化升级，并达到无缝地结合Lambda表达式来说，*Default* 方法是至关重要的特性。
+
+
+
+default方法只能被实例调用，并且调用在继承结构中离实例类最近的接口default方法
