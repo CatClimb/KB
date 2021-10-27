@@ -358,7 +358,7 @@ Spring 3中为Bean定义了5中作用域，分别为singleton（单例）、prot
 
    指`方法的调用`。
 
-3. 切入点（Pointcut）
+3. **切入点**（Pointcut）
    切面与程序流程的交叉点，即那些需要处理的连接点，通常在程序中，切入点指的是类或者`方法名`，如某个通知要应用到所有一add开头的方法中，那么所有满足这一规则的方法都是切入点。
 
 4. **通知/增强处理（Advice）**
@@ -440,7 +440,7 @@ public class App {
 
 ### 3.2.2 CGLIB动态代理
 
-是一个基于ASM的字节码生成库，它允许我们在运行时对字节码进行修改和动态生成。CGLIB通过继承方式实现代理，在子类中采用方法拦截的技术拦截所有父类方法的调用并顺势织入横切逻辑。
+是一个基于ASM的字节码生成库，它允许我们在运行时对字节码进行修改和动态生成。CGLIB通过`继承方式`实现代理，在子类中采用方法拦截的技术拦截所有父类方法的调用并顺势织入横切逻辑。
 
 例子如下：
 
@@ -489,9 +489,9 @@ public class CgLibProxy {
 
 
 
-## 3.3 基于代理的AOP实现（Spring AOP）
+## 3.3 ==**基于动态代理的**==AOP实现（Spring AOP）
 
-Spring AOP默认使用JDK动态代理的方式来实现的，在Spring中，使用`ProxyFactoryBean`是创建AOP代理的最**基本方式**。
+Spring AOP`默认使用JDK`动态代理的方式来实现的，在Spring中，使用`ProxyFactoryBean`是创建AOP代理的最**基本方式**。
 
 ### 3.3.1 Spring 通知类型
 
@@ -585,7 +585,7 @@ public class MyAspect implements MethodInterceptor{
 		<property name="target" ref="userDao"></property>
 		<!--指定切面，植入环绕通知-->
 		<property name="interceptorNames" value="myAspect"></property>
-		<!--指定代理方式，rtue:使用cglib,false(默认):使用jdk动态代理-->
+		<!--指定代理方式，true:使用cglib,false(默认):使用jdk动态代理-->
 		<property name="proxyTargetClass" value="true"></property>
 	</bean>
 </beans>
@@ -604,9 +604,9 @@ public class ProxyFactoryBeanTest {
 
 ```
 
+3.3.3 基于注解的Spring AOP
 
-
-## 3.3 AspectJ开发（静态代理 非 Spring AOP ）
+## 3.3 AspectJ开发（==**静态代理**== 非 Spring AOP ）
 
 AspectJ是一个基于Java语言的AOP框架，在`编译阶段`生成 AOP 代理类，是静态代理的增强。并且现Spring支持AspectJ。
 

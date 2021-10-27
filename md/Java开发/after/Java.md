@@ -249,7 +249,7 @@ int c = a + b;
 
 * 标识符是以字母，“_”（下划线），或“$”开始的一个字符序列
 * 数字不能作为标识符的第一个字符
-* 标识符不能是Java语言的关键字
+* 标识符不能是Java语言的关键字（==**包装类名可以**==）
 * 标识符大小写敏感，且长度没有限定
 
 Java==**标识符风格约定**==：
@@ -271,13 +271,13 @@ abstract、assert、boolean、break、byte、case、catch、char、vlass、conti
 
 ## 2.3 数据类型与类型转换
 
-|    种类    |        类型         | 默认值 |      转化规则      |
-| :--------: | :-----------------: | ------ | :----------------: |
-|   逻辑型   |       boolean       | false  | 布尔值不能转成数字 |
-|   文本型   |        char         | \u0000 | char可自动转成int  |
-|    整型    | byte short int long | 0      | int可自动转成char  |
-|   浮点型   |    float double     | 0.0    |                    |
-| 所用引用型 |   类、接口、数组    | null   |                    |
+|    种类    |        类型         | 默认值                             |      转化规则      |
+| :--------: | :-----------------: | ---------------------------------- | :----------------: |
+|   逻辑型   |       boolean       | false                              | 布尔值不能转成数字 |
+|   文本型   |        char         | \u0000                             | char可自动转成int  |
+|    整型    | byte short int long | 0 默认int类型                      | int可自动转成char  |
+|   浮点型   |    float double     | 0.0 默认double类型 0.0f为float类型 |                    |
+| 所用引用型 |   类、接口、数组    | null                               |                    |
 
 
 
@@ -328,6 +328,16 @@ char 16位
 设`低优先级类型`为`位数低`的`类型`，则：
 
 * 低优先级类型转换为高优先级类型将`自动转换`。
+
+  * ①所有的byte,short,char型的值将被提升为int型；
+
+    ②如果有一个操作数是long型，计算结果是long型；
+
+    ③如果有一个操作数是float型，计算结果是float型；
+
+    ④如果有一个操作数是double型，计算结果是double型；
+
+    而声明为final的变量会被JVM优化
 
 * 高优先级类型转换为低优先级类型将`强制转换`。
 
@@ -453,7 +463,7 @@ else{}
 
 **switch**
 
-case语句==不能使用null==，但支持以下类型：==char、byte、short、int 和 Character、Byte、Short、Integer 和 String==
+case语句==不能使用null==，但支持以下类型：==**char、byte、short、int**== 和 ==**Character、Byte、Short、Integer 、 String Enum 类型**==
 
 ==default可选,可以放在case的上与下==
 
@@ -610,6 +620,8 @@ public class Calculation{
 
 ### 3.2.3 方法重载
 
+[3.5.3 方法重写](###3.5.3 方法的重写)
+
 java编译时多态
 
 例如：
@@ -624,7 +636,7 @@ public void println( int x,String x)
 
 重载条件：
 
-* **方法名相同**，**参数列表不同：{数量不同、顺序不同、类型不同}；**
+* **方法名相同**，**返回类型不同** **参数列表不同：{数量不同、顺序不同、类型不同}；**
 * 方法重载与返回值类型没有关系
 * 方法重载和修饰符列表无关
 
@@ -684,6 +696,16 @@ public A(int a){}
 #### 1 继承访问控制
 
 ==**public、protected**==修饰的方法可以被子类继承，同一个包下，默认的也可以被继承。如果子类重写，要修改方法的访问权限，==**子类方法的访问权限必须比父类大**==
+
+### 3.2.6初始化过程
+
+**1.** **初始化==父类==中的静态成员变量和静态代码块** **；** 
+
+**2.** **初始化==子类==中的静态成员变量和静态代码块** **；** 
+
+**3.初始化==父类==的普通成员变量和代码块，再执行==父类的构造方法==；**
+
+**4.初始化==子类==的普通成员变量和代码块，再执行子类的构造方法；**
 
 ## 3.3 ==**内部类**==
 
@@ -895,13 +917,25 @@ super关键字指向所在类的父类。super([args])指调用父类的构造�
 
 ### 3.5.3 方法的重写
 
+[3.2.3 方法重载](###3.2.3 方法重载)
+
 使用规则：
 
-1. 子类中重写的父类方法`返回值类型`必须与父类方法相同。
+1. 子类中重写的父类方法`返回值类型`必须与父类方法`相同`。
 
 2. 子类中重写方法的访问权限不能缩小。
+
 3. 子类中重写方法不能抛出新的异常。
+
 4. 子类与父类成员变量或方法（`方法名字`、`参数个数`、`返回值类型`、`参数类型`）是相同的，才能被定义为重写。
+
+5. **方法名相同，参数类型、个数相同**
+
+   **子类返回类型小于等于父类方法返回类型，**
+
+   **子类抛出异常小于等于父类方法抛出异常，**
+
+   **子类访问权限大于等于父类方法访问权限。**
 
 
 
@@ -1225,7 +1259,7 @@ box.add(new Double(10.1));
 
 ### 4.6.4 通配符
 
-Java运行在泛型的类型形参中使用通配符（wildcards），以提高程序的灵活性。
+Java运行在泛型的类型形参中使用通配符（wildcards），以提高程序的灵活性。（==**支持泛型中的子类，实现多态**==）
 
 ==通配符“**？**”==替代泛型尖括号中的具体类型，表示一种未知类型的笼子，例如：
 
@@ -1241,25 +1275,21 @@ Cage<?>   可认为是Cage<Animal>,Cage<Butterfly>,Cage<Fruit>的父类
 
 * Java中，不仅可以对实例方法进行泛化，也可以对静态方法、构造方法进行泛化，即==**所有方法**==都可以定义为泛化方法。
 
-* Java编译器具有类型推理的能力，他根据调用方法时实参的类型，推理得出被调用方法中类型变量的具体类型并据此检查方法调用中类型的正确性。
-
 * 泛化方法中类型参数的优势是可以表达==**多个参数**==或==**返回值**==之间的类型==**依赖关系**==。如果方法中并不存在类型之间的依赖关系，则可以不适用泛化方法，而使用通配符。
 
 例如：
 
 ```java
-根据第二条通配符如下：
-interface Collection<E>{
-    boolean containsAll(Collection<?> c);
-    boolean addAll(Collection<? extends E> c);
-}
-
-泛化方法
+泛化方法 不符合第二条：单个参数，且返回值不依赖于参数类型。
 interface Collection<E>{
     <T>boolean containsAll(Collection<T> c);
     <T extends E> boolean addAll(Collection<T> c);
 }
-
+通配符：符合第二条
+interface Collection<E>{
+    boolean containsAll(Collection<?> c);
+    boolean addAll(Collection<? extends E> c);
+}
 
 ```
 
@@ -1748,6 +1778,174 @@ public class MyBox{
 
 * ==**LinkedHashMap**== 略
 
+### 4.7.3 集合类并发测试
+
+```java
+public class TestThread {
+    private static List<String> arrayList = Collections.synchronizedList(new ArrayList<String>());
+    private static List<String> copyOnWriteArrayList = new CopyOnWriteArrayList<String>();
+    private static CountDownLatch cdl1 = new CountDownLatch(2);
+    private static CountDownLatch cdl2 = new CountDownLatch(2);
+    private static CountDownLatch cdl3 = new CountDownLatch(2);
+    private static CountDownLatch cdl4 = new CountDownLatch(2);
+     private static CountDownLatch cdl5 = new CountDownLatch(2);
+     private static CountDownLatch cdl6 = new CountDownLatch(2);
+    private static MyArrayList myList=new TestThread.MyArrayList<String>();
+    private static class MyArrayList<E> extends ArrayList<E>{
+         @Override
+         public boolean add(E e) {
+             synchronized (this){
+                 return super.add(e);
+             }
+
+         }
+
+         @Override
+         public E remove(int index) {
+             synchronized (this){
+                 return super.remove(index);
+             }
+         }
+
+     }
+    //ArrayList写线程
+    static class ArrayAddThread extends Thread{
+
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+            for(int i=0;i<50000;i++) {
+                arrayList.add(String.valueOf(i));
+            }
+            cdl1.countDown();
+        }
+    }
+    //ArrayList读线程
+    static class ArrayGetThread extends Thread{
+
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+            int size = arrayList.size();
+            for(int i=0;i<size;i++) {
+                arrayList.get(i);
+            }
+            cdl2.countDown();
+        }
+
+    }
+    //CopyOnWriteArrayList写线程
+    static class CopyAddThread extends Thread{
+
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+            for(int i=0;i<50000;i++) {
+                copyOnWriteArrayList.add(String.valueOf(i));
+            }
+            cdl3.countDown();
+        }
+
+    }
+
+    //CopyOnWriteArrayList读线程
+    static class CopyGetThread extends Thread{
+
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+            int size = copyOnWriteArrayList.size();
+            for(int i=0;i<size;i++) {
+                copyOnWriteArrayList.get(i);
+            }
+            cdl4.countDown();
+        }
+
+    }
+     //myList写线程
+     static class Array1AddThread extends Thread{
+
+         @Override
+         public void run() {
+             // TODO Auto-generated method stub
+             for(int i=0;i<50000;i++) {
+                 myList.add(String.valueOf(i));
+             }
+             cdl5.countDown();
+         }
+     }
+     //myList读线程
+     static class Array1GetThread extends Thread{
+
+         @Override
+         public void run() {
+             // TODO Auto-generated method stub
+             int size = myList.size();
+             for(int i=0;i<size;i++) {
+                 myList.get(i);
+             }
+             cdl6.countDown();
+         }
+
+     }
+    public static void main(String[] args) throws InterruptedException {
+        long start1 = System.currentTimeMillis();
+        new ArrayAddThread().start();
+        new ArrayAddThread().start();
+        cdl1.await();
+        long end1 = System.currentTimeMillis();
+        System.out.println("ArrayList写操作时间："+(end1-start1));
+
+        long start3 = System.currentTimeMillis();
+        new CopyAddThread().start();
+        new CopyAddThread().start();
+        cdl3.await();
+        long end3 = System.currentTimeMillis();
+        System.out.println("CopyOnWriteArrayList的写操作时间："+(end3-start3));
+
+        long start5 = System.currentTimeMillis();
+        new Array1AddThread().start();
+        new Array1AddThread().start();
+        cdl5.await();
+        long end5 = System.currentTimeMillis();
+        System.out.println("myList写操作时间："+(end5-start5));
+
+        long start2 = System.currentTimeMillis();
+        new ArrayGetThread().start();
+        new ArrayGetThread().start();
+        cdl2.await();
+        long end2 = System.currentTimeMillis();
+        System.out.println("ArrayList读操作时间："+(end2-start2));
+
+
+        long start4 = System.currentTimeMillis();
+        new CopyGetThread().start();
+        new CopyGetThread().start();
+        cdl4.await();
+        long end4 = System.currentTimeMillis();
+        System.out.println("CopyOnWriteArrayList的读操作时间："+(end4-start4));
+
+        long start6 = System.currentTimeMillis();
+        new Array1GetThread().start();
+        new Array1GetThread().start();
+        cdl6.await();
+        long end6 = System.currentTimeMillis();
+        System.out.println("myList读操作时间："+(end6-start6));
+
+    }
+
+}
+ArrayList写操作时间：15
+CopyOnWriteArrayList的写操作时间：2421
+myList写操作时间：17
+ArrayList读操作时间：11
+CopyOnWriteArrayList的读操作时间：8
+myList读操作时间：6
+
+```
+
+
+
 ## 4.8枚举类
 
 ==**定义：**==
@@ -1991,7 +2189,41 @@ JVM规范里Class文件的常量池项的类型，有两种东西：
 
 ## 4.11 Object类
 
+看完线程在看这里比较好[ 九、线程编程](#九、线程编程)
 
+protected Object clone(); 返回这个对象的克隆
+
+boolean equals(OBject obj) 指定该对象是否等于调用方法的对象。Object类该方法的源码：
+
+```java
+ public boolean equals(Object obj) {
+        return (this == obj);
+    }
+```
+
+protected void finalize() 当垃圾收集确定不再有对象该对象的引用时，垃圾收集器将调用该对象的该方法。
+
+Class<?> getClass() 返回这个对象的运行时类。
+
+int hashCode()返回对象的哈希码值。
+
+void notify（）唤醒正在这个对象的监视器等待的单个线程。
+
+void notifyAll() 唤醒在正在这个对象的监视器等待的所有线程。
+
+String toString() 源码：
+
+```java
+public String toString() {
+    return getClass().getName() + "@" + Integer.toHexString(hashCode());
+}
+```
+
+void wait() 导致当前线程在监视器中等待，直到监视器中另一个的线程调用该对象的notify()方法和notifyAll()方法进行唤醒。
+
+void wait(long timeout)
+
+void wait(long timeout,int nanos)
 
 # 五、异常处理
 
@@ -2150,7 +2382,7 @@ java -ea:<className>...	打开指定包及其子包的断言检查
 
    
 
-# 六、IO与流
+# 六、IO、流与文件
 
 ## 6.1流式输入输出
 
@@ -2278,59 +2510,19 @@ public class Main {
 }
 ```
 
-### 6.4.2 缓存流
+### 6.4.2 缓存流 
 
-通过减少系统资源的读写次数来加快程序的执行。
-
-```java
-package com.company;
-
-import java.io.*;
-
-public class Main {
-    public static void main(String args[]) throws IOException {
-        File inputFile = new File("F:\\a.txt");
-        File outputFile = new File("F:\\b.txt");
-
-        FileInputStream in = new FileInputStream(inputFile);
-        FileOutputStream out = new FileOutputStream(outputFile);
-        BufferedInputStream bin =new BufferedInputStream(in);
-        BufferedOutputStream bout =new BufferedOutputStream(out);
-        int c;
-        while ((c = bin.read()) != -1)
-            bout.write(c);
-        bin.close();
-        bout.flush();//让他输出
-        bout.close();
-    }
-}
-```
-
-### 6.4.3 管道流
-
-管道流可以实现线程间数据的直接传输。与共享缓冲区方法相比，不需要线程同步，节省内存并提高了程序的运行效率。核心图如下：
-
-![image-20210915181212089](Java.assets/image-20210915181212089.png)
-
-![image-20210915180826824](Java.assets/image-20210915180826824.png)
+* 通过减少系统资源的读写次数来加快程序的执行。
+* 增加了一个好用的方法 readLine();读一行 ==**末尾返回null**==
 
 ```java
-package com.company;
-
-import java.io.*;
-import java.util.Scanner;
-
-import static com.sun.jmx.snmp.agent.SnmpMibNode.sort;
-import static jdk.nashorn.internal.objects.NativeArray.reverse;
-
-
 public class Main {
     public static void main(String args[]) throws IOException {
         FileReader fileReader =new FileReader("F:\\\\a.txt");
-        Reader reader =reverse(sort(reverse(fileReader)));
-        BufferedReader in１=new BufferedReader(reader);
+        Reader reader =sort(reverse(fileReader));
+        BufferedReader in=new BufferedReader(reader);
         String input;
-        while((input=in１.readLine())!=null){
+        while((input=in.readLine())!=null){
             System.out.println(input);
         }
         in.close();
@@ -2454,17 +2646,648 @@ class SortThread extends Thread{
         quicksort(a, lo==lo0 ? lo+1:lo, hi0);
     }
 }
+```
+
+### 6.4.3 管道流（线程之间通信）
+
+[管道扩展](####管道)
+
+管道流可以实现线程间数据的直接传输。与共享缓冲区方法相比，==**不需要线程同步**==，节省内存并提高了程序的运行效率。核心图如下：
+
+![image-20211017164033210](Java.assets/image-20211017164033210.png)
+
+![image-20210915180826824](Java.assets/image-20210915180826824.png)
+
+```java
+package com.company;
+
+import java.io.*;
+import java.util.Scanner;
+
+import static com.sun.jmx.snmp.agent.SnmpMibNode.sort;
+import static jdk.nashorn.internal.objects.NativeArray.reverse;
+
+//文本数据
+//apple
+//image
+//condication
+public class Main {
+    public static void main(String args[]) throws IOException {
+        FileReader fileReader =new FileReader("F:\\a.txt");
+        Reader reader =reverse(sort(reverse(fileReader)));
+        BufferedReader in１=new BufferedReader(reader);
+        String input;
+        while((input=in１.readLine())!=null){
+            System.out.println(input);
+        }
+        in.close();
+    }
+    public static Reader reverse(Reader source) throws IOException {
+        BufferedReader in=new BufferedReader(source);
+        PipedWriter pipedOut=new PipedWriter();
+        PipedReader pipedIn=new PipedReader(pipedOut);
+        PrintWriter out=new PrintWriter(pipedOut);
+        new ReverseThread(out,in).start();
+        //pipeIn为主线程输入流（读取）
+        return pipedIn;
+
+    }
+    public static Reader sort(Reader source) throws IOException {
+        BufferedReader in=new BufferedReader(source);
+        PipedWriter pipedOut=new PipedWriter();
+        PipedReader pipedIn=new PipedReader(pipedOut);
+        PrintWriter out=new PrintWriter(pipedOut);
+        new SortThread(out,in).start();
+        return pipedIn;
+
+    }
+}
+
+//单词字母逆序类包含线程
+class ReverseThread extends Thread {
+    private PrintWriter out = null;
+    private BufferedReader in = null;
+
+    public ReverseThread(PrintWriter out, BufferedReader in) {
+        this.out = out;
+        this.in = in;
+    }
+
+    public void run(){
+        if(out!=null&&in!=null){
+            try {
+                String input;
+                while ((input = in.readLine()) != null) {
+                    out.println(reverseIt(input));
+                    out.flush();
+                }
+
+                out.close();
+
+            }catch (IOException e){
+                System.out.println("ReverseThread run:" +e);
+            }
+        }
+    }
+
+    //单词字母逆序算法
+    private String reverseIt(String source){
+        int i,len=source.length();
+        StringBuffer dest=new StringBuffer(len);
+        for(i=(len-1);i>=0;i--){
+            dest.append(source.charAt(i));
+        }
+        return dest.toString();
+    }
+}
+//单词排序类包含线程
+class SortThread extends Thread{
+    private PrintWriter out=null;
+    private BufferedReader in=null;
+
+    public SortThread(PrintWriter out,BufferedReader in){
+        this.out=out;
+        this.in=in;
+    }
+    public void run(){
+        int MAXWORDS=50;
+        if(out!=null&&in!=null){
+            try{
+                String[] listOfWords=new String[MAXWORDS];
+                int numwords=0;
+                while((listOfWords[numwords]=in.readLine())!=null){
+                    numwords++;
+                }
+                quicksort(listOfWords,0,numwords-1);
+                for(int i=0;i<numwords;i++){
+                    out.println(listOfWords[i]);
+                }
+                out.flush();
+                out.close();
+
+            }catch (IOException e){
+                System.err.println("SortThread run:"+e);
+            }
+        }
+    }
+    //排序算法
+    private static void quicksort(String[] a,int lo0,int hi0){
+        int lo=lo0;
+        int hi=hi0;
+        if(lo>=hi){
+            return;
+        }
+        String mid=a[(lo+hi)/2];
+        while (lo<hi){
+            while (lo<hi&& a[lo].compareTo(mid)<0)
+                lo++;
+            while(lo<hi&&a[hi].compareTo(mid)>0)
+                hi--;
+            if(lo<hi){
+                String T=a[lo];
+                a[lo]=a[hi];
+                a[hi]=T;
+                lo++;
+                hi--;
+
+            }
+        }
+        if(hi<lo){
+            int T=hi;
+            hi=lo;
+            lo=T;
+        }
+        quicksort(a, lo0, lo);
+        quicksort(a, lo==lo0 ? lo+1:lo, hi0);
+    }
+}
 
 
 ```
 
-## 6.5 文件
+### 6.4.4 数据流
 
-## 6.6 随机存取文件
+
+
+#### DataInputStream
+
+| `boolean` | `readBoolean()`  读取一个输入字节，并返回 `true`如果该字节不为零，  `false`如果该字节是零。 |
+| --------- | ------------------------------------------------------------ |
+| `byte`    | `readByte()`  读取并返回一个输入字节。                       |
+| `char`    | `readChar()`  读取两个输入字节并返回一个 `char`值。          |
+| `double`  | `readDouble()`  读取八个输入字节并返回一个 `double`值。      |
+| `float`   | `readFloat()`  读取四个输入字节并返回一个 `float`值。        |
+| `void`    | `readFully(byte[] b)`  从输入流读取一些字节，并将它们存储到缓冲区数组 `b` 。 |
+| `void`    | `readFully(byte[] b,  int off, int len)`  从输入流读取 `len`个字节。 |
+| `int`     | `readInt()`  读取四个输入字节并返回一个 `int`值。            |
+| `String`  | `readUTF()`  读取已使用 [modified UTF-8]格式编码的字符串。   |
+| `String`  | 已弃用 <br/>此方法无法将字节正确转换为字符。 从JDK 1.1开始，读取文本行的BufferedReader.readLine()方法是通过BufferedReader.readLine()方法。 使用DataInputStream类读取行的程序可以转换为使用BufferedReader类替换以下形式的代码： <br/>     `DataInputStream d = new DataInputStream(in);`<br/> 与： <br/>     `BufferedReader d   = new BufferedReader(new InputStreamReader(in));`<br/> |
+
+#### DataOutputStream
+
+写入的是二进制文件哦
+
+| `void` | `writeBoolean(boolean v)`  将 `boolean`写入底层输出流作为1字节值。 |
+| ------ | ------------------------------------------------------------ |
+| `void` | `writeByte(int v)`  将 `byte`作为1字节值写入底层输出流。     |
+| `void` | `writeBytes(String s)`  将字符串作为字节序列写入基础输出流。 |
+| `void` | `writeChar(int v)`  将 `char`写入底层输出流作为2字节值，高字节优先。 |
+| `void` | `writeChars(String s)`  将字符串写入底层输出流作为一系列字符。 |
+| `void` | `writeDouble(double v)`  双参数传递给转换 `long`使用 `doubleToLongBits`方法在类  `Double` ，然后写入该 `long`值基础输出流作为8字节的数量，高字节。 |
+| `void` | `writeFloat(float v)`  浮子参数的转换 `int`使用 `floatToIntBits`方法在类  `Float` ，然后写入该 `int`值基础输出流作为一个4字节的数量，高字节。 |
+| `void` | `writeInt(int v)`  将底层输出流写入 `int`作为四字节，高位字节。 |
+| `void` | `writeLong(long v)`  将 `long`写入底层输出流，为8字节，高字节为首。 |
+| `void` | `writeShort(int v)`  将 `short`写入底层输出流作为两个字节，高字节优先。 |
+| `void` | `writeUTF(String str)`  使用 [modified  UTF-8](DataInput.html#modified-utf-8)编码以机器无关的方式将字符串写入基础输出流。 |
+
+```java
+public static void main(String args[]) throws IOException {
+    //文件是二进制文件
+    //new File不会创建文件，但是如果被套上流，不管有没有写入数据，都会创建文件。
+    DataOutputStream out =new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File("F:\\invoice1.txt"))));
+    double[] prices={19.99,9.99,15.99,3.99,4.99};
+    int[] units={12,8,13,29,50};
+    String[] descs={"Java T-shirt","Java Mug","Duke Juggling Dolls","Java Pin","Java Key Chain"};
+    for(int i=0;i<prices.length;i++){
+        out.writeDouble(prices[i]);
+        out.writeChar('\t');
+        out.writeInt(units[i]);
+        out.writeChar('\t');
+        out.writeUTF(descs[i]);
+        out.writeChar('\t');
+    }
+    out.flush();
+    out.close();
+    DataInputStream in =new DataInputStream(new BufferedInputStream(new FileInputStream("F:\\invoice1.txt")));
+    double price;
+    int unit;
+    String desc;
+    double total=0.0;
+    for(int i=0;i<prices.length;i++){
+        price=in.readDouble();
+        in.readChar();
+        unit=in.readInt();
+        in.readChar();
+        desc=in.readUTF();
+        in.readChar();
+        System.out.println("您订购了"+unit+"价格为"+price+"的"+desc);
+    }
+    in.close();
+}
+```
+
+#### 6.4.5 标准输入\输出
+
+* 标准输入是键盘，标准输出是控制台。
+* System类提供了三个常量流：**System.in** **System.out** **System.err**
+
+**System.in** (`InputStream`对象)
+
+**System.out** （`PrintStream`对象）
+
+例子如下：
+
+```java
+public class inout {
+    public static void main(String[] args) throws IOException {
+        String goal;
+        BufferedReader in =new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("Please input：");
+        goal=in.readLine();
+        while (!goal.equals("exit")){
+            System.out.println("read："+goal);
+            goal=in.readLine();
+            }
+        System.out.println("End of Inputting");
+        in.close();
+    }
+}
+```
+
+## 6.5 文件 File
+
+new File不会创建文件，但是如果被套上流，不管有没有写入数据，==**都会创建文件**==。
+
+| `String[]` | `list()`  返回一个字符串数组，命名由此抽象路径名表示的目录中的文件和目录。 |
+| ---------- | ------------------------------------------------------------ |
+| `boolean`  | `delete()`  删除由此抽象路径名表示的文件或目录。             |
+
+```java
+public static void main(String args[]){
+    //args[0]存在文件 args[1]不存在文件
+    File old =new File(args[0]);
+    File rname =new File(args[1]);
+    System.out.println("源文件信息：");
+    //调用自定义函数
+    System.out.println("重命名前：");
+    fileData(old);
+    //old重命名为rname的文件名
+    System.out.println("重命名："+old.renameTo(rname));
+    System.out.println("重命名后：");
+    fileData(rname);
+}
+private static void fileData(File f){
+    System.out.println(
+            "绝对路径："+f.getAbsolutePath()+
+                    "\n能读："+f.canRead()+
+                    "\n能写："+f.canWrite()+
+                    "\n文件名："+f.getName()+
+                    "\n父目录："+f.getParent()+
+                    "\n文件长度："+f.length()+
+                    "\n最近的修改时间："+new Date(f.lastModified())+
+                    "\n是目录："+f.isDirectory()+
+                    "\n是文件："+f.isFile()+
+                    "\n现在时间："+new Date(new Date().getTime())+
+                    "\n存在："+f.exists()
+    );
+}
+```
+
+### 6.5.1创建新文件
+
+```java
+public static void main(String[] args) throws IOException {
+    String fileName = "test.txt";
+    System.out.println("File.separator:" + File.separator);
+    File testFile = new File("D:" + File.separator + "filepath" + File.separator + "test" + File.separator + fileName);
+    File fileParent = testFile.getParentFile();//返回的是File类型,可以调用exsit()等方法
+    String fileParentPath = testFile.getParent();//返回的是String类型
+    System.out.println("fileParent:" + fileParent);
+    System.out.println("fileParentPath:" + fileParentPath);
+    if (!fileParent.exists()) {
+        fileParent.mkdirs();// 能创建多级目录
+    }
+    if (!testFile.exists())
+        testFile.createNewFile();//有路径才能创建文件
+    System.out.println(testFile);
+
+    String path = testFile.getPath();
+    String absolutePath = testFile.getAbsolutePath();//得到文件/文件夹的绝对路径
+    String getFileName = testFile.getName();//得到文件/文件夹的名字
+    System.out.println("path:"+path);
+    System.out.println("absolutePath:"+absolutePath);
+    System.out.println("getFileName:"+getFileName);
+}
+```
+
+## 6.6 随机存取文件 RandomAccessFile
+
+使用指针，不是流，实现DataInput和DataOutput接口，能使用`readLine()`
+
+- - | `void`           | `close()`  关闭此随机访问文件流并释放与流相关联的任何系统资源。 |
+    | ---------------- | ------------------------------------------------------------ |
+    | `FileChannel`    | `getChannel()`  返回与此文件关联的唯一的[`FileChannel`](../../java/nio/channels/FileChannel.html)对象。 |
+    | `FileDescriptor` | `getFD()`  返回与此流关联的不透明文件描述符对象。            |
+    | `long`           | `getFilePointer()`  返回此文件中的当前偏移量。               |
+    | `long`           | `length()`  返回此文件的长度。                               |
+    | `int`            | `read()`  从该文件读取一个字节的数据。                       |
+    | `int`            | `read(byte[] b)`  从该文件读取最多 `b.length`字节的数据到字节数组。 |
+    | `int`            | `read(byte[] b,  int off, int len)`  从该文件读取最多 `len`个字节的数据到字节数组。 |
+    | `boolean`        | `readBoolean()`  从此文件读取一个 `boolean` 。               |
+    | `byte`           | `readByte()`  从此文件中读取一个带符号的八位值。             |
+    | `char`           | `readChar()`  从此文件中读取一个字符。                       |
+    | `double`         | `readDouble()`  从此文件读取 `double` 。                     |
+    | `float`          | `readFloat()`  从此文件读取一个 `float` 。                   |
+    | `void`           | `readFully(byte[] b)`  从此文件读取 `b.length`字节到字节数组，从当前文件指针开始。 |
+    | `void`           | `readFully(byte[] b,  int off, int len)`  从此文件中读取 `len`个字节到字节数组，从当前文件指针开始。 |
+    | `int`            | `readInt()`  从该文件读取一个带符号的32位整数。              |
+    | `String`         | `readLine()`  从此文件中读取下一行文本。                     |
+    | `long`           | `readLong()`  从该文件中读取一个带符号的64位整数。           |
+    | `short`          | `readShort()`  从此文件中读取一个已签名的16位数字。          |
+    | `int`            | `readUnsignedByte()`  从此文件中读取一个无符号的八位数字。   |
+    | `int`            | `readUnsignedShort()`  从该文件中读取一个无符号的16位数字。  |
+    | `String`         | `readUTF()`  从该文件读取字符串。                            |
+    | `void`           | `seek(long pos)`  设置文件指针偏移，从该文件的开头测量，发生下一次读取或写入。 |
+    | `void`           | `setLength(long newLength)`  设置此文件的长度。              |
+    | `int`            | `skipBytes(int n)`  尝试跳过 `n`字节的输入丢弃跳过的字节。   |
+    | `void`           | `write(byte[] b)`  从指定的字节数组写入 `b.length`个字节到该文件，从当前文件指针开始。 |
+    | `void`           | `write(byte[] b,  int off, int len)`  从指定的字节数组写入 `len`个字节，从偏移量 `off`开始写入此文件。 |
+    | `void`           | `write(int b)`  将指定的字节写入此文件。                     |
+    | `void`           | `writeBoolean(boolean v)`  将 `boolean`写入文件作为一个字节值。 |
+    | `void`           | `writeByte(int v)`  将 `byte`写入文件作为单字节值。          |
+    | `void`           | `writeBytes(String s)`  将字符串作为字节序列写入文件。       |
+    | `void`           | `writeChar(int v)`  将 `char`写入文件作为两字节值，高字节为先。 |
+    | `void`           | `writeChars(String s)`  将一个字符串作为字符序列写入文件。   |
+    | `void`           | `writeDouble(double v)`  双参数传递给转换 `long`使用 `doubleToLongBits`方法在类  `Double` ，然后写入该 `long`值到该文件作为一个八字节的数量，高字节。 |
+    | `void`           | `writeFloat(float v)`  浮子参数的转换 `int`使用 `floatToIntBits`方法在类  `Float` ，然后写入该 `int`值到该文件作为一个四字节数量，高字节。 |
+    | `void`           | `writeInt(int v)`  将 `int`写入文件为四个字节，高字节 `int` 。 |
+    | `void`           | `writeLong(long v)`  将 `long`写入文件为八个字节，高字节为先。 |
+    | `void`           | `writeShort(int v)`  将 `short`写入文件作为两个字节，高字节优先。 |
+    | `void`           | `writeUTF(String str)`  以机器无关的方式使用 [modified  UTF-8](DataInput.html#modified-utf-8)编码将字符串写入文件。 |
+
+随机存取文件对象创建的参数mode
+
+> r ——只读
+>
+> rw——读写
+>
+> rwd——读写，并要求文件内容更新同步到底层存储设备
+>
+> rws——和rwd基本相同，同时可以更新文件的`元数据`
+
+```java
+   public static void main(String args[]) throws IOException {
+        long startTime=System.currentTimeMillis();
+        long filePoint = 0;
+        String goal;
+        System.out.println("获取配置文件所在目录路径"+RandomAccessFileTest.class.getClassLoader().getResource(""));
+        System.out.println("获取工作目录"+System.getProperty("user.dir"));
+        System.out.println("获取所在目录"+RandomAccessFileTest.class.getResource(""));
+        RandomAccessFile file = new RandomAccessFile(System.getProperty("user.dir")+
+                File.separator+"src"+
+                File.separator+"main"+
+                File.separator+"java"+
+                File.separator+"com"+
+                File.separator+"example"+
+                File.separator+"RandomAccessFileTest.java", "r");
+        long fileLength=file.length();
+        while(filePoint<fileLength){
+            goal=file.readLine();
+            System.out.println(goal);
+            filePoint=file.getFilePointer();
+        }
+        long endTime= System.currentTimeMillis();
+        System.out.println(endTime-startTime);
+        file.close();
+    }
+```
+
+
 
 ## 6.7对象的串行化
 
+将Java程序中得对象保存在`外存`中，称为`对象永久化`。对象永久化得关键是将它得状态以一种`串行格式表示出来`，以便以后读该对象时能够把它重构出来。因此对Java对象得读写的过程被称为对象`串行化`。
 
+* 会串行化`串行化对象`的引用对象。
+
+### 6.7.1对象串行化方法
+
+==**保存对象**==：
+
+运行两遍不会追加，会覆盖
+
+```java
+public class SerializeDate {
+    Date d;
+    Date b;
+    SerializeDate() throws IOException {
+
+        File file=new File("date.ser");
+        if(!file.exists()){
+            file.createNewFile();
+        }
+        FileOutputStream f=new FileOutputStream(file);
+        ObjectOutputStream s=new ObjectOutputStream(f);
+        s.writeObject(d=new Date());
+        s.writeObject(b=new Date());
+        //readObject结束符判断
+        s.writeObject(null);
+        f.flush();
+        f.close();
+    }
+    public static void main(String args[]) throws IOException {
+        SerializeDate b=new SerializeDate();
+        System.out.println(b.d.toString());
+        System.out.println(b.b.toString());
+    }
+}
+```
+
+==**读取对象**==：
+
+```java
+public class SerializeDate {
+    Date d=null;
+    private SerializeDate() throws IOException, ClassNotFoundException {
+        FileInputStream f=new FileInputStream("date.ser");
+        ObjectInputStream s=new ObjectInputStream(f);
+        while((d=(Date)s.readObject())!=null){
+            System.out.println(d);
+        }
+        f.close();
+    }
+    public static void main(String args[]) throws IOException, ClassNotFoundException {
+        SerializeDate b=new SerializeDate();
+
+    }
+}
+```
+
+### 6.7.2构造可串行化对象的类
+
+```java
+class D implements Serializable{
+    int a;
+    int b;
+    public int getA() {
+        return a;
+    }
+    public void setA(int a) {
+        this.a = a;
+    }
+
+    public int getB() {
+        return b;
+    }
+    public void setB(int b) {
+        this.b = b;
+    }
+}
+```
+
+### 6.7.3定制串行化
+
+==**部分定制串行化**==
+
+定制自己的
+
+文件数据敏感
+
+解决：`transient`或`static`类型的数据项是==**不能进行串行化和反串行化**==
+
+```java
+class Employee implements Serializable{
+    int id;
+    int age;
+    String name;
+
+    public Employee(int id,  int age,String name) {
+        this.id = id;
+        this.age = age;
+        this.name = name;
+
+    }
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        Date savedDate=new Date();
+        out.writeInt(id);
+        out.writeInt(age);
+        out.writeUTF(name);
+        out.writeInt(savedDate.getYear()-1);
+    }
+    private void readObject(ObjectInputStream in) throws IOException {
+        Date readDate=new Date();
+        int savedYear;
+        id=in.readInt();
+        age=in.readInt();
+        name=in.readUTF();
+        savedYear=in.readInt();
+        age+=(readDate.getYear()-savedYear);
+    }
+    @Override
+    public String toString() {
+        return "ObjectSerial{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+public class ObjectSerial{
+    public static void main(String args[]) throws IOException, ClassNotFoundException {
+        Employee employee=new Employee(123456,23,"Tom");
+        ObjectOutputStream out =new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("date.ser")));
+        out.writeObject(employee);
+        out.flush();
+        out.close();
+        ObjectInputStream in =new ObjectInputStream(new BufferedInputStream(new FileInputStream("date.ser")));
+        Employee tmp=(Employee)in.readObject();
+        System.out.println(tmp);
+    }
+}
+```
+
+==**完全定制串行化**==
+
+定制自己的和父类的
+
+* 文件数据敏感
+* 权限敏感public 方法
+
+解决：`transient`或`static`类型的数据项是==**不能进行串行化和反串行化**==
+
+Externalizable extends Serializable
+
+```java
+class Employee{
+        int id;
+        int age;
+        String name;
+    public Employee(){}
+
+    public Employee(int id,  int age,String name) {
+        this.id = id;
+        this.age = age;
+        this.name = name;
+
+    }
+    @Override
+    public String toString() {
+        return "ObjectSerial{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+class Manager extends Employee implements Externalizable{
+    String position;
+
+    public Manager(int id, int age, String name, String position) {
+        super(id, age, name);
+        this.position = position;
+    }
+	//没有就报InvalidClassException: no valid constructor 原因跟Externalizable有关
+    public Manager() {
+    }
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        Date savedDate=new Date();
+        out.writeInt(id);
+        out.writeInt(age);
+        out.writeUTF(name);
+        out.writeInt(savedDate.getYear()-1);
+        out.writeUTF(position);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        Date readDate=new Date();
+        int savedYear;
+        id=in.readInt();
+        age=in.readInt();
+        name=in.readUTF();
+        savedYear=in.readInt();
+        position=in.readUTF();
+        age+=(readDate.getYear()-savedYear);
+
+    }
+
+    @Override
+    public String toString() {
+        return "Manager{" +
+                "id=" + id +
+                ", age=" + age +
+                ", name='" + name + '\'' +
+                ", position='" + position + '\'' +
+                '}';
+    }
+}
+
+public class ObjectExternal{
+    public static void main(String args[]) throws IOException, ClassNotFoundException {
+        Manager manager=new Manager(123456,23,"Tom","柳州");
+        ObjectOutputStream out =new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("date.ser")));
+        out.writeObject(manager);
+        out.flush();
+        out.close();
+        ObjectInputStream in =new ObjectInputStream(new BufferedInputStream(new FileInputStream("date.ser")));
+        Manager tmp=(Manager)in.readObject();
+        System.out.println(tmp);
+    }
+}
+```
+
+默认串行化机制 defaultReadObject(); 待处理
 
 # 七、GUI编程
 
@@ -2476,19 +3299,507 @@ class SortThread extends Thread{
 
 # 八、Applet（小程序）编程
 
+Applet是能够嵌入到HTML页面中，并能够在浏览器中运行的Java类。Applet自身不能运行，必须嵌入在其它应用程序中运行。
+
+过时了可以了解下
+
 ## 8.1 Applet基本概念
 
-Applet是能够嵌入到HTML页面中，并能够在浏览器中运行的Java类。Applet自身不能运行，必须嵌入在其他应用程序（如Web浏览器或appletViewer）中运行。
+Applet是能够嵌入到HTML页面中，并能够在浏览器中运行的Java类。Applet自身不能运行，必须嵌入在其他应用程序（如Web浏览器或appletViewer）中运行。是==**java.awt.panel**==类的直接子类。
 
-### 8.1.1 Applet运行过程
+例子：
+
+```java
+public class HelloWorldApplet extends Applet {
+
+    @Override
+    public void paint(Graphics g) {
+        g.drawString("Hello World!",25 , 25);
+    }
+}
+```
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+  
+    <title>HelloWorld</title>
+  </head>
+  <body>
+  <applet code ="HelloWorldApplet.class" width=150 height=25></applet>
+</body>
+</html>
+
+```
+
+
+
+### 8.1.1 applet生命周期
+
+```java
+public class HelloWorldApplet extends Applet {
+    StringBuffer buffer;
+    @Override
+    public void paint(Graphics g) {
+        g.drawRect(0,0, getSize().width-1 , getSize().height-1);
+        g.drawString(buffer.toString(),5,15);
+    }
+
+    @Override
+    public void init() {
+        super.init();
+        buffer =new StringBuffer();
+        addItem("初始化");
+    }
+
+    @Override
+    public void start() {
+        super.start();
+        addItem("启动");
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        addItem("停止运行");
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        addItem("卸载");
+    }
+    void addItem(String newWord){
+        System.out.println(newWord);
+        buffer.append(newWord);
+
+    }
+
+}
+
+初始化
+启动
+停止运行 
+卸载 
+初始化 
+启动 
+停止运行 
+卸载
+```
+
+==**applet加载：**==
+
+初始化 启动
+
+==**applet重新加载：**==
+
+停止运行 卸载 初始化 启动 
+
+==**退出浏览器：**==
+
+停止运行 卸载
+
+### 8.1.2 一些方法
+
+==**生命周期方法**==上面演示过了不在赘述
+
+==**HTML标记方法**==
+
+| `URL getDocumentBase()` | 返回包含Applet的HTML文件URL |
+| ----------------------- | --------------------------- |
+| `URL getDocumentBase()` | 返回Applet主类的URL         |
+
+==**多媒体支持方法**==
+
+|           `Image getImage(URL url)`           | 返回能够显示在屏幕上的图像对象。 |
+| :-------------------------------------------: | :------------------------------: |
+|     `Image getImage(URL url,String name)`     | 返回能够显示在屏幕上的图像对象。 |
+|       `AudioClip getaudioClip(URL url)`       |         获取指定声音数据         |
+| `AudioClip getaudioClip(URL url,String name)` |         获取指定声音数据         |
+|             `void play(URL url)`              |        演播指定的声音文件        |
+|       `void play(URL url,String name)`        |        演播指定的声音文件        |
+
+
+
+==**applet显示方法**==
+
+| `void paint(Graphics g)`  |     涂上容器     |
+| :-----------------------: | :--------------: |
+| `void update(Graphics g)` |     更新容器     |
+|    `void repaint（）`     | 重新编辑这个组件 |
+
+### 8.1.3 applet 元素
+
+```html
+<applet
+ 	[codebase=codebaseURl]
+    code="appletFile"
+	[alt=alternateText]
+	[name=appletInstanceName]
+	width=pixels
+	height=pixels
+	[align=alignment]
+	[vspace=pixels]
+	[hspace=pixels]
+	>
+	[<param name=appletParameter 1 value=value>]
+	[<param name=appletParameter 2 value=value>]
+	...
+	[alternateHTML]
+</applet>
+```
+
+## 8.2 applet GUI应用
+
+### 8.2.1 基于AWT
+
+### 8.2.2 基于Swing
+
+### 8.2.3 applet与application
+
+Applet与Application是Java的两种应用程序形式。
+
+
 
 # 九、线程编程
 
+[4.11 Object类](#4.11 Object类)
+
+进程：是由代码、数据、内核状态和一组寄存器组成。是一个内核级的实体。
+
+线程：是由表示程序运行状态的寄存器（如程序计数器、栈指针）以及堆栈组成，线程不包含进程地址空间中的代码和数据，线程是计算过程的某一时刻的状态。线程也被称为轻型进程。是一个用户级的实体。
+
+## 9.1 Java线程模型
+
+* 一个虚拟的CPU
+* 该CPU执行的代码
+  * 代码可与其它线程共享，也可不共享。
+* 代码所操作的数据
+  * 代码与数据是独立的。数据可与其它线程共享，也可不共享。
+
+## 9.2 线程创建方式
+
+线程体：由代码和数据构成。线程体决定了线程的行为。
+
+虚拟CPU是在创建线程时由系统==**自动封装**==进Thread类的实例中，而线程体要应用程序通过一个对象传递给Thread类的构造函数。Java中的==**线程体是由线程类的run()方法定义**==，在该方法中定义线程的具体行为。线程由run（）方法开始执行。
+
+通过继承方式
+
+```java
+public class TestThread extends Thread{
+    private int i;
+    private String name;
+
+    public TestThread(String name) {
+        this.name = name;
+    }
+
+    public static void main(String args[]){
+        TestThread th1=new TestThread("a：");
+        TestThread th2=new TestThread("b：");
+        th1.start();
+        th2.start();
+    }
+    @Override
+    public void run() {
+        while(true){
+            System.out.println(name+ ++i);
+            if(i==5){
+                break;
+            }
+        }
+    }
+}
+
+```
+
+通过实现接口方式
+
+```java
+public class TestRunnable implements Runnable {
+    private int i;
+    private String name;
+
+    public TestRunnable(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void run() {
+        while(true){
+            System.out.println(name+ ++i);
+            if(i==5){
+                break;
+            }
+        }
+    }
+    public static void main(String args[]){
+        //放入提供线程体的对象
+        Thread th1=new Thread(new TestRunnable("a："));
+        Thread th2=new Thread(new TestRunnable("b："));
+        th1.start();
+        th2.start();
+    }
+}
+```
+
+==**比较：**==
+
+继承方式：代码简单，并可以在run（）方法中直接调用线程的其它方法
+
+接口方式：符合面向对象设计的思想。由于Thread类是虚拟CPU的封装，所以其子类应该是关于CPU的行为类。（通常来说大都是不相关的）
+
+## 9.3 线程的调度与线程控制
+
+线程调度：在单个CPU上以某种顺序运行多个线程，称为线程的调度。
+
+### 9.3.1 线程的优先级与调度策略
+
+* 新建线程继承创建它的父线程的优先级。
+* 主线程具有普通优先级。
+
+==**线程优先级常量：**==
+
+MIN_PRIORITY=1
+
+MAX_PRIORITY=5
+
+NORM_PRIORITY=10
+
+==**设置和获取线程优先级的方法（基于Thread类）：**==
+
+| `int`  | `getPriority()`  返回此线程的优先级                 |
+| ------ | --------------------------------------------------- |
+| `void` | `setPriority(int newPriority)` 更改此线程的优先级。 |
+
+==**调度策略：**==
+
+* **低优先级的线程被高优先级的线程抢占运行。直到它中止运行，或其它高优先级的线程成为可运行的。**
+
+* 方案：按优先级设置多个线程等待池。JVM先运行高优先级池中的线程，高优先级等待池`空后`，才考虑低优先级等待池。
+
+### 9.3.2 线程的基本控制
+
+==**static void sleep(int millsecond)**== 线程将暂时停止一段时间,能够把CPU让给优先级比其低的线程。休眠时间以指定的毫秒数。
+
+static void sleep(int millsecond,int nanosecond) 休眠时间以指定的毫秒数与纳秒数之和。
+
+==**static void yield()**== 对调度程序的一个暗示，即当前线程愿意==**让出**==当前使用的处理器。 如果没有与当前线程相同的、低的优先级线程，当前线程将继续运行。
+
+==**void join()**== t.join() 等待`线程t`结束在继续运行当前线程。
+
+void join(int millsecond) 
+
+void join(int millsecond,int nanosecond) 
+
+==**void interrupt()**==  线程t在调用sleep(),join(),wait()等方法被阻塞时，则调用该方法将中断t的阻塞状态，并且t将接收到`InterruptException异常。`
+
+==**static boolean interrupt()**== 测试当前线程是否中断。 
+
+==**static Thread currentThread()**== 返回对当前正在执行的线程对象的引用。
+
+==**boolean isAlive()**== 测试这个线程是否活着。
+
+void stop() 停止线程 不安全 弃用 弃用原因 待处理
+
+void suspend() void resume() 一个暂停，一个恢复 弃用 ，弃用原因：容易死锁
+
+### 9.3.2 对象锁
+
+一个程序的各个并发线程中堆同一个对象进行防高温的代码段，称为临界区（critical sections）。在Java语言中，临界区可以是一个语句块或是一个方法，并且用synchronized关键字标识。
+
+* 对象锁返还问题
+
+  * synchronized（）语句块执行完，或出现异常，或当持有锁的线程调用对象的wait方法，将释放对象锁。
+
+* 共享数据的所有访问都必须作为临界区。
+
+* synchronized保护的共享数据必须是私有的。
+
+* 如果方法体整个都在synchronized语句块中，则可以把关键字放在方法的声明中。(性能会受到点影响)
+
+  * ```java
+    public synchronized void push(char c){
+    	data[id]=c;
+    	id++;
+    }
+    ```
+
+对象锁例子如下：
+
+```java
+import java.util.Arrays;
+//线程控制了顺序
+class MyStack<E> {
+    private int id;
+    private Object[] data={};//{} {}.length=0
+    public boolean push(E tmp){
+        synchronized (this){
+            if(data.length==id){
+                data=Arrays.copyOf(data, data.length+1);
+            }
+            data[id++]=tmp;
+            return true;
+        }
+    }
+    @SuppressWarnings("unchecked")
+    public E pop(){
+        synchronized (this){
+            if(id>0){
+                E e=(E) data[--id];
+                data=Arrays.copyOf(data, data.length-1);
+                return e;
+            }
+            return null;
+        }
+    }
+    @Override
+    public String toString() {
+        return Arrays.toString(data);
+    }
+}
+public class Test {
+    public static void main(String args[]) throws ClassNotFoundException, InterruptedException {
+        MyStack stack=new MyStack();
+        Thread th1=new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Thread th2=new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        stack.push("bb");
+                        stack.push("cc");
+                        System.out.println(stack.pop());
+                    }
+                });
+                th2.start();
+                try {
+                    th2.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                stack.push(1);
+                stack.push("aa");
+                stack.push("bb");
+            }
+        });
+        th1.start();
+        th1.join();
+        System.out.println(stack.toString());
+    }
+}
+
+```
+
+## 9.4 线程的状态与生命周期
+
+![image-20211025183721936](Java.assets/image-20211025183721936.png)
+
+1. 新建状态（new）：创建线程
+2. 可运行状态（Runnable）
+3. 运行状态（Running）
+4. 阻塞状态（Blocked）
+
+## 9.5 其它支持线程类与方法
+
+1. **java.lang.Thread**
+2. **java.lang.Runnable**
+3. **java.lang.Object**
+4. **java.lang.ThreadGroup**
+5. **java.lang.ThreadDeath**
+6. **java.util.concurrent.CountDownLatch** 
+
 # 十、网络编程
+
+支持类
+
+TCP：
+
+URL、URLConnection、Socket、ServerSocket
+
+UDP：
+
+DatagramPacket、DatagramSocket、MulticastSocket
+
+## 10.1 URL类
+
+URL类表示统一资源定位符，指向万维网上的“资源”的指针。资源可以是文件或目录，或更复杂的对象的引用。例如对数据库或搜索引擎的查询。
+
+组成部分：（两个组成部分用`:\\`分隔。localhost:8080/index.html）
+
+* 协议标识：https
+
+* 资源名称：
+  * 主机名：localhost（`localhost`表示为`127.0.0.1` 用`/`分隔文件名。用`:`分隔端口号）
+  * 文件名：文件路径以及文件名。/index（结尾处`/`是`/index.html`的简略写法）
+  * 端口号：8080 (可选)
+  * 引用：（可选）
+
+解析与读取URL地址：
+
+```java
+public static void main(String args[]) throws IOException {
+        ArrayList<URL> urls=new ArrayList<URL>();
+        urls.add(new URL("http://www.baidu.com"));
+        urls.add(new URL("http://localhost:8080/"));
+        urls.add(new URL("http://java.sun.com:80/docs/books/tutorial/index.html"));
+        for(URL url : urls){
+            System.out.println(
+                    url.getProtocol()+" "+
+                    url.getHost()+" "+
+                    url.getPort()+" "+//返回-1
+                    url.getFile()+" "+//返回空字符串
+                    url.getRef()+" "//返回null
+            );
+        }
+        BufferedReader in = new BufferedReader(new InputStreamReader(urls.get(0).openStream()));
+        String tmp;
+        while((tmp=in.readLine())!=null){
+            System.out.println(tmp);
+        }
+    }
+```
+
+
+
+
 
 # 十一、JDBC
 
 # 类、接口的应用与描述
+
+#### CountDownLatch （类）
+
+#### Array （类）
+
+```java
+public static void main(String args[]) throws ClassNotFoundException {
+    int[] x = {4, 4};
+    Class type = x.getClass().getComponentType();
+    //获取二维数组
+    Object two = Array.newInstance(type, x);
+//    dimensions 维度
+    //Object two = Array.newInstance(type, 4,4);
+    //获取角标为3的一维数组
+    Object one = Array.get(two, 3);
+    //放入二维数组中角标为1的一维数组
+    Array.set(two, 1, new int[]{1, 2, 3, 4});
+    //放入一维数组中角标为3的一个元素位置。
+    Array.set(one, 3, 9);
+    System.out.println(two.getClass());
+    System.out.println(one.getClass());
+    int[][] a = (int[][]) two;
+    //System.out.println(Arrays.toString(a)); 输出的是对象id不是对象数据。
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            System.out.println("[" + i + "][" + j + "]=" + a[i][j]);
+        }
+    }
+}
+```
+
+#### Graphics （类）
 
 #### Consumer
 
@@ -2498,7 +3809,63 @@ Applet是能够嵌入到HTML页面中，并能够在浏览器中运行的Java类
 
 #### Predicate
 
-#### Comparator
+#### Comparator （接口）
+
+实现方式：`接口实现`、`匿名内部类实现`
+
+以下为接口实现：
+
+```java
+class TreeSetComparator implements Comparator{
+@Override
+public int compare(Object o1, Object o2) {
+    String s1=(String) o1;
+    String s2=(String) o2;
+    return s1.compareTo(s2);
+	}
+}
+```
+#### Scanner （类）扫描流
+
+- 例如，该代码允许用户从`System.in`读取一个数字： 
+
+  > ```java
+  >      Scanner sc = new Scanner(System.in);
+  >      int i = sc.nextInt();
+  >  
+  > ```
+
+  另一个例子，该代码允许从文件`myNumbers`中的条目分配`long`类型： 
+
+  > ```java
+  >       Scanner sc = new Scanner(new File("myNumbers"));
+  >       while (sc.hasNextLong()) {
+  >           long aLong = sc.nextLong();
+  >       }
+  >  
+  > ```
+
+  扫描仪也可以使用除空格之外的分隔符。 此示例从字符串读取几个项目： 
+
+  > ```java
+  >      String input = "1 fish 2 fish red fish blue fish";
+  >      Scanner s = new Scanner(input).useDelimiter("\\s*fish\\s*");
+  >      System.out.println(s.nextInt());
+  >      System.out.println(s.nextInt());
+  >      System.out.println(s.next());
+  >      System.out.println(s.next());
+  >      s.close();
+  >  
+  > ```
+
+  打印以下输出： 
+
+  > ```
+  >      1
+  >      2
+  >      red
+  >      blue
+  > ```
 
 # 项目文件详解
 
@@ -3237,3 +4604,29 @@ RRTI（Run-Time Type Identification）运行时类型识别
 
 
 default方法只能被实例调用，并且调用在继承结构中离实例类最近的接口default方法
+
+#### 管道
+
+管道分为有名管道和无名管道
+
+#### 编码问题
+
+作者：[宇翔XGT](https://www.nowcoder.com/profile/7101879)
+
+我看下面一些评论对ANSI编码解释都有些许错误，现在解释一下ANSI编码：不同的国家和地区制定了不同的标准，由此产生了 GB2312、GBK、Big5、Shift_JIS 等各自的编码标准。这些使用 1 至 4 个[字节](https://baike.baidu.com/item/字节)来代表一个字符的各种汉字延伸编码方式，称为 ANSI 编码。在简体中文Windows操作系统中，ANSI 编码代表 GBK 编码；在日文Windows操作系统中，ANSI 编码代表 Shift_JIS 编码。 不同 ANSI 编码之间互不兼容，当信息在国际间交流时，无法将属于两种语言的文字，存储在同一段 ANSI 编码的文本中。 当然对于ANSI编码而言，0x00~0x7F之间的[字符](https://baike.baidu.com/item/字符)，依旧是1个字节代表1个字符。这一点是ANSI编码与[Unicode](https://baike.baidu.com/item/Unicode)编码之间最大也最明显的区别。
+
+sum(int… a) 用sum(1,2,3)调用或者sum(x)（x为数组）调用
+
+#### 监视器
+
+[java锁与监视器概念 为什么wait、notify、notifyAll定义在Object中 多线程中篇（九） - noteless - 博客园 (cnblogs.com)](https://www.cnblogs.com/noteless/p/10394054.html)
+
+
+
+“为什么wait、notify、notifyAll 都是Object的方法”？
+
+Java中所有的类和对象逻辑上都对应有一个锁和监视器，也就是说在Java中一切对象都可以用来线程的同步、所以这些管程（监视器）的“过程”方法定义在Object中一点也不奇怪
+
+只要理解了锁和监视器的概念，就可以清晰地明白了
+
+1111
