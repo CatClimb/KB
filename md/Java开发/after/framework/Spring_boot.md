@@ -73,3 +73,48 @@ https://github.com/spring-projects/spring-boot/blob/v2.0.0.RELEASE/spring-boot-p
 
 @SpringBootApplication` 注解相当于使用 `@Configuration`、`@EnableAutoConfiguration` 和 `@ComponentScan
 
+
+
+
+
+
+
+# Spring Boot2
+
+SpringBoot是整合Spring技术栈的一站式框架。
+
+SpringBoot是简化Spring技术栈的快速开发脚手架
+
+用来组装spring生态圈或整合技术栈，简化配置。能快速创建出生产级别的Spring应用。并引入了两套方案Reactive Stack 、Servlet Stack。
+
+## 一、Spring Boot概述
+
+## 1.1 Spring Boot 特点
+
+人称版本帝，迭代快，需要时刻关注变化，社区活跃，bug少
+
+### 1.1.1Spring Boot优点
+
+* 创建独立的Spring应用
+* 内嵌web服务器 
+  * Tomcat letty or Undertow
+* 自动starter依赖，简化构建配置
+  * 如web场景（web starter）
+* 自动配置Spring以及第三方功能
+  * 简化配置
+* 提供生产级别的监控、健康检查及外部化配置
+* 无代码生成、无需编写XML
+  * 基于自动配置
+
+### 1.1.2 SpringBoot缺点
+
+- 封装太深，内部原理复杂，不容易精通
+
+## 1.2 时代应用背景
+
+1.2.1 微服务
+
+1.2.2 分布式
+
+1.2.3 云原生
+
