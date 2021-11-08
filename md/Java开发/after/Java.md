@@ -345,6 +345,8 @@ char 16位
 
 引用类型造型 待处理
 
+### 2.3.8 类型转换具体实现
+
 ## 2.4 变量
 
 ### 2.4.1变量类型
@@ -2384,6 +2386,8 @@ java -ea:<className>...	打开指定包及其子包的断言检查
 
 # 六、IO、流与文件
 
+[Java I/O简介 - LiuXi | Blog](https://liuxi.name/blog/20171023/java-io-summary.html)
+
 ## 6.1流式输入输出
 
 ### 6.1.1流的概念
@@ -2479,7 +2483,7 @@ InputStream和OutputStream是字节流的两个顶层父类。
 | Converting between Bytes(字节与字符转换) |       InputStreamReader<br />OutputStreamWriter<br />        | InputStreamReader按照一定的编码/解码标准将InputStream中的字节转换为字符；OutputStreamWriter进行反向转换，即把字符转换为字节 |
 |                                          |                                                              |                                                              |
 
-## 6.3 I/O套接
+## 6.3 I/O流套接
 
 过滤流都为最外层（最终流是过滤流）
 
@@ -3722,11 +3726,13 @@ UDP：
 
 DatagramPacket、DatagramSocket、MulticastSocket
 
-## 10.1 URL类
+## 10.1 URL通信机制
+
+### 10.1.1 URL类
 
 URL类表示统一资源定位符，指向万维网上的“资源”的指针。资源可以是文件或目录，或更复杂的对象的引用。例如对数据库或搜索引擎的查询。
 
-组成部分：（两个组成部分用`:\\`分隔。localhost:8080/index.html）
+组成部分：（两个组成部分用`:\\`分隔。localhost:8080/index.html#sss）
 
 * 协议标识：https
 
@@ -3734,14 +3740,14 @@ URL类表示统一资源定位符，指向万维网上的“资源”的指针�
   * 主机名：localhost（`localhost`表示为`127.0.0.1` 用`/`分隔文件名。用`:`分隔端口号）
   * 文件名：文件路径以及文件名。/index（结尾处`/`是`/index.html`的简略写法）
   * 端口号：8080 (可选)
-  * 引用：（可选）
+  * 引用：#sss（可选）
 
 解析与读取URL地址：
 
 ```java
 public static void main(String args[]) throws IOException {
         ArrayList<URL> urls=new ArrayList<URL>();
-        urls.add(new URL("http://www.baidu.com"));
+        urls.add(new URL("http://www.baidu.com#sss"));
         urls.add(new URL("http://localhost:8080/"));
         urls.add(new URL("http://java.sun.com:80/docs/books/tutorial/index.html"));
         for(URL url : urls){
@@ -3761,11 +3767,369 @@ public static void main(String args[]) throws IOException {
     }
 ```
 
+### 10.1.2 URLConnection与HttpURLConnection
+
+URLConnection是对应用程序与URL之间建立的连接的`抽象`。通过它可以对URL所表示的资源进行`读写`操作。建立在==**HTTP协议的应用层**==。(==**与Servlet交互的**==，Servlet能完成CGI能完成的功能)
+
+==**URLConnection读取：**==
+
+```java
+public static void main(String args[]) throws IOException {
+        URL url =new URL("http://www.baidu.com/");
+        URLConnection urlConnection=url.openConnection();
+        //默认true
+        System.out.println(urlConnection.getDoInput());
+        //默认false
+        System.out.println(urlConnection.getDoOutput());
+        BufferedReader in=new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+        String tmp;
+        while((tmp=in.readLine())!=null){
+            System.out.println(tmp);
+        }
+        in.close();
+    }
+```
+
+==**HttpURLConnection写入：**==（与Servlet进行交互）
+
+流程如下：
+
+* 创建URL对象，打开URL连接对象。
+
+  * ```java
+    URL url=new URL("http://www.baidu.com");
+            HttpURLConnection conn=(HttpURLConnection) url.openConnection();
+    ```
+
+* **设置连接参数**（或设置请求头）
+
+  * setAllowUserInteraction
+
+  * setDoInput
+
+  * setDoOutput
+
+  * setIfModifiedSince  待处理
+
+  * setUseCaches
+
+  * setDefaultAllowUserInteraction
+
+  * setDefaultUseCaches
+
+  * 请求头设置方法：
+
+  * setRequestProperty(key,value)
+
+  * addRequestProperty(key,value)
+
+  * ```java
+     		  //默认GET
+            conn.setRequestMethod("POST");
+            //默认true
+            conn.setDoInput(true);
+            //默认false
+            conn.setDoOutput(true);
+            conn.setUseCaches(false);
+            conn.setRequestProperty("Content-type", "application/x-java-serialized-object");
+            urlCon.setConnectTimeout(30000);  
+            urlCon.setReadTimeout(30000);  
+    ```
+
+    
+
+* **建立连接**与**准备好发送请求的数据**
+
+  * ```java
+    		  conn.connect();
+    //此处getOutputStream会隐含的进行connect，上一句可以不写。
+            ObjectOutputStream out =new ObjectOutputStream(new BufferedOutputStream(conn.getOutputStream()));
+            out.writeObject("测试数据");
+            out.flush();
+            out.close();
+    ```
+
+* 发送请求并获取响应
+
+  * 获取响应
+
+  * getContent
+
+  * getHeaderField
+
+  * getContentEncoding
+
+  * getContentLength
+
+  * getContentType
+
+  * getDate
+
+  * getExpiration
+
+  * getLastModifed 
+
+  * ```java
+    //此处getInputStream会发送请求。获取响应
+    	InputStream in =conn.getInputStream();
+            System.out.println(conn.getResponseCode());
+            System.out.println(conn.getContent());
+            //System.out.println(conn.getHeaderField(""));
+            System.out.println(conn.getContentEncoding());
+            System.out.println(conn.getLastModified());
+            in.close();
+            conn.disconnect();
+    ```
+
+### ==**10.1.3 HTTPConnection应用**==
+
+模拟登录：==**这个地方有点深了，以后在弄吧。。。 待处理**==
+
+## 10.2 Socket通信机制
+
+socket是传输层与应用层之间的一个接口，对TCP/IP的封装，网络上的两个程序通过一个双向的通信连接实现数据的交换，这个连接的一端称为一个socket。
+
+套接字连接过程：
+
+​	服务器监听、客户端请求、连接确认。
+
+### 10.2.1 基于TCP的Socket实现
+
+Socket("localhost", 8088) 客户端
+
+ServerSocket(8088) 服务器监听
+
+==**C**==
+
+```java
+package communication;
+
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+
+public class C {
+    public static void main(String args[]) {
+        PrintWriter out = null;
+        BufferedReader in = null;
+        try {
+            Socket socket = new Socket("localhost", 8088);
+            //如果不使用上面这个连接 则用connect通过下面方式连接
+//            Socket socket=new Socket();
+//            InetSocketAddress socketAddress= (InetSocketAddress) socket.getLocalSocketAddress();
+//            socket.connect(socketAddress);
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8")));
+            String tmp = "我是客户端";
+            out.println(tmp);
+            out.flush();
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            while ((tmp = in.readLine()) != null) {
+                System.out.println("服务器说："+tmp);
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }finally {
+            if(out!=null){
+                out.close();
+            }
+            if(in!=null){
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+        }
+    }
+}
+```
+
+==**S**==
+
+```java
+public class S{
+    public static void main(String args[]){
+            //监听
+        ServerSocket s= null;
+        try {
+            s = new ServerSocket(8088);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //直到监听到客户端请求，不然一直阻塞。
+            while(true){
+                Socket socket= null;
+                try {
+                    socket = s.accept();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                Thread thread=new Thread(new SThread(socket));
+                thread.start();
+                InetSocketAddress socketAddress= (InetSocketAddress) socket.getRemoteSocketAddress();
+                System.out.println("当前客户端为："+socketAddress);
+            }
+
+    }
+}
+
+```
+
+==**ServerThread**==
+
+```java
+package communication;
+
+import java.io.*;
+import java.net.Socket;
+
+public class SThread implements Runnable{
+    private Socket socket;
+
+    public SThread(Socket socket) {
+        this.socket = socket;
+    }
+
+    @Override
+    public void run() {
+        PrintWriter out=null;
+        BufferedReader in=null;
+        try {
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8")));
+            String tmp = "我是服务器";
+            out.println(tmp);
+            out.flush();
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            while ((tmp = in.readLine()) != null) {
+                System.out.println("客户端："+tmp);
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }finally {
+            if(out!=null){
+                out.close();
+            }
+            if(in!=null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+
+```
+
+### 10.2.2 基于UDP的Socket实现
+
+DatagramPacket(byte[] buf,  int length, SocketAddress address)  发送类型包
+
+DatagramPacket(byte[] buf,  int length)  接收类型包
+
+DatagramSocket() 发送类型套接字
+
+DatagramSocket() 接收类型套接字
+
+==**C**==
+
+```java
+public class C {
+    public static void main(String args[]) throws IOException {
+        String sendMsg="www";
+        //InetAddress addr=InetAddress.getByName("localhost");
+        InetSocketAddress addr=new InetSocketAddress("localhost",8080);
+        DatagramPacket packet=new DatagramPacket(sendMsg.getBytes(),sendMsg.getBytes().length,addr/*,8080*/);
+        DatagramSocket socket=new DatagramSocket();
+        socket.send(packet);
+        socket.close();
+
+    }
+}
+```
+
+==**S**==
+
+```java
+public class S {
+    public static void main(String args[])throws IOException{
+
+        byte bytes[] =new byte[1024];
+        DatagramPacket packet=new DatagramPacket(bytes,bytes.length);
+        DatagramSocket socket=new DatagramSocket(8080);
+        socket.receive(packet);
+        socket.close();
+        String receive=new String(bytes);
+        System.out.println("客户说:"+receive);
+    }
+}
+```
+
+## 10.5 P2P打洞原理
+
+[P2P学习（二）P2P中的NAT穿越(打洞)方案详解 - 山上有风景 - 博客园 (cnblogs.com)](https://www.cnblogs.com/ssyfj/p/14791980.html)
+
+打洞成功率的因素在于[NAT介绍及NAT设备类型 - changxun - 博客园 (cnblogs.com)](https://www.cnblogs.com/sixloop/p/what_is_nat.html)
+
+Netty 是一个异步事件驱动的网络应用程序框架，用于快速开发可维护的高性能协议服务器和客户端。
+
+框架Netty[GitHub - netty/netty: Netty project - an event-driven asynchronous network application framework](https://github.com/netty/netty)
+
+#### 反向链接技术
+
+1. 运用在一种特殊的p2p场景（也是最简单的）：==**通信双方有一方为NAT设备后**==。
+
+通信原理：由于B是外网地址，A可以直接TCP连接B。反过来不允许。只能通过服务器==**转发**==B连接A的==**请求**==给A，驱使A主动连接B。需要第三方的服务（也就是服务器，需让A注册在服务器中）。如图3所示：
+
+![img](https://img2020.cnblogs.com/blog/1309518/202105/1309518-20210521094158280-2057875021.png)
+
+### 10.5.1 基于UDP打洞技术（3种情况）
+
+#### UDP打洞原理	
+
+UDP打洞技术是通过中间服务器的协助在各自的NAT网关上==**建立相关的表项**==，使P2P连接的双方发送的报文能够直接穿透对方的NAT网关，从而实现P2P客户端互连。==**俗称在NAT上打洞**==。
+
+#### 集中服务器作用
+
+1. 服务器角度：记录要连接双发的信息。客户端连接角度：了解要连接的对方信息，并中转自己的信息。
+
+2. 判断客户端是否在NAT之后。通过比较两对地址是否相等，相等则不是在NAT设备之后。
+3. 原理：记录客户端两对地址二元组信息（IP地址:UDP端口）==**一对是实际的内网地址**==，==**另一对是NAT转换后的外网地址**==。
+
+#### P2P会话建立原理
+
+1. A和B分别UDP连接服务器。（记录）
+2. A不知道B，向服务器索要。
+3. 接下来为会话的正式建立过程：
+4. 服务器发送B的两对二元组地址信息给A，并转发A的两对二元组地址信息给B。双方都知道对方了。
+5.  A开始向B的地址二元组发送UDP数据包，==**并且A会自动锁定第一个给出响应的B的地址二元组**==。同理B也一样。（双方发送与先后顺序无关）
+
+#### 三种情况
+
+==**双方位于同一NAT设备之后**==（最简单的）
 
 
 
+建立会话中，A和B发往对方==**公网**==地址二元组信息的UDP数据包==**不一定**==会被对方收到，取决于NAT设备是否支持hairpin translation（端口回流）。（A->NAT内网接口1->NAT外网接口1->NAT外网接口2->NAT内网接口2->B）可以防止能内部攻击。 待处理
 
-# 十一、JDBC
+建立会话中，A和B发往对方==**内网**==地址二元组信息的UDP数据包一定会被对方收到。无需路由很快。（很快 待处理 大概是交换机吧）
+
+==**双方位于不同NAT设备之后**==（普遍的）
+
+建立会话中，A与B==**外网**==互通数据中，当双方==**互相发送**==（异步）==**打洞数据包**==到目标映射的外网，由于是未经授权的会拒绝掉，发送方的NAT就会建立映射：即目标方发往发送方的数据可以通过。双方打洞完后，开始真正的互通数据。
+
+==**内网**==不能直接互通数据。
+
+==**双方位于两层或多层NAT设备之后**==（分属不同的内网）
+
+和第一种相似，只是迭代多点。也是用Hairpin技术。
+
+### 10.5.2 基于UDP打洞实现
+
+# 十一、JDBC  待处理
 
 # 类、接口的应用与描述
 
@@ -3869,7 +4233,7 @@ public int compare(Object o1, Object o2) {
 
 # 项目文件详解
 
-# 深入理解Class对象（不全面以后搞）
+# 深入理解Class对象（不全面以后搞 待处理）
 
 [什么是RRTI？](####RRTI)
 
@@ -4621,12 +4985,15 @@ sum(int… a) 用sum(1,2,3)调用或者sum(x)（x为数组）调用
 
 [java锁与监视器概念 为什么wait、notify、notifyAll定义在Object中 多线程中篇（九） - noteless - 博客园 (cnblogs.com)](https://www.cnblogs.com/noteless/p/10394054.html)
 
-
-
 “为什么wait、notify、notifyAll 都是Object的方法”？
 
 Java中所有的类和对象逻辑上都对应有一个锁和监视器，也就是说在Java中一切对象都可以用来线程的同步、所以这些管程（监视器）的“过程”方法定义在Object中一点也不奇怪
 
 只要理解了锁和监视器的概念，就可以清晰地明白了
 
-1111
+#### Hairpin技术
+
+Hairpin技术又被称为Hairpin NAT、Loopback NAT或Hairpin Translation。Hairpin技术需要NAT网关支持，它能够让两台位于同一台NAT网关后面的主机，通过对方的公网地址和端口相互访问，NAT网关会根据一系列规则，将对内部主机发往其NAT公网IP地址的报文进行转换，并从私网接口发送给目标主机。
+
+# ==**未完成 常量池 深入Class对象 URLConnection JDBC**==
+
