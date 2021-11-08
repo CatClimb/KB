@@ -4129,6 +4129,8 @@ UDP打洞技术是通过中间服务器的协助在各自的NAT网关上==**建�
 
 ### 10.5.2 基于UDP打洞实现
 
+[udp穿透简单讲解和实现(Java) - 无脑仔的小明 - 博客园 (cnblogs.com)](https://www.cnblogs.com/wunaozai/p/5545150.html)
+
 # 十一、JDBC  待处理
 
 # 类、接口的应用与描述
