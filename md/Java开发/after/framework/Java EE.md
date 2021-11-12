@@ -1695,7 +1695,7 @@ where id=#{id}
 | :-------: | :----------------------------------------------------------: |
 | property  |          指定映射到实体类对象属性，与表字段一一对应          |
 |  column   |                      指定表中对应的字段                      |
-| javaType  |                 指定映射到实体对象属性的类型                 |
+| javaType  |             ==**指定映射到实体对象属性的类型**==             |
 |  select   | 指定引入嵌套查询的子SQL语句，该属性用于关联映射中的嵌套查询  |
 | fetchType | 指定在关联查询时是否启用延迟加载。值为lazy和eager。默认为lazy |
 
@@ -1716,7 +1716,7 @@ where id=#{id}
 
 用于一对多关联
 
-属性与<association>相同，其中它的ofType属性对应<association>的javaType属性。
+属性与<association>相同，其中它的==**ofType**==属性对应<association>的==**javaType**==属性。
 
 待扩展
 
@@ -1974,6 +1974,9 @@ IdCardMapper
  </mapper>
 
 
+```
+
+```xml
 PersonMapper
 <select id="oneToOneByIdNest1" parameterType="Integer" resultMap="IdCardWithPersonResult">
     select * from tb_person where id=#{id}
@@ -2275,7 +2278,7 @@ public interface IAccountDao {
     @Select("select * from account")
     @Results(id="accountMap",value = {
             @Result(id = true,column = "id",property = "id"),
-            @Result(column = "uid",property = "uid"),
+            @Result(column = "id",property = "id"),
             @Result(column = "money",property = "money"),
             @Result(property = "user",column = "uid",one=@One(select="com.keafmd.dao.IUserDao.findById",fetchType= FetchType.EAGER))
     })
@@ -3108,7 +3111,7 @@ MappingJackson2HttpMessageConverter是Spring MVC默认处理JSON格式请求响�
 |     注解      |                             说明                             |
 | :-----------: | :----------------------------------------------------------: |
 | @RequestBody  | 用于将请求体中的数据绑定到方法的形参中。该注解用在`方法的形参上` |
-| @ResponseBody |          用于直接放回return对象。该注解用在`方法上`          |
+| @ResponseBody |      用于直接返回return==**对象**==。该注解用在`方法上`      |
 
 **Spring MVC配置文件加入：**
 
@@ -3419,6 +3422,7 @@ public String handlerFormUpload(@RequestParam("name") String name,@RequestParam(
     if(!uploadfile.isEmpty()&&uploadfile.size()>0){
         for(MultipartFile file :uploadfile){
             String originalFilename=file.getOriginalFilename();
+            //WebRoot中文件在磁盘中的位置
             String dirPath=request.getServletContext().getRealPath("/upload/");
             File filePath=new File(dirPath);
             if(!filePath.exists()){
