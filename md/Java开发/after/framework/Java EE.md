@@ -1657,7 +1657,7 @@ where id=#{id}
 
 ```xml
 <resultMap>
-    <constructor>类在实例化时，用来注入结果岛构造方法中
+    <constructor>类在实例化时，用来注入结果到构造方法中
         <idArg/>ID参数；标记结果作为ID
         <arg/>注入到构造方法的一个普通结果
     </constructor>
@@ -1703,10 +1703,10 @@ where id=#{id}
 
 ```xml
 嵌套查询 效率不高，多执行一个sql语句
-<association property="idcard" column="card_id" javaType="idCard"
+<association property="idcard" column="card_id" javaType="IdCard"
 	select="com.itheima.mapper.IdCardMapper.findCodeById"/>
 嵌套结果
-<association property="idcard" column="card_id" javaType="idCard">
+<association property="idcard" column="card_id" javaType="IdCard">
 	<id property="id" column="card_id"/>
     <result property="code" column="code"/>
 </association>
@@ -1722,7 +1722,7 @@ where id=#{id}
 
 #### 8&lt;selectKey&gt;元素
 
-通过之定义的语句来设置数据中的主键。(自定义生成主键)
+通过自定义的语句来设置数据中的主键。(自定义生成主键)
 
 属性如下：
 
@@ -1968,7 +1968,7 @@ mapper.xml如下：
 
 ```xml
 IdCardMapper
- <select id="findCodeById" parameterType="idCard" resultType="idCard">
+ <select id="findCodeById" parameterType="IdCard" resultType="IdCard">
  		select * from tb_idcard where id=#{id}
  </select>
  </mapper>
@@ -1988,7 +1988,7 @@ PersonMapper
  	<result property="age" column="age"/>
  	<result property="sex" column="sex"/>
     嵌套查询 效率不高，执行了两条SQL 应使用嵌套结果
- 	<association property="idcard" column="card_id" javaType="idCard"
+ 	<association property="idcard" column="card_id" javaType="IdCard"
  		select="com.itheima.mapper.IdCardMapper.findCodeById"/>
 </resultMap>
 测试结果如下：
