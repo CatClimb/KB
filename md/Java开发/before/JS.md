@@ -784,7 +784,7 @@ BOM：浏览器对象模型。
 * QQ浏览器
 * 360浏览器
 
-> ##### window
+### 7.1、window
 
 window代表浏览器窗口
 
@@ -799,7 +799,7 @@ window.outerWidth
 1920
 ```
 
-> ##### Navigator（不建议使用）
+### 7.2、Navigator（不建议使用）
 
 Navigator封装了浏览器的信息
 
@@ -816,7 +816,7 @@ navigator.platform
 
 大多数时候，我们不会使用navigator对象，因为会被认为修改，不建议使用这些属性来判断和编写代码。
 
-> ##### screen
+### 7.3、screen
 
 代表屏幕尺寸
 
@@ -827,7 +827,7 @@ screen.height
 1080
 ```
 
-> ##### location（重要）
+### 7.4、location（重要）
 
 location代表当前页面的URL信息
 
@@ -842,7 +842,7 @@ location.reload()
 location.assign('https://www.bilibili.com/')
 ```
 
-> ##### document
+### 7.5、document
 
 document 代表当前的页面，HTML DOM文档树。
 
@@ -866,7 +866,7 @@ document.cookie
 
 服务器端可以设置cookie：httpOnly 使cookie安全
 
-> ##### history（不建议使用）
+### 7.6、history（不建议使用）
 
 ```js
 history.back()//后退
@@ -884,7 +884,7 @@ history.forward()//前进
 * 删除：删除一个DOM节点
 * 添加：添加一个新的节点
 
-> ##### 获取节点
+### 8.1、获取节点
 
 要操作一个DOM节点，就必须要先获得这个
 
@@ -901,9 +901,9 @@ DOM节点
         //script脚本放后面别放前面，因为还没加载。
 
         let h1=document.getElementsByTagName('h1');//返回类型为HttpCollection[]
-        let p1=document.getElementById('p1');//返回类型为原生标签（不规范 待处理 我不知道咋读）
+        let p1=document.getElementById('p1');//返回类型为HTMLElement（不规范 待处理 我不知道咋读）
         let p2=document.getElementsByClassName('p2');//返回类型为HttpCollection[]
-        let father=document.getElementById('father');//返回类型为原生标签（不规范 待处理 我不知道咋读）
+        let father=document.getElementById('father');//返回类型为HTMLElement（不规范 待处理 我不知道咋读）
 
 </script>
 </body>
@@ -925,7 +925,7 @@ father.lastChild
              
 ```
 
-> ##### 更新节点
+### 8.2、更新节点
 
 操作文本、包含HTML的文本与CSS
 
@@ -938,8 +938,189 @@ p1.style.color='red';
 "red"
 p1.style.fontSize='200px';
 "200px"
-p2//没有以上属性 表面原因为：不是id选择器 （
-h1//没有以上属性 表面原因为：不是id选择器
+p2[0].style.padding='20px'
+'20px'
+h11[0].
+```
+
+### 8.3、删除节点
+
+删除节点的步骤：先获取父节点，再通过父节点删除自己（可以自杀remove()）
+
+```html
+<body>
+  <div id="id1">
+    <h1>标题一</h1>
+      <p id="p1">p1</p>
+      <p class="p2">p2</p>
+  </div>
+<script>
+    let p1=document.getElementById('p1');
+    let father=p1.parentElement;
+    father.removeChild(p1);
+    
+</script>
+</body>
+```
+
+```js
+father.children
+HTMLCollection(2) [h1, p.p2]
+father.childNodes
+NodeList(6) [text, h1, text, text, p.p2, text]
+```
+
+>  注意：删除多个节点的时候，children是再时刻变化的，删除节点的时候一定要注意
+
+### 8.4、插入节点
+
+**追加**`xxx.append()`
+
+**插入**`xxx.insertBefore(newNode,targetNode).`
+
+```js
+head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+  <p id="js">JavaScript</p>
+  <div id="list">
+      <p id="se">JavaSE</p>
+      <p id="ee">JavaEE</p>
+      <p id="me">JavaME</p>
+  </div>
+
+<script>
+    let js =document.getElementById('js');
+    let list=document.getElementById('list');
+    list.append(js);
+    var newP=document.createElement('p');
+    newP.innerText='123';
+    list.append(newP);
+    let myScript =document.createElement('script');
+    myScript.setAttribute('type','text/javascript');
+    list.append(myScript);
+    list.insertBefore(js,document.getElementById('ee'));
+</script>
+</body>
+```
+
+## 9、操作表单（验证）
+
+包括
+
+1. 文本框 `<input type="text">`
+2. 下拉框 `<select>`
+3. 单选框 `<input type="radio">`
+4. 多选框`<input type="checkbox">`
+5. 隐藏域`<input type="hidden">`
+6. 密码框`<input type="password">`
+7. ……
+
+表单目的：提交信息
+
+```js
+<body>
+//onsubmit为true则放行
+<form action="https://www.baidu.com/" method="post" onsubmit="aa()">
+    <input type="text" name="account" value="" id="account"/>
+    <input type="password" value="" id="input-password"/>
+    <input type="hidden" id="md5-password" name="password">
+    <input type="radio" name="sex" value="boy">
+    <input type="radio" name="sex" value="gril">
+    <button type="submit" >提交</button>
+
+</form>
+<script>
+
+    let inputs=document.getElementsByTagName('input');
+    //inputs[4].value 是写死的，为gril
+    inputs[4].checked = true;
+    function aa(){
+        let pwd=document.getElementById('input-password');
+        let md5_pwd=document.getElementById('md5-password');
+        md5_pwd.value=md5(pwd.value);
+        return true;
+    }
+</script>
+</body>
+```
+
+## 10、JQuery
+
+JQuery是 JavaScript 库。
+
+如何使用：导入script和看JQuery API （网上有）
+
+一般公式：
+
+> ##### $(selector).action()
+
+例子如下：
+
+```js
+$('#root').click()
+$('#root').text()
+$('#root').html()
+$('#root').show()
+$('#root').hide()//本质display：none
+$('#root').toggle()//切换隐藏和显示
+$('#root').css({"color","red"})
+
+
+$(document).ready(function(){})
+等价于
+$(function{})
+
+$ajax()
+```
+
+# ==**小技巧**==与需要的应用
+
+巩固js（看Jquery源码，看游戏源码在源码之家）
+
+巩固HTML CSS（扒网站，全部下载下来，删除掉非核心代码（也就是不影响布局 看效果））
+
+layer 弹窗组件
+
+elementUI
+
+# 补充：
+
+### 操作表单需要补充
+
+# 其它：
+
+### HTMLCollection与NodeList
+
+### Object.defineproperty
+
+可以用来数据代理
+
+```js
+<body>
+    <script>
+        let number=18;
+        let person={
+            name:'张三',
+            sex:'男'
+        }
+        Object.defineProperty(person,'age'{
+            enumerable:true,//控制属性是否可以被枚举，默认值是false
+            writable:true,//控制属性是否可以被修改，默认值是false
+            configurable:true,//控制属性是否可以被删除，默认值false
+            //当有人读取person的age属性时，get函数（getter）就会被调用，且返回值就是age的值
+            get(){
+                console.log('有人读取age属性了')
+            },
+            //当有人修改person的age属性时，set函数（setter）就会被调用，且会收到修改的具体值
+            set(value){
+                console.log('有人修改了age属性，且值是',value);
+                number=value;
+            }
+        });
+    </script>
 ```
 
 
