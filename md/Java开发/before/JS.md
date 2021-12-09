@@ -1,4 +1,4 @@
-# JavaScript
+# JavaScript 不完善 待维修
 
 # 一、JavaScript概述
 
@@ -86,6 +86,8 @@ script标签type属性默认为==**“text/javascript”**==。
         <!--这里也可以放
         <script></script>-->
     </body>
+<!--这里也可以放
+        <script></script>-->
 </html>
 ```
 
@@ -1094,6 +1096,8 @@ elementUI
 
 ### HTMLCollection与NodeList
 
+NodeList的元素是Node,HTMLCollection的元素是Element，Element继承自Node，是Node的一种，
+
 ### Object.defineproperty
 
 可以用来数据代理
@@ -1123,7 +1127,9 @@ elementUI
     </script>
 ```
 
+### getElementById和querySelector方法的区别
 
+getXXXByXXX 获取的是动态集合，querySelector获取的是静态集合。
 
 # 参考资料
 
