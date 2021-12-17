@@ -1,6 +1,6 @@
 # Vue
 
-## 一、Vue概述
+# 一、Vue概述
 
 #### Vue是什么？
 
@@ -87,7 +87,7 @@ html引入.js
    1. 除了`Object.freeze()`，这会==**阻止修改**==现有的 property
 8. 只有当实例被创建时就已经存在于 `data` 中的 property 才是==**响应式**==的。之后加入的属性为==**非响应式**==
 
-# 二、模板语法
+# 二、Vue核心
 
 待处理
 
@@ -104,7 +104,7 @@ html引入.js
 写法：
 
 1. `v-bind:href=“xxx”`或简写为`:href=“xxx”`,xxx同样要写js表达式。  
-2. `v-bind:[yyy]=“xxx”` 或简写 `:[yyy]=“xxx”` 被`[]`括起来的会被作为一个指令的参数的js表达式
+2. `v-bind:[yyy]=“xxx”` 或简写 `:[yyy]=“xxx”` 被`[]`括起来的会被作为一个指令的参数的js表达式（动态参数）
 
 ```html
 <body>
@@ -1535,6 +1535,8 @@ v-pre指令：
 
 (2).指令名如果时多个单词，要使用kebab-case命名方式，不要用camelCase命名。
 
+(3).回调函数中是Window管理（this是Window）
+
 实例解决需求：
 
 需求1：定义一个v-big指令，和v-text功能类似，但会把绑定的数值放大10倍。
@@ -1607,6 +1609,706 @@ v-pre指令：
         }
     })
 </script>
+```
+
+## 15、生命周期
+
+常用的生命周期钩子：
+
+1. mounted：发送ajax请求、启动定时器、绑定自定义事件、订阅消息【初始化操作】。
+2. beforeDestroy：清楚定时器、解绑自定义事件、取消订阅消息等【收尾工作】。
+
+关于销毁Vue实例
+
+1. 销毁后借助Vue开发者工具看不到任何信息
+2. 销毁后自定义事件会失效，但原生DOM事件依然有效。
+3. 一般不会在beforeDestroy操作数据，因为即使操作数据，也不会再触发更新流程了
+
+
+
+
+
+![123](vue.assets/123.png)
+
+```html
+body>
+    <div id="root">
+        <h2 :style="{opacity}">生命周期</h2>
+        <button @click="opacity=1">透明度设置为1</button>
+        <button @click="stop">停止变换</button>
+        <button @click="destroy">销毁</button>
+    </div>
+</body>
+<script>
+    const vm=new Vue({
+        el:'#root',
+        data:{
+            opacity:1
+        },
+        methods:{
+            change(){
+                    console.log('开始定时器');
+
+                    this.timer=setInterval(() => {
+                    this.opacity=((this.opacity*100-1)/100).toFixed(2);
+                    //console.log(((this.opacity*100-1)/100).toFixed(2));
+                    if(this.opacity<=0){
+                        this.opacity=1;
+                        //clearInterval(timer);
+                    }
+                }, 15);
+            },
+            stop(){
+                console.log('停止定时器');
+                clearInterval(this.timer);
+            },
+            destroy(){
+                this.$destroy();
+            }
+        },
+        beforeCreate(){
+            console.log('beforeCreate');
+        },
+        created(){
+            console.log('created');
+        },
+        beforeMount(){
+            console.log('beforeMount')
+        },
+        mounted(){
+            console.log('mounted')
+            this.change();
+        },
+        beforeDestroyed(){
+            this.stop();
+            console.log('beforeDestroyed')
+        },
+        destroyed(){
+            console.log('destroyed')
+        }
+    })
+</script>
+```
+
+
+
+
+
+# 三、Vue组件化编程
+
+## 1、 模块与组件、模块化与组件化 
+
+### 1.1、 模块 
+
+1. 理解: 向外提供特定功能的 js 程序, 一般就是一个 js 文件 （拆分复杂的js文件为多个小的js文件）
+2.  为什么: ==**js 文件很多很复杂**== 
+3.  作用: ==**复用 js, 简化 js 的编写, 提高 js 运行效率**== 
+
+![image-20211210114503768](vue.assets/image-20211210114503768.png)
+
+### 1.2、 组件
+
+1. 理解: ==**用来实现局部(特定)功能效果的代码集合**==(html/css/js/image…..) 
+2. 为什么: ==**一个界面的功能很复杂**== 
+3. 作用: 复用编码, 简化项目编码, 提高运行效率 
+
+![image-20211210115945877](vue.assets/image-20211210115945877.png)
+
+### 1.3、 模块化
+
+ 当应用中的 js 都以模块来编写的, 那这个应用就是一个模块化的应用。 
+
+### 1.4、 组件化
+
+ 当应用中的功能都是多组件的方式来编写的, 那这个应用就是一个组件化的应用,。
+
+![image-20211210120031039](vue.assets/image-20211210120031039.png)
+
+## 2、非单文件组件
+
+非单文件组件：
+
+​		一个文件中包含有n个组件。
+
+单文件组件：
+
+​		一个文件中只包含有1个组件。（a.vue）
+
+### 2.1、组件的 使用 与 嵌套
+
+> ##### Vue中使用组件的三大步骤：
+
+一、定义组件（创建组件）
+
+1. 使用`Vue.extend(options)`创建，其中，options和`new Vue(options)`时传入的那个options几乎一样，但也有点区别：
+   1. `el`不要写，为什么？——最终所有的组件都要经过一个vm的管理，由vm中的el决定服务哪个容器
+   2. `data`必须写成==**函数**==，为什么？——避免组件被复用时，数据存在引用关系。
+
+二、注册组件
+
+1. 局部注册：靠new Vue()的时候传入components选项
+2. 全局注册：靠`Vue.component('组件名',组件)`
+
+三、使用组件（写组件标签）
+
+1. `<school></school>`
+
+> ##### 组件嵌套
+
+字面意思。
+
+```html
+<body>
+    <div id="root">
+        
+    </div>
+    <div>
+
+    </div>
+</body>
+<script>
+    //定义school组件。（非最终组件名）
+    let a=Vue.extend({
+        //模板中只能有一个根元素，不是，则使用div标签包起来
+        template:`
+        <div>
+            <h2>学校名：{{name}}</h2>
+            <h2>学校地址：{{adress}}</h2>
+        </div>
+       
+        `,
+        data(){
+            return {
+                name:'哈佛',
+                adress:'北京'
+            }
+        }
+    });
+    //定义student组件。（非最终组件名）
+    let b=Vue.extend({
+        
+        template:`
+        <div>
+            <h2>学生名：{{name}}</h2>
+            <h2>学生年龄：{{age}}</h2>
+        </div>
+        `,
+        data(){
+            return{
+                name:'啊小',
+                age:18
+            }
+        }
+    })
+    //定义hello组件 简写
+    let c=({
+        template:`
+        <div>
+            <h2>hello,同学<h2>
+        </div>
+        `,
+        
+    });
+    //定义app组件 简写
+    let app=({
+        template:`
+        <div>
+            <school></school>
+            <student></student>
+            <hello></hello>
+        </div>
+        `,
+        components:{
+            school:a,
+            student:b
+        }
+    })
+    //注册全局组件
+    Vue.component('hello',c);
+    const vm=new Vue({
+        el:'#root',
+        template:`
+        <app></app>
+        `,
+        //局部组件注册
+        components:{
+            app 
+        }
+    })
+</script>
+```
+
+### 2.2、理解VueComponent
+
+1. school==**组件本质是**==一个名为==**VueComponent的构造函数**==，且不是程序员定义的，是Vue.textend生成的
+2. 我们只需要写`<school></school>`，Vue解析时会帮我们创建school组件的实例对象，即Vue帮我们执行的：new VueComponent(options)
+3. 特别注意：每次调用Vue.extend。返回的都是一个全新的VueComponent！！！
+4. 关于this指向：
+	1. 组件配置中：
+		data函数、methods中的函数、watch中的函数、computed中的函数 他们的this均是【VueComponent】
+	2. new Vue()配置中：
+		data函数、methods中的函数、watch中的函数、computed中的函数 它们的this均是【Vue】
+5. VueComponent的实例对象，以后简称vc（也可称之为：组件实例对象），Vue的实例对象，以后简称为vm。
+```html
+<body>
+    <div id="root">
+        
+    </div>
+  
+</body>
+<script>
+    //定义app组件 简写
+    let app=({
+        template:`
+        <div>
+            <h2>{{information}}</h2>
+            <button @click="showThis">点我查看this指向</button>
+        </div>
+        `,
+        data(){
+            return{
+                information:'理解VueComponent'
+            }
+        },
+        methods:{
+            showThis(){
+                console.log(this);//此处为VueComponent
+            }
+        }
+    })
+    const vm=new Vue({
+        template:`
+        <app></app>
+        `,
+        el:'#root',
+        //局部组件注册
+        components:{
+            app 
+        }
+    })
+</script>
+```
+
+### 2.3、Vue与Component的关系
+
+1.一个重要的内置关系，`VueComponent.prototype.__proto__=== Vue.prototype`
+
+2.为什么要有这个关系：让组件实例对象（vc）可以访问到Vue原型上的属性、方法（白话：复用）
+
+![image-20211213162924769](vue.assets/image-20211213162924769.png)
+
+## 注意点 2
+
+1. 关于组件名：
+
+   1. 一个单词组成：
+
+      1. 第一种写法（首字母小写）：school
+      2. 第二种写法（首字母大写）：School
+
+   2. 多个单词组成：
+
+      1. 第一种写法（kebab-case命名）：my-school
+      2. 第二种写法（CamelCase命名）：MySchool (需要Vue脚手架支持 不然报错)
+
+      备注：
+
+      1. 组件名尽可能回避HTML中已有的元素名称，例如：h2、H2都不行。
+      2. 可以使用name配置项指定组件在 ==**开发者工具中呈现的名字**==
+
+2. 关于组件标签：
+
+   1. 第一种写法：`<school></school>`
+   2. 第二种写法：`<school/>`（需要脚手架支持，不然该标签之后的标签不执行）
+
+3. 一个简写方式：
+   `const school=Vue.extend(options)` 可简写为：`const school=options`
+
+## 3、单文件组件
+
+
+
+```vue
+<template>
+    <div class="demo">
+        <!-- 组件的结构 -->
+        <h2>学校名：{{name}}</h2>
+        <h2>学校地址：{{adress}}</h2>
+    </div>
+</template>
+<script>
+    // 组件交互相关的代码（数据、方法等等）
+     // let School=Vue.extend({
+    //     data(){
+    //         return {
+    //             name:'哈佛',
+    //             adress:'北京'
+    //         }
+    //     }
+    // });
+    // export default School
+    // 简写
+export default {
+     data(){
+            return {
+                name:'哈佛',
+                adress:'北京'
+            }
+        }
+}
+</script>
+<style>
+    /* 组件的样式 */
+    .demo{
+        background-color: aquamarine;
+        }
+</style>
+```
+
+## 4、脚手架
+
+### 4.1初始化和使用脚手架
+
+1.全局安装@vue/cli:
+
+`npm install -g @vue/cli`（使`vue`指令有效化）
+
+2.创建项目
+
+`vue create objectName`
+
+3.启动项目 
+
+`npm run serve`
+
+### 4.2、分析脚手架
+
+> #### 文件结构
+
+```
+├── node_modules 
+├── public
+│   ├── favicon.ico: 页签图标
+│   └── index.html: 主页面
+├── src
+│   ├── assets: 存放静态资源
+│   │   └── logo.png
+│   │── component: 存放组件
+│   │   └── HelloWorld.vue
+│   │── App.vue: 汇总所有组件
+│   │── main.js: 入口文件
+├── .gitignore: git版本管制忽略的配置
+├── babel.config.js: babel的配置文件
+├── package.json: 应用包配置文件 
+├── README.md: 应用描述文件
+├── package-lock.json：包版本控制文件
+```
+
+> #### 关于不同版本的Vue
+
+1. vue.js与vue.runtime.xxx.js的区别：
+   1. `vue.js`是完整版的Vue，包含：==**核心功能 + 模板解析器**==。
+   2. `vue.runtime.xxx.js`是运行版的Vue，==**只包含：核心功能；没有模板解析器**==。
+2. 因为vue.runtime.xxx.js==**没有模板解析器**==，所以不能使用template这个配置项，需要使用==**render函数**==接收到的==**createElement函数**==去指定具体内容。（脚手架使用的就是这个，节约，穷）
+
+正常创建Vue实例
+
+```
+new Vue({
+	el:'#root',
+	components:{
+	App
+	}
+})
+```
+
+脚手架创建的Vue实例
+
+```js
+new Vue({
+   el:'#root', 
+	render: h =>h(App);
+})
+```
+
+其简写由来：
+
+```js
+new Vue({
+    el:'#root',//
+    render(createElement){
+        return createElement('h1','你好！');
+    },
+    render:(createElement)=>{
+    	return createElement('h1','你好！');
+	},
+ 	render:(createElement)=> createElement('h1','你好！');
+	
+})
+```
+
+> #### vue.config.js配置文件
+
+1. 使用vue inspect > output.js可以查看到Vue脚手架的默认配置。
+2. 使用vue.config.js可以对脚手架进行个性化定制，详情见：https://cli.vuejs.org/zh
+
+```js
+module.exports = {
+    // 选项...
+    // pages: {
+    //     index: {
+    //       // page 的入口
+    //       entry: 'src/index/main.js',
+    //       // 模板来源
+    //       template: 'public/index.html',
+    //       // 在 dist/index.html 的输出
+    //       filename: 'index.html',
+    //       // 当使用 title 选项时，
+    //       // template 中的 title 标签需要是 <title><%= htmlWebpackPlugin.options.title %></title>
+    //       title: 'Index Page',
+    //       // 在这个页面中包含的块，默认情况下会包含
+    //       // 提取出来的通用 chunk 和 vendor chunk。
+    //       chunks: ['chunk-vendors', 'chunk-common', 'index']
+    //     },
+    //     // 当使用只有入口的字符串格式时，
+    //     // 模板会被推导为 `public/subpage.html`
+    //     // 并且如果找不到的话，就回退到 `public/index.html`。
+    //     // 输出文件名会被推导为 `subpage.html`。
+    //     subpage: 'src/subpage/main.js'
+    //   },
+    //关闭语法检查
+    lintOnSave:false
+  }
+```
+
+## 5、ref属性
+
+1.被用来给元素或子组件注册引用信息（id的代替者）
+2.应用再html标签上获取的是真实DOM元素，应用再组件标签上是组件实例对象（vc）
+3.使用方式：
+	打标识：`<h1 ref="xxx">......</h1>` 或<School ref="xxx"></School>
+	获取：this.$refs.xxx
+
+```vue
+template>
+  <div id="app">
+    <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
+    <!-- <HelloWorld msg="Welcome to Your Vue.js App"/> -->
+    <Student ref="stu"></Student>
+    <School ref="sch"></School>
+    <button @click="method1" ref="button"></button>
+  </div>
+</template>
+
+<script>
+//import HelloWorld from './components/HelloWorld.vue'
+import Student from './components/Student.vue'
+import School from './components/School.vue'
+
+export default {
+  name: 'App',
+  components: {
+    Student,
+    School
+  },
+  methods:{
+    method1(){
+      console.log(this.$refs.stu);
+      console.log(this.$refs.sch);
+      console.log(this.$refs.button);
+
+    }
+  }
+}
+</script>
+```
+
+## 6、props配置项
+功能：让组件接收外部传过来的数据
+(1).传递数据：
+	`<Demo name="xxx"/>`
+(2).接收数据：
+	第一种方式（只接收）：
+		`props:['name']`
+	第二种方式（限制类型）：
+        `props:{
+            name:Number
+        }`
+	第三种方式（限制类型、限制必要性、指定默认值）：
+	`props:{
+		name:{
+		type:String,//类型
+		required:true,//必要性（不为空）
+		default:'老王'//默认值
+		}
+	}`
+	注意：==**props属性被接收方vc实例所代理**==。
+	备注：props是只读的，Vue底层会监测你对props的修改，如果进行了修改，==**就会发出警告**==，若业务需求确实需要修改，那么请复制一份props的属性内容到data中，然后去修改data中的数据。
+
+
+
+App.vue组件：
+```vue
+<template>
+  <div id="app">
+    <Student name="张三" sex="男" :age="18"></Student>
+  </div>
+</template>
+
+<script>
+
+import Student from './components/Student.vue'
+
+export default {
+  name: 'App',
+  components: {
+    Student,
+   
+  },
+  
+}
+</script>
+
+```
+Stduent.vue
+```vue
+<template>
+    <div>
+        <h1>{{msg}}</h1>
+        <h2>学生姓名：{{name}}</h2>
+        <h2>学生性别：{{sex}}</h2>
+        <h2>学生年龄：{{myAge+1}}</h2>
+        <button @click="updateAge">点我更新年龄</button>
+    </div>
+</template>
+<script>
+export default {
+    data(){
+            return{
+                msg:'配置项props使用',
+                myAge:this.age
+            }
+        },
+    //简单声明接收
+    //props:['name','sex','age'],
+    //接收的同时对数据类型进行限制
+    // props:{
+    //     name:String,
+    //     sex:String,
+    //     age:Number
+    // },
+    props:{
+        name:{
+            type:String,
+            required:true//不为空
+        },
+        sex:{
+            type:String,
+            required:true,
+        },
+        age:{
+            type:Number,
+            default:99
+        }
+    },
+    methods:{
+        updateAge(){
+            this.myAge++;
+        }
+    }
+}
+</script>
+<style >
+   
+</style>
+
+  
+```
+
+## 7、mixin混入
+
+功能：可以把多个组件==**共用的配置**==提取成一个混入对象
+使用方式：
+	第一步定义混合，例如：（mixin.js）
+		`{
+		data(){...},
+		methods:{...}
+		......
+		、
+		}`
+	第二步引用混入，例如：
+	(1).全局混入：`Vue.mixin(xxx)`
+	(2).局部混入：`mixins:['xxx'] ` （这个是一个配置项）
+经验：
+	* data配置冲突，则以data为准。
+	* 声明周期冲突，则都会执行。
+	
+
+==**mixin.js**==
+
+```js
+export const hunhe={
+    methods:{
+        showName(){
+            alert(this.name)
+        }
+    }
+}
+export const hunhe2={
+    data(){
+        return{
+            x:100,
+            y:200
+        }
+    }
+}
+```
+
+==**Student.vue**==
+
+```vue
+<template>
+    <div>
+        <h2 @click="showName">学生姓名：{{name}}</h2>
+        <h2>学生性别：{{sex}}</h2>
+    </div>
+</template>
+<script>
+// import {hunhe,hunhe2} from '../mixin'
+export default {
+    data(){
+            return{
+               name:'张三',
+               sex:'男',
+               x:600 //以这为主
+            }
+        },
+    methods:{
+        
+    },
+    // mixins:[hunhe,hunhe2]
+}
+</script>
+<style >
+</style>
+```
+
+==**App.vue**== 略 ==**School.vue**== 略	
+==**main.js**==
+
+```js
+import Vue from 'vue'
+import App from './App.vue'
+
+Vue.config.productionTip = false
+import {hunhe,hunhe2} from './mixin'
+Vue.mixin(hunhe)
+Vue.mixin(hunhe2)
+new Vue({
+  render: h => h(App),
+}).$mount('#app');
+
+
 ```
 
 
