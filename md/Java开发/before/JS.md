@@ -470,7 +470,7 @@ function abs(x){
 
 > ##### rest
 
-ES6引入的新特性，湖区出来已经定义的参数之外的所有参数
+ES6引入的新特性，接收已经定义的参数之外的所有参数
 
 rest参数只能写在最后面，必须用…
 
@@ -752,7 +752,7 @@ Object.prototype为null
 
 > ##### prototype和\_\_proto\_\_ 头疼问题
 
-prototype函数有，对象没有
+`prototype函数有，对象没有`
 
 ```js
 function Fn() {
@@ -1092,6 +1092,8 @@ elementUI
 
 ### 操作表单需要补充
 
+
+
 # 其它：
 
 ### HTMLCollection与NodeList
@@ -1130,6 +1132,57 @@ NodeList的元素是Node,HTMLCollection的元素是Element，Element继承自Nod
 ### getElementById和querySelector方法的区别
 
 getXXXByXXX 获取的是动态集合，querySelector获取的是静态集合。
+
+## 浏览器的本地存储
+
+### webStorage
+
+1. 存储内容大小一般支持5MB左右（不同浏览器可能还不一样）
+
+2. 浏览器短通过window.sessionStorage和 Window.localStorage属性来实现本地存储机制。
+
+3. 相关API：
+   1. xxxxStorage.setItem(‘key’,’value’);
+   2. xxxStorage.getItem(‘key’)
+   3. xxxStorage.removeItem(‘key’)
+   4. xxxStorage.clear()
+4. 备注
+   1. SessionStorage存储的内容会随着浏览器窗口关闭而消失。（会话不是后端说的会话，而是指浏览器关闭后就是会话关闭）
+   2. LocalStorage存储的内容，需要手动清除才会消失（清除缓存）或调用相关api。
+   3. xxxStorage.getItem(xxx)如果xxx对应的value获取不到，那么getItem的返回值是null
+   4. JSON.parse(null)的结果依然是 null
+
+## JS中的短路与Java略有不同
+
+**1.&&**
+
+1.1两边条件都为true时，结果才为true；
+1.2如果有一个为false，结果就为false；
+1.3当第一个条件为false时，就不再判断后面的条件
+
+注意：当数值参与逻辑与运算时，结果为true，那么会返回的会是第二个为真的值；如果结果为false，返回的会是第一个为假的值。
+
+**2.||**
+
+2.1只要有一个条件为true时，结果就为true；
+2.2当两个条件都为false时，结果才为false；
+2.3当一个条件为true时，后面的条件不再判断
+
+注意：当数值参与逻辑或运算时，结果为true，会返回第一个为真的值；如果结果为false，会返回第二个为假的值
+
+**与Java区别：**
+
+么有两个注意点。
+
+## `_`符号
+
+参数占位，不接收如:
+
+​	定义函数：`function show(_,a){console.log(a)}`
+
+​	调用函数：`show(1,2)`
+
+​	结果：`2`
 
 # 参考资料
 
