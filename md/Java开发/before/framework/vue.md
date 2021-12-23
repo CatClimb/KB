@@ -1543,6 +1543,10 @@ v-pre指令：
 
 需求2：定义一个v-fbind指令，和v-bind功能类似，但可以让其所绑定的input元素默认获取焦点
 
+注意：
+
+​	<font color='red'>不涉及数据更改的自定义指令可以不加参数。</font>
+
 ```html
 <body>
     <div id="root">
@@ -2389,9 +2393,11 @@ export default {
 
 写法：`<style scoped>`
 
-## ==注意点 3  10~13 是组件通信==
 
-## 10、TodoList案例（父发送给子）
+
+# 四、Vue组件通信
+
+## 1、TodoList案例（父发送给子）
 
 1. 组件化编码流程：
 	(1).拆分静态组件：组件要按照功能点拆分，命名不要与html元素冲突。
@@ -2402,7 +2408,7 @@ export default {
   (3).实现交互：从绑定事件开始。 
 3. props适用于：
     (1).父组件 ==> 子组件 通信
-    (2).子组件 ==> 父组件 通信 （要求父先给子一个函数）
+    (2).<font color='red'>子组件 ==> 父组件 通信 （要求父先给子一个函数）</font>
 4. 使用v-model时要记住：v-model绑定的值不能是props传过来的值，因为props是不可以修改的。
 5. props传过来的若是对象类型的值，修改对象中的属性时Vue不会报错，但不推荐这样做。（感觉是props的bug ，没去检测） 
 
@@ -2827,7 +2833,7 @@ export default {
 
 其它技术：less
 
-## 11、组件的自定义事件（子发送给父）
+## 2、组件的自定义事件（子发送给父）
 
 1. 一种组件件通信的方式，适用于`子组件===>父组件`
 
@@ -3029,7 +3035,7 @@ export default {
 
 任意组件通信两种方式一样，没有太大本质区别，建议使用全局事件总线，自身的。	
 
-## 12、全局事件总线（任意组件通信1 推荐）
+## 3、全局事件总线（任意组件通信1 推荐）
 
 1. 一种组件间通信的方式，适用于<font color='red'>任意组件间通信</font>。
 
@@ -3073,7 +3079,7 @@ export default {
 1. $bus（vm）对所有组件可见
 2. $bus（vm）可绑定（`$on`）、可触发（`$emit`）、可解绑（`$off`）
 
-## 13、消息订阅与发布（任意组件通信2 三方库）
+## 4、消息订阅与发布（任意组件通信2 三方库）
 
 pubsub.js（publish subscribe）
 
@@ -3177,3 +3183,216 @@ export default {
   
 ```
 
+## 5、TodoList案例+编辑
+
+1. 解决问题：
+     1. 初始化获取焦点	
+     2. 更新时获取焦点
+
+  2.   解决方式：
+
+         1. nextTick API 与mounted
+              1. 语法：this.$nextTick（回调函数）
+            2. 作用：在下一次DOM更新结束后执行其指定的回调。
+            3. 什么时候用：当改变数据后，要基于更新后的新DOM进行某些操作是，要在nextTick所指定的回调函数中执行。
+         2. 自定义指令（inserted、update）
+
+       ### App
+
+```vue
+<template>
+ ......
+  </div>
+</template>
+
+<script>
+import Top from "./components/Top";
+import Bottom from "./components/Bottom";
+import List from "./components/List";
+
+export default {
+  name: "App",
+  data() {
+    return {
+      todos: JSON.parse(localStorage.getItem('todos')) || []
+    };
+  },
+     //本地缓存
+  watch: {
+    todos: {
+      deep: true,
+      handler(newVuale) {
+        localStorage.setItem("todos", JSON.stringify(newVuale));
+      },
+    },
+  },
+  methods: {
+    //添加需完成的事项 top
+   ......
+    updateTitle(title, id) {
+      
+      this.todos.forEach((todo) => {
+        if (todo.id === id){
+          todo.title = title
+          
+        }
+
+           
+      });
+    },
+  },
+
+  components: {
+    Top,
+    Bottom,
+    List,
+  },
+  mounted() {
+   ......
+    this.$bus.$on("updateTitle", this.updateTitle);
+  },
+  beforeDestroy() {
+    this.$bus.$off(["checkTodo", "deleteTodo",'updateTitle']);
+  },
+};
+</script>
+
+<style>
+......
+    
+.btn-edit {
+  color: #fff;
+  background-color: deepskyblue;
+  border: 1px solid deepskyblue;
+  margin-right: 5px;
+}
+.btn-edit:hover {
+  color: #fff;
+  background-color: dodgerblue;
+}
+......
+
+
+/* //error信息颜色 */
+.error::-webkit-input-placeholder { /* WebKit, Blink, Edge */
+    color:    red;
+    font-size: 10px;
+}
+.error:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+   color:    red;
+   font-size: 10px;
+}
+.error::-moz-placeholder { /* Mozilla Firefox 19+ */
+   color:    red;
+   font-size: 10px;
+}
+.error:-ms-input-placeholder { /* Internet Explorer 10-11 */
+   color:   red;
+   font-size: 10px;
+}
+.error::-ms-input-placeholder { /* Microsoft Edge */
+   color:    red;
+   font-size: 10px;
+}
+</style>
+
+```
+
+
+
+### Item
+
+```vue
+<template>
+  <div>
+    <li>
+      <label>
+        <input
+          type="checkbox"
+          :checked="todo.done"
+          @change="handleCheck(todo.id)"
+        />
+        <!-- <input type="checkbox" v-model="todo.done"/> -->
+        <span v-show="!todo.isEdit">{{ todo.title }}</span>
+      </label>
+      <input
+      class="error"
+        type="text"
+        :value="todo.title"
+        v-show="todo.isEdit"
+        @keydown.enter="handleUpdateTitle($event, todo)"
+        @blur="handleUpdateTitle($event, todo)"
+        v-focusEditBox
+        placeholder=""
+        ref="editBox"
+      />
+      <button class="btn btn-danger" @click="handleDelete(todo.id)">
+        删除
+      </button>
+      <button class="btn btn-edit" @click="handleEdit(todo)" v-show="!todo.isEdit  ">编辑</button>
+    </li>
+  </div>
+</template>
+<script>
+export default {
+  props: ["todo"],
+  
+  methods: {
+    //点击编辑按钮触发隐藏span和显示input
+    handleEdit(todo) {
+      if (todo.hasOwnProperty("isEdit")) {
+        todo.isEdit = true;
+      } else {
+        this.$set(todo, "isEdit", true);
+      }
+      //dom更新完毕后执行里面的回调 这个比自定义指令更快
+      // this.$nextTick(function(){
+      //   this.$refs.editBox.focus()
+      // })
+    },
+    //处理编辑后的数据  由 blur和keydown事件触发
+    handleUpdateTitle(e, todo) {
+      if (!e.target.value.trim()) {
+        e.target.setAttribute('placeholder','不能为空');
+      } else {
+        this.$bus.$emit("updateTitle", e.target.value, todo.id);
+        todo.isEdit = false;
+        e.target.setAttribute('placeholder','');
+      }
+    },
+   ......
+      //解决初始化获取焦点
+  // mounted(){
+  //   this.$refs.editBox.focus();
+  // }
+};
+</script>
+<style scoped>
+    ......
+</style>
+```
+
+### plugins.js
+
+```js
+
+export default{
+    install(Vue){
+        Vue.directive('focusEditBox',{
+            bind(el,binding){
+                
+            },
+            inserted(el,binding){
+                el.focus();
+            },
+            update(el,binding){
+                el.focus();
+            }
+        })
+    }
+}
+```
+
+# 五、待定
+
+Vue封装的过度与动画
