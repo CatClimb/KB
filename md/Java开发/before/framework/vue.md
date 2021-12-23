@@ -3393,7 +3393,7 @@ export default{
 }
 ```
 
-# 五、待定
+# 五、过渡 & 动画
 
 ## 1、Vue封装的过渡与动画
 
@@ -3405,34 +3405,197 @@ export default{
 
 3. 写法：
 
-   1. 准备好样式：
+   1. Vue帮你准备好的样式：
 
       * 元素进入的样式：
+
         1. v-enter：进入的起点
         2. v-enter-active：进入过程中
         3. v-enter-to：进入的终点
+
       * 元素离开的样式
+
         1. v-leave：离开的起点
         2. v-leave-active：离开过程中
-        3. v-enter-to：离开的终点
+        3. v-leave-to：离开的终点
 
-   2. 使用`<transition>`包裹要过度的元素，并配置name属性：（<font color='red'>绑定name属性</font>后，进入的<font color='red'>起点类名</font>为<font color='red'>hello-enter</font>）
+        
 
-      ```vue
-      <transition name="hello">
-          <h1 v-show="isShow">你好啊！</h1>
+   2. `<transition>`中只能包含<font color='red'>一个根元素</font>，`<transition-group>`中可以包含<font color='red'>多个根元素</font>
+
+   3. 配置`<transition>`元素的name属性：`name="xxx"`，元素的进入与离开样式会变成：xxx-enter、xxx-leave 等等
+
+4. 备注：
+
+   1. <font color='red'>key</font>在`<transition>`与`<transition-group>`作用不同：
+      1. `<transition>`进行多元素<font color='red'>切换过渡</font>时，一般与<font color='red'>v-if</font>配合使用。由于<font color='orange'>Vue效率的特性</font>使得需要<font color='red'>key</font>属性。原因如下：
+         1. 当有**相同标签名**的元素切换时，需要通过 `key` attribute 设置唯一的值来标记以让 Vue 区分它们，<font color='orange'>否则</font> Vue 为了效率<font color='orange'>只会替换相同标签内部的内容</font>。
+   2. `<transition-group>`不可用过渡模式，因为我们不再<font color='red'>相互切换</font>特有的元素，其中<font color='red'>key</font>用来唯一标识。
+
+5. 其它知识：
+
+   1. 自定义过渡类名、JavaScript钩子、初始化渲染过渡（appear）、过渡模式（与transition、v-if使用）、多个元素过渡（）、多个组件过渡、列表过渡、动态过渡、状态过渡、过渡持续时间（这个应该跟钩子用的）、v-move等。（[进入/离开 & 列表过渡 — Vue.js (vuejs.org)](https://cn.vuejs.org/v2/guide/transitions.html)）
+   2. <font color='orange'>多个元素过渡</font>与<font color='orange'>多个组件过渡</font>属于<font color='red'>同一时间渲染多个节点中的一个（切换过渡）</font>
+   3. <font color='orange'>列表过渡</font>属于<font color='red'>同一时间渲染多个节点</font>
+
+### 使用动画效果与初始化渲染动画
+
+```vue
+<template>
+  <div>
+      <button @click="isShow=!isShow">开启动画</button>
+      <!-- appear 等于 :appear="true" 初始化渲染动画	-->
+      <transition appear>
+        <h1 v-show="isShow">你好啊</h1>
       </transition>
-      ```
+  </div>
+</template>
 
-      
-
-4. 备注：若有多个元素需要过度，则需要使用`<transition-group>`，且每个元素都要指定<font color='red'>key</font>值（但不能使用过渡模式）
-
-5. 其它知识：自定义过渡类名、JavaScript钩子、初始化渲染过渡（appear）、过渡模式、多个元素过渡、多个组件过渡、列表过渡、动态过渡、状态过渡、过渡持续时间等。（[进入/离开 & 列表过渡 — Vue.js (vuejs.org)](https://cn.vuejs.org/v2/guide/transitions.html)）
-
-使用动画以及动画初始化
-
+<script>
+export default {
+  data() {
+    return {
+      isShow:true 
+    }
+  },
+}
+</script>
+<style scoped>
+  h1{
+    background-color: orange;
+  }
+  .v-enter-active{
+    animation:donghua 0.5s linear;
+  }
+  .v-leave-active{
+    animation: donghua 0.5s linear reverse;
+  }
+  @keyframes donghua{
+    0%{
+      transform: translateX(-100%)
+    }
+    100%{
+      transform: translateX(0);
+    }
+  }
+</style>
 ```
 
+### 多个元素 切换过渡
+
+注意：absolute（绝对定位不占位置）。这是 `<transition>` 的默认行为 - <font color='orange'>进入和离开同时发生</font>。
+
+```vue
+<template>
+  <div>
+    <button @click="change">开启动画</button><br />
+    <!-- appear 等于 :appear="true" -->
+    <transition name="hello">
+      <button v-bind:key="n">{{msg}}</button>
+    </transition>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      n: 1,
+    };
+  },
+  computed: {
+    msg() {
+      switch (this.n) {
+        case 1:
+          return "Edit";
+        case 2:
+          return "Save";
+        case 3:
+          return "Cancel";
+      }
+    },
+  },
+  methods: {
+    change() {
+      if(++this.n>2){
+        this.n=1;
+      }
+    },
+  },
+};
+</script>
+<style scoped>
+div {
+  position: relative;
+}
+button {
+  margin-top: 10px;
+  width: 100px;
+  background-color: orange;
+  /*为了平滑过渡 */
+  position: absolute;
+  /*不破坏别人的样式 */
+  /* transition: .5s linear; */
+}
+/* 进入起点，离开终点 */
+.hello-enter {
+  transform: translateX(100px);
+  opacity: 0;
+}
+.hello-enter-to {
+  opacity: 1;
+}
+.hello-leave {
+  opacity: 1;
+}
+.hello-leave-to {
+  transform: translateX(-100px);
+
+  opacity: 0;
+}
+/* 进入状态（过程）启动后执行 */
+.hello-enter-active {
+  transition: 0.5s linear;
+}
+/* 离开状态（过程）启动后执行 */
+.hello-leave-active {
+  transition: 0.5s linear;
+}
+</style>
 ```
 
+### 列表过渡与animate.css三方库使用
+
+```vue
+<template>
+  <div>
+    <button @click="isShow = !isShow">开启动画</button>
+    
+    <transition-group name="animate__animated animate__bounce" enter-active-class="animate__rubberBand" leave-active-class="animate__bounceOutRight" appear>
+      <h1 v-show="!isShow" key="1">a1</h1>
+      <h1 v-show="isShow" key="2">b2</h1>
+      <h1 v-show="!isShow" key="3">c3</h1>
+      <h1 v-show="isShow" key="4">c4</h1>
+    </transition-group>
+  </div>
+</template>
+
+<script>
+import "animate.css";
+export default {
+  data() {
+    return {
+      isShow: true,
+    };
+  },
+};
+</script>
+<style scoped>
+div {
+  text-align: center;
+}
+
+</style>
+```
+
+# s
