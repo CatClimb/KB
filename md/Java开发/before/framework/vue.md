@@ -1,4 +1,4 @@
-# Vue
+Vue
 
 # 一、Vue概述
 
@@ -3395,4 +3395,44 @@ export default{
 
 # 五、待定
 
-Vue封装的过度与动画
+## 1、Vue封装的过渡与动画
+
+1. 作用：在插入、更新或移动DOM元素时，在合适的时候给元素添加样式类名。
+
+2. 图示：
+
+![transition](vue.assets/transition.png)
+
+3. 写法：
+
+   1. 准备好样式：
+
+      * 元素进入的样式：
+        1. v-enter：进入的起点
+        2. v-enter-active：进入过程中
+        3. v-enter-to：进入的终点
+      * 元素离开的样式
+        1. v-leave：离开的起点
+        2. v-leave-active：离开过程中
+        3. v-enter-to：离开的终点
+
+   2. 使用`<transition>`包裹要过度的元素，并配置name属性：（<font color='red'>绑定name属性</font>后，进入的<font color='red'>起点类名</font>为<font color='red'>hello-enter</font>）
+
+      ```vue
+      <transition name="hello">
+          <h1 v-show="isShow">你好啊！</h1>
+      </transition>
+      ```
+
+      
+
+4. 备注：若有多个元素需要过度，则需要使用`<transition-group>`，且每个元素都要指定<font color='red'>key</font>值（但不能使用过渡模式）
+
+5. 其它知识：自定义过渡类名、JavaScript钩子、初始化渲染过渡（appear）、过渡模式、多个元素过渡、多个组件过渡、列表过渡、动态过渡、状态过渡、过渡持续时间等。（[进入/离开 & 列表过渡 — Vue.js (vuejs.org)](https://cn.vuejs.org/v2/guide/transitions.html)）
+
+使用动画以及动画初始化
+
+```
+
+```
+
