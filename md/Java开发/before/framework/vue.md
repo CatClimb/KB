@@ -244,7 +244,7 @@ data与el写法：
 
 1. Vue中的数据代理：
 
-   ​		通过vm对象来代理data对象中属性的操作（读/写）
+   ​		通过vm对象来代理_data对象中属性的操作（读/写）
 
 2. Vue中数据代理的好处：
 
@@ -252,7 +252,7 @@ data与el写法：
 
 3. 基本原理：
 
-   ​		通过Object.defineProperty()把data对象中所有属性添加到vm上。为每一个添加到vm上的属性，都指定一个getter/setter。在getter/setter内部去操作（读/写）data中对应的属性。 
+   ​		通过Object.defineProperty()把data对象中所有属性添加到vm上。为每一个添加到vm上的属性，都指定一个getter/setter。在getter/setter内部去操作（读/写）_data中对应的属性。 
    
    
 
@@ -3598,4 +3598,330 @@ div {
 </style>
 ```
 
-# s
+# 六、
+
+## 1、vue脚手架配置代理
+
+> ### 	同源
+>
+
+就是指，域名、协议、端口均为相同（文件路径可不同）。
+
+> ### 	跨域
+>
+
+指浏览器不能执行其他网站的脚本。**浏览器会根据同源策略来判断一个请求是否同源来确定是否是跨域请求**
+
+
+
+作用；正向代理解决跨域（还有其它的跨域方式，比如后端的cors），以及多代理配置。	
+
+原理：让同源代理人去完成跨域访问。此代理人不受浏览器同源策略限制（后端请求不受限制）
+
+> ## 方式一：
+>
+
+在vue.config.js中添加如下配置：
+
+```js
+devserver:{
+    proxy:'http://oalhost:5000'
+}
+```
+
+说明：
+
+1. 工作方式：当请求了前端不存在的资源时，那么该请求会转发给服务器（优先匹配前端资源）
+2. 优点配置简单，请求资源时直接发给前端（8080）即可。
+3. 缺点：不能配置多个代理，不能灵活的控制请求是否走代理。
+
+> ## 方式二：
+>
+
+编写vue.config.js配置具体代理规则：
+
+```js
+module.exprts={
+
+devServer:{
+	proxy:{
+        'api1':{//匹配所有以‘/api1’开头的请求路径
+            target:'http://localhost:5000',//代理目标的基础路径
+            ws:true,//支持webSocket 默认
+            changeOrigin:true,//默认
+            pathRewrite:{'^/api1';''}
+        },
+        'api2':{
+            target:'http://localhost:5001',
+            pathRewrite:{'^api2':''}
+        }
+    },
+    	
+
+
+}
+```
+
+说明：
+
+1. 优点：可以配置多个代理，且看可以灵活的控制请求是否走代理
+
+2. 缺点：配置略微繁琐，请求资源时必须加前缀。
+
+### vue.config.js
+
+```js
+module.exports = {
+  //方式一
+  // devServer: {
+  //   proxy: 'http://localhost:5000'
+  // },
+  //方式二
+  devServer: {
+    proxy: {
+      '/haha': {
+        target: 'http://localhost:5000',
+        pathRewrite:{'^/haha':''}
+      },
+      '/wuwu': {
+        target: 'http://localhost:5001',
+        pathRewrite:{'^/wuwu':''}
+      }
+    }
+  },
+  lintOnSave:false
+}
+    
+
+```
+
+### App
+
+```vue
+<template>
+  <div>
+    <button @click="getStudentInfo">点我获取学生信息</button>
+    <button @click="getCarInfo">点我获取汽车信息</button>
+  </div>
+</template>
+
+<script>
+
+import axios from 'axios'
+export default {
+  methods: {
+    //方式一
+    // getStudentInfo(){
+    //   axios.get('http://localhost:8080/students').then(
+    //     response=>{
+    //       console.log('请求成功了',response.data)
+    //     },
+    //     error=>{
+    //       console.log('请求失败了',error.message)
+    //     }
+    //   )
+    // },
+    //方式二
+      //this.info={...this.info,...receiveInfo}
+      //`https://api.github.com/search/users?q=${keyWords}`
+    getStudentInfo(){
+      axios.get('http://localhost:8080/haha/students').then(
+        response=>{
+          console.log('请求成功了',response.data)
+        },
+        error=>{
+          console.log('请求失败了',error.message)
+        }
+      )
+    },
+    getCarInfo(){
+      axios.get('http://localhost:8080/wuwu/cars').then(
+        response=>{
+          console.log('请求成功了',response.data)
+        },
+        error=>{
+          console.log('请求失败了',error.message)
+        }
+      )
+    },
+  },
+
+};
+</script>
+<style >
+body {
+  /* text-align: center; */
+}
+</style>
+```
+
+## 2、vue-resource插件（vue1.0）
+
+## 3、插槽
+
+1. 作用：让父组件可以向子组件指定位置插入html结构，也是一种组件间通信的方式，适用于<font color='red'>父组件===>子组件</font>
+
+2. 分类：默认插槽、具名插槽、作用域插槽
+
+3. 使用方式：
+
+   1. 默认插槽：
+
+      ```vue
+      父组件中：
+      <Category>
+      	<div>
+              <!--填坑-->
+              html结构1 
+          </div>
+      </Category>
+      子组件中：
+      <template>
+      	<div>
+              <!--定义插槽 坑-->
+              <slot>没填坑我显示，哈哈</slot>
+          </div>
+      </template>
+      ```
+
+      
+
+   2. 具名插槽：
+
+      ```vue
+      父组件中：
+      <Category>
+          <template slot="center">
+      		<div>html结构1 </div>
+          </template>
+          <!--v-slot:footer在template标签中才有用-->
+      	<template v-slot:footer>
+      		<div>html结构2 </div>
+          </template>
+      </Category>
+      子组件中：
+      <template>
+      	<div>
+              <!--定义插槽 坑-->
+              <slot name="center">没填坑我显示，哈哈</slot>
+              <slot name="center">没填坑我显示，哈哈</slot>
+          </div>
+      </template>
+      ```
+
+      
+
+   3. 作用域插槽：
+
+      1. 理解：数据在组件的自身，但根据数据生成的结构需要组件的使用者来决定。（本质是超过作用域范围之外传递数据。（子组件===>父组件））
+
+      2. 具体编码：
+
+         1. App
+
+            ```vue
+            <template>
+              <div class="app">
+                <Category title="美食">
+                  <template slot-scope="obj">
+                    <ul>
+                      <li v-for="(g, index) of obj.foods" :key="index">
+                        {{ g }}
+                      </li>
+                    </ul>
+                  </template>
+                </Category>
+                <Category title="美食">
+                  <template slot-scope="obj">
+                    <ol>
+                      <li v-for="(g, index) of obj.foods" :key="index">
+                        {{ g }}
+                      </li>
+                    </ol>
+                    {{obj.msg}}
+                  </template>
+                </Category>
+                <Category title="美食">
+                  <template slot-scope="{foods}">
+                    <h4 v-for="(g, index) of foods" :key="index">
+                      {{ g }}
+                    </h4>
+                  </template>
+                </Category>
+              </div>
+            </template>
+            
+            <script>
+            import Category from "./components/Category";
+            
+            export default {
+              components: {
+                Category,
+              },
+              data() {
+                return {};
+              },
+            };
+            </script>
+            <style >
+            .app,
+            .footer {
+              display: flex;
+              justify-content: space-around;
+            }
+            img,
+            video {
+              width: 100%;
+            }
+            
+            h5 {
+              text-align: center;
+            }
+            </style>
+            ```
+
+            
+
+         2. Category
+
+            ```vue
+            <template>
+              <div class="containter">
+                <h3>{{ title }}</h3>
+                <slot :foods="foods" msg="hello"></slot>
+              </div>
+            </template>
+            <script>
+            export default {
+              props:['title'],
+              data() {
+                return {
+                  foods: ["苹果", "香蕉", "桃子", "西瓜"],
+                }
+              },
+            };
+            </script>
+            <style lang="css" scoped>
+            .containter {
+              height: 400px;
+              width: 200px;
+              background: skyblue;
+            }
+            
+            div h3 {
+              text-align: center;
+              background: orange;
+            }
+            </style>
+            ```
+
+            
+
+
+
+
+
+
+
+
+

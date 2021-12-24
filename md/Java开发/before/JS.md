@@ -1119,6 +1119,7 @@ NodeList的元素是Node,HTMLCollection的元素是Element，Element继承自Nod
             //当有人读取person的age属性时，get函数（getter）就会被调用，且返回值就是age的值
             get(){
                 console.log('有人读取age属性了')
+            	return n
             },
             //当有人修改person的age属性时，set函数（setter）就会被调用，且会收到修改的具体值
             set(value){
