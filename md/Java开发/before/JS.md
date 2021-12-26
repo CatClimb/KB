@@ -1134,9 +1134,9 @@ NodeList的元素是Node,HTMLCollection的元素是Element，Element继承自Nod
 
 getXXXByXXX 获取的是动态集合，querySelector获取的是静态集合。
 
-## 浏览器的本地存储
 
-### webStorage
+
+### webStorage 浏览器的本地存储
 
 1. 存储内容大小一般支持5MB左右（不同浏览器可能还不一样）
 

@@ -1,4 +1,4 @@
-Vue
+> # Vue
 
 # 一、Vue概述
 
@@ -2833,7 +2833,7 @@ export default {
 
 其它技术：less
 
-## 2、组件的自定义事件（子发送给父）
+## 2、组件自定义事件（子发送给父）
 
 1. 一种组件件通信的方式，适用于`子组件===>父组件`
 
@@ -3031,7 +3031,7 @@ export default {
 </style> 
 ```
 
-## 注意点 4 学了个寂寞
+## 注意点 3 学了个寂寞
 
 任意组件通信两种方式一样，没有太大本质区别，建议使用全局事件总线，自身的。	
 
@@ -3192,7 +3192,7 @@ export default {
   2.   解决方式：
 
          1. nextTick API 与mounted
-              1. 语法：this.$nextTick（回调函数）
+              1. 语法：this.$nextTick（回调函数）（是<font color='red'>生命周期钩子</font>font>波）
             2. 作用：在下一次DOM更新结束后执行其指定的回调。
             3. 什么时候用：当改变数据后，要基于更新后的新DOM进行某些操作是，要在nextTick所指定的回调函数中执行。
          2. 自定义指令（inserted、update）
@@ -3598,7 +3598,7 @@ div {
 </style>
 ```
 
-# 六、
+# 六、其它
 
 ## 1、vue脚手架配置代理
 
@@ -3756,6 +3756,10 @@ body {
 ```
 
 ## 2、vue-resource插件（vue1.0）
+
+ npm i vue-resource
+
+import VueResource from 'vue-resource'
 
 ## 3、插槽
 
@@ -3916,6 +3920,768 @@ body {
             ```
 
             
+
+
+
+# 七、Vuex
+
+## 1、基本使用
+
+![image-20211225115721557](vue.assets/image-20211225115721557.png)
+
+在Vue中实现集中式状态（数据）管理的一个Vue插件，对vue应用中多个组件的共享状态进行集中式的管理（读/写），也是一种组件间通信的方式，且适用于任意组件间通信。
+
+### 1.何时使用？
+
+多个组件需要共享数据时
+
+### 2.搭建vuex环境
+
+1. 创建文件：`src/store/index.js`
+
+   ```js
+   //创建Vuex最为核心的
+   import Vuex from 'vuex'
+   import Vue from 'vue'
+   
+   Vue.use(Vuex)
+   //准备actions——用于响应组件中的动作
+   const actions={}
+   //准备mutations——用于操作数据（state）
+   const mutations={}
+   //准备mutations——用于存储数据
+   const state={}
+   //创建并暴露store
+   export default new Vuex.Store({
+       actions:actions,
+       mutations:mutations,
+       state:state,
+   });
+   
+   ```
+
+2. 在`main.js`中创建vm时传入store配置项
+
+   ```js
+   ......
+   //引入store
+   import store from './store'
+   ......
+   //创建vm
+   new Vue({
+     render: h => h(App),
+     store, 
+   }).$mount('#app');
+   
+   
+   ```
+
+### 3.基本使用
+
+1. 初始化数据、配置actions 、mutations、state，操作文件`src/store/index.js`(后面都简写成`store.js`)
+
+```js
+//创建Vuex最为核心的
+import Vuex from 'vuex'
+import Vue from 'vue'
+
+Vue.use(Vuex)
+//准备actions——用于响应组件中的动作
+const actions={
+    
+    jiaOdd(context,value){
+        if(context.state.sum%2){
+            context.commit('JIA',value)
+        }
+    },
+    jiaWait(context,value){
+        setTimeout(()=>{
+            context.commit('JIA',value)
+        },500)
+   
+    },
+}
+//准备mutations——用于操作数据（state）
+const mutations={
+    JIA(state,value){
+        state.sum+=value; 
+
+    },
+    JIAN(state,value){
+        state.sum-=value;
+    }
+}
+//准备mutations——用于存储数据
+const state={
+    sum:0
+}
+//创建并暴露store
+export default new Vuex.Store({
+    actions:actions,
+    mutations:mutations,
+    state:state,
+});
+
+```
+
+2. 操作共享数据：`Count.vue`
+
+```vue
+<template>
+  <div>
+      <!-- state  -->
+    <h1>{{ $store.state.sum }}</h1>
+    <select name="sss" v-model.number="n">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+    <button @click="increment">+</button>
+    <button @click="decrement">-</button>
+    <button @click="incrementOdd">当前求和为奇数再加</button>
+    <button @click="incrementWait">等一等再加</button>
+  </div>
+</template>
+<script>
+export default {
+  data() {
+    return {
+      n: 1,
+    };
+  },
+  methods: {
+    increment() {
+      this.$store.commit("JIA", this.n);
+    },
+    decrement() {
+        //this.$store.commit("mutations中的方法名", this.n);
+      this.$store.commit("JIAN", this.n);
+    },
+    incrementOdd() {
+       //this.$store.dispatch("actions中的方法名", this.n);
+      this.$store.dispatch("jiaOdd", this.n);
+    },
+    incrementWait() {
+      this.$store.dispatch("jiaWait", this.n);
+    },
+  },
+};
+</script>
+<style lang="css" scoped>
+</style>
+```
+
+备注：若没有网络请求或其它业务逻辑，组件中也可以越过actions，即不写`dispatch`，直接编写`commit`
+
+### 4.getters的使用（可选）
+
+1. 概念：当state中的数据需要经过加工后再使用时，可以使用getters加工。（像data（state）和computed（getters））
+2. 在`store.js`中追加`getters`配置
+
+```js
+......
+//准备getters——用于讲state中的数据进行加工
+const getters={
+    bigSum(state){
+        return state.sum*10-9+1-4;
+    }
+}
+//创建并暴露store
+export default new Vuex.Store({
+......
+    getters,
+});  
+
+//在组件的模板或方法中调用：
+$store.getters.bigSum
+```
+
+### 5.四个map方法的使用
+
+1. mapState或MapGetters方法：用于帮助我们映射<font color='red'>state</font>或<font color='red'>getters</font>中的 数据为计算属性(`import { mapState,mapGetters } from "vuex";`)
+
+```js
+computed(){
+ 	// 解构
+    // mapstate()返回一个对下对象
+    // 借助mapState生成计算属性，从state中读取数据
+    //对象写法
+ ...mapState({ he: "sum", xuexiao: "school", xueke: "subject" }),
+     //数组写法
+ ...mapState(['sum', 'school', 'subject']),
+     
+     
+     //对象写法
+      ...mapGetters({ calculate: "calculate",}),
+     //数组写法
+     ...mapGetters(['calculate']),
+}
+```
+
+2. mapActions或mapMutations方法：用于帮助我们生成与`actions或mutations对话的方法`，即包含 `$store.dispatch('xxx',yyy)或$store.commit('xxx',yyy)`函数
+
+```js
+computed(){
+    //借助mapMutations生成对应的方法，方法中会调用commit去联系 mutations
+     //对象写法
+ 	 ...mapMutations({increment:'JIA',decrement:'JIAN'}),
+     //数组写法（模板的方法和store中的方法名一致才行）
+     ...mapMutations(['JIA','JIAN']),
+         
+         
+    //借助mapActions生成对应的方法，方法中会调用dispatch去联系 Actions
+    //对象写法
+    ...mapActions({incrementOdd:'jiaOdd',incrementWait:'jiaWait'}),
+     //数组写法（方法名一致才行）
+    ...mapActions(['jiaOdd','jiaWait']),
+}
+```
+
+备注：<font color='red'>mapActions</font>与<font color='red'>mapMutations</font>使用时，若需要传递参数，就要在模板中绑定事件时传递好参数，否则默认传递是事件对象： `$event`
+
+## 2、Vuex模块化+命名空间
+
+1. 目的：让代码更好维护，让多种数据分类更加明确
+
+2. 修改 `store.js`
+
+   ```js
+   //这里也可以开个Count.js来写并暴露它就行。
+   const countAbout ={
+       namespaced: true,//开启命名空间
+       actions: {...},
+       mutations: {...},
+       state:{...},
+       getters: {...}, 
+   }
+              
+   //这里也可以开个Count.js来写并暴露它就行。
+   const countAbout ={
+       namespaced: true,//开启命名空间
+       actions: {...},
+       mutations: {...},
+       state:{...},
+       getters: {...}, 
+   }
+              
+   export default new Vuex.Store({
+       modules:{
+           countAbout,
+           personAbout,
+       }
+   });
+   ```
+
+3. 开启命名空间后，组件中读取state数据：
+
+   ```js
+   //方式一：自己直接读取
+   this.$store.state.countAbout.sum;
+   //方式2：借助mapState读取
+   ...mapState('countAbout',['sum']),
+       
+   ```
+
+4. 开启命名空间后，组件中读取getters数据：
+
+   ```js
+   //方式一：自己直接读取
+   this.$store.getters["personAbout/FirstPerson"]
+   //方式2：借助mapGetters读取
+    ...mapGetters('countAbout',['calculate']),
+       
+   ```
+
+5. 开启命名空间后，组件中调用dispatch：
+
+   ```js
+   //方式一：自己直接读取
+   this.$store.dispatch("personAbout/addFirstNameForWang", pobj);
+   //方式2：借助mapActions读取
+   ...mapActions('countAbout',['jiaOdd','jiaWait'])//注意这里面的方法在模板上要传参    
+   ```
+
+6. 开启命名空间后，组件中调用commit：
+
+   ```js
+   //方式一：自己直接读取
+   this.$store.commit("personAbout/ADD_PERSON", pobj);
+   //方式2：借助mapMutations读取
+   ...mapMutations('countAbout',['JIA','JIAN']),//注意这里面的方法在模板上要传参
+   ```
+
+   
+
+# 注意点 5
+
+学路由器前，一定要写组件名。后面需要用到
+
+# 八、vue-router
+
+vue 的一个插件库，专门用来实现 SPA 应用 
+
+> ###  对 SPA 应用的理解
+
+1. 单页 Web 应用（single page web application，SPA）。 
+2. 整个应用只有一个完整的页面。 
+3. 点击页面中的导航链接不会刷新页面，只会做页面的局部更新。 
+4. 数据需要通过 ajax 请求获取。 
+
+> ###  路由的理解 
+
+1. 什么是路由? 
+
+   1. 一个路由就是一组映射关系（key - value） 
+   2. key 为路径, value 可能是 function 或 component 
+
+2. 路由分类 
+
+   1.  后端路由： 
+
+       1)理解：value 是 function, 用于处理客户端提交的请求。
+
+       2) 工作过程：服务器接收到一个请求时, 根据请求路径找到匹配的函数 来处理请求, 返回响应数据。
+
+   2.  前端路由： 
+
+      1)理解：value 是 component，用于展示页面内容。 
+
+      2)工作过程：当浏览器的路径改变时, 对应的组件就会显示
+
+## 1、基本使用
+
+1. 安装vue-router `npm i vue-router`
+
+2. 应用插件：Vue.use(VueRouter)
+
+3. 编写router配置项在 `router/index.js`：
+
+   ```js
+   //引入VueRouter
+   import VueRouter from 'vue-router'
+   //引入组件
+   import About from '../components/About'
+   import Home from '../components/Home'
+   export default new VueRouter({
+       routes: [
+           {
+               path: '/about',
+               component: About
+           },
+           {
+               path: '/home',
+               component: Home
+           }
+       ]
+   })
+   ```
+
+4. 实现切换（<font color='red'>active-class</font>可配置高亮样式）
+
+   ```vue
+   <router-link active-class="高亮样式" to="/about">About</router-link>
+   <!--不能是./about-->
+   ```
+
+5. 指定展示位置：
+
+   ```vue
+   <router-view></router-view>
+   ```
+
+## 2、几个注意点
+
+1. 路由组件通常存放在<font color='red'>pages</font>文件夹，一般组件通常存放在 `components`文件夹。
+2. 通过切换，“隐藏”了的路由组件，默认是被<font color='red'>销毁的</font>，需要的时候再去挂载
+3. 每个路由组件都有自己的 `$route`属性，里面存储着自己的路由信息。
+4. 整个应用只有一个router，可以通过组件的 `$router`属性获取到。（一般组件也能访问到）
+5. <font color='red'>`<router-link><router-link/>`</font>会转为  <font color='red'>`<a><a/>`</font>
+
+## 3、多级（嵌套）路由
+
+1. 配置路由规则，使用children配置项：
+
+   ```js
+   export default new VueRouter({
+       routes: [
+           {
+               path: '/about',
+               component: About
+           },
+           {
+               path: '/home',
+               component: Home,
+               children:[
+                   {
+                       path: 'news',
+                       component: News
+                   },
+                   {
+                       path: 'message',
+                       component: Message
+                   }
+               ]
+           },
+           
+       ]
+   })
+   ```
+
+2. 跳转（要写完整路径）
+
+   ```vue
+   <router-link to="/home/news">News</router-link>
+   ```
+
+   
+
+## 4、路由的query参数
+
+1. 传递参数
+
+   ```vue
+   <!--跳转并携带query参数，to的字符串写法-->
+   <li v-for="item of messageList" :key="item.id">
+           <router-link :to="`/home/message/detail?id=${item.id}&title=${item.title}`">{{item.title}}</router-link>
+         </li>
+   
+   ```
+
+2. 接收参数：
+
+   ```
+   $route.query.id
+   $router.query.title
+   ```
+
+## 5、命名路由
+
+1. 作用：可以简化路由的跳转。
+
+2. 如何使用
+
+   1. 给路由命名：
+
+      ```JS
+      {
+          path:'/demo',
+          component.
+          children:[
+              {
+                  path:'test',
+                  component:Test,
+                  children:[
+                      {
+                          name:'hello',
+                          path:'welcome',
+                          component:Hello,
+                      }
+                  ]
+              }
+          ]
+      }
+      ```
+
+   2. 简化跳转：
+
+      ```vue
+      <!--简化前，需要写完整的路径-->
+      <router-link to="/demo/test/welcome">跳转 </router-link>
+      <!--简化后，直接通过名字跳转-->
+      <route-link :to="{name:'hello'}">跳转</route-link>
+      <!--简化写法配合传递参数-->
+      <rourer-link
+                   :to="{
+                        name:'name',
+                        query:{
+                        id:'666',
+                        title:'你好'
+                        }
+                        }">跳转</rourer-link>
+      ```
+
+      
+
+## 6、路由的params参数
+
+1. 配置路由声明接收params参数：
+
+   ```js
+   {
+               path: '/home',
+               component: Home,
+               children:[
+                   {
+                       path: 'news',
+                       component: News
+                   },
+                   {
+                       path: 'message',
+                       component: Message,
+                       children:[
+                           {
+                           name:'D',
+                           path:'detail/:id/:title',//使用展位符声明接收params参数
+                           component:Detail,
+   
+                           }
+   
+                       ]
+                   }
+               ]
+           },
+   ```
+
+2. 传递参数
+
+   ```vue
+   <!--跳转并携带params参数，to的字符串写法-->
+   <router-link :to="`/home/message/detail/${item.id}/${item.title}`">
+       {{item.title}}
+   </router-link>
+   <!--跳转并携带params参数，to的对象写法-->
+   <router-link :to="{
+             name:'D',
+             params:{
+               id:item.id,
+               title:item.title
+             }
+           }">{{
+             item.title
+           }}</router-link
+           >
+   ```
+
+   特别注意：路由携带params参数时，若使用to的对象写法，<font color='red'>则不能使用path配置项，必须使用name配置！</font>
+
+3. 接收参数：
+
+   ```js
+   $route.params.id
+   $route.params.title
+   ```
+
+## 7、路由的props配置
+
+作用：让路由组件更方便的收到参数：
+
+```js
+   {
+       name:'D',
+           path:'detail/:id/:title',//是query则为 path:'detail'
+               component:Detail,
+              //prorps第一种写法，值为对象，该对象中的所有key-value都会以props的形式传给Detail组件。
+              //不常用，传递的是死数据
+              // props:{a:900,b:'s'}
+                   
+              //props第二种写法，值为对布尔值，若为真，就会把该路由组件收到的所有params参数，以props的形式传给Detail组件
+              //不能解决query
+              // props:true,
+                   
+              //props第三种写法，值为函数 完美 xxx可以是query或params
+                   props($route){
+                   return {
+                       id:$route.params.id,
+                       title:$route.params.title,
+                       a:'888',
+                       b:'sss'
+                   }
+               }
+   }, 
+```
+
+接收数据：
+
+```js
+props:['id','title','a','b']
+```
+
+## 8、`<route-link>`的replace属性
+
+1. 作用：控制路由跳转时操作浏览器历史记录的模式
+2. 浏览器的历史记录有两种写入方式：分别为 `push`和 `replace`，`push`是追加历史记录（栈）， `replace`是替换当前记录。路由跳转时候默认为 `push`
+
+3. 如何开启replace模式： `<router-link replace >跳转</router-link>`
+4. 备注：push与replace通常会嵌套应用。
+
+## 9、编程式路由导航
+
+1. 作用：不借助 `<router-link>` 实现路由跳转，让路由跳转更灵活
+
+2. 具体编码：
+
+   ```js
+   //$router的两个API
+   pushShow(item) {
+         this.$router.push({
+           name: 'D',
+           params: {
+             id: item.id,
+             title: item.title,
+           },
+         })
+   },
+       replaceShow(item) {
+         this.$router.replace({
+           name: 'D',
+           params: {
+             id: item.id,
+             title: item.title,
+           },
+         })
+   },	
+       //回退一步
+   this.$router.back();
+   //前进一步
+   this.$router.forward();
+   // 前进3步
+   this.$router.go(3);
+   ```
+
+   
+
+## 10、缓存路由组件
+
+1. 作用：让不展示的路由组件保持挂载，不被销毁（缓存在当前组件，当指针不再该组件时，组件和缓存都会销毁）
+2. 具体编码：
+
+```vue
+<keep-alive include="News"><!--单个-->
+    <router-view></router-view>
+ </keep-alive>
+<keep-alive :include="['News','Message']"><!--多个-->
+    <router-view></router-view>
+ </keep-alive>
+<keep-alive><!--全部-->
+    <router-view></router-view>
+ </keep-alive>
+```
+
+## 11、两个新的生命周期钩子
+
+1. 作用：<font color='red'>路由组件</font>所独有的两个钩子，用于捕获路由组件的激活状态
+2. 具体名字：
+   1.  `activated` 路由组件被激活时触发。
+   2. `deactivated`路由组件失活时触发。
+
+```java
+  activated() {
+    this.timer = setInterval(() => {
+      this.opacity = ((this.opacity * 100 - 1) / 100).toFixed(2);
+      //console.log(((this.opacity*100-1)/100).toFixed(2));
+      if (this.opacity <= 0) {
+        this.opacity = 1;
+        //clearInterval(timer);
+      }
+    }, 15);
+  },
+  deactivated() {
+    clearInterval(this.timer);
+  },
+//目的：不销毁组件保存数据，并清除定时器
+```
+
+## 12、路由守卫
+
+1. 作用：对路由进行权限控制
+2. 分类：全局守卫、独享守卫、组件内守卫
+3. 应用：看需求，可以相互使用
+
+### 12.1、全局守卫
+
+分为<font color='orange'>全局后置</font>和全<font color='orange'>全局前置守卫</font>
+
+```js
+//全局前置路由守卫————在每次切换路由前调用，包含初始化时候被调用
+router.beforeEach((to,from,next)=>{
+    if(to.meta.auth){
+        if(localStorage.getItem('school','清华')){
+            //放行
+            next()
+			//大概中断的意思 待处理
+			//next({name:'message'})
+        }else{
+            alert('学校名不对，无权查看')
+        }
+    }else{
+        next()
+    }
+})
+//全局后置路由守卫————在每次切换路由后调用，包含初始化时候被调用
+router.afterEach((to,from)=>{
+    //初始化和切换时换标题
+    document.title=to.meta.title || '主站'
+})
+export default router
+```
+
+### 12.2、独享守卫
+
+只有独享前置守卫
+
+```js
+{   
+                    name:'xiaoxi',
+                    path: 'message',
+                    component: Message,
+                    meta:{title:'消息',auth:true},//需要授权
+                        //独享前置守卫
+                    beforeEnter:((to,from,next)=>{
+                        if(to.meta.auth){
+                            if(localStorage.getItem('school')==='清华'){//授权验证
+                                //放行
+                                next()
+                            }else{
+                                alert('学校名不对，无权查看')
+                            }
+                        }else{
+                            next()
+                        }
+                    }),
+```
+
+
+
+### 12.3、组件内守卫  
+
+组件内配置
+
+```js
+	//通过路由规则，进入该组件时被调用  
+	beforeRouteEnter(to, from, next) {
+    //是否需要授权
+    if (to.meta.auth) {
+      //授权验证
+      if (localStorage.getItem("school") === "清华") {
+        //放行
+        next();
+      } else {
+        alert("学校名不对，无权查看");
+      }
+    } else {
+      next();
+    }
+  },
+  //通过路由规则，离开该组件时被调用
+  beforeRouteLeave(to, from, next) {
+    next()
+  },
+};
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
