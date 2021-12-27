@@ -1930,8 +1930,6 @@ body>
 
 ## 3、单文件组件
 
-
-
 ```vue
 <template>
     <div class="demo">
@@ -4671,17 +4669,88 @@ export default router
 
 
 
+## 13、路由器的两种工作模式
+
+1. 对于一个url来说，什么是hash值？——#及其后面的内容就是hash值。
+
+2. hash值不会包含在HTTP请求红，即：hash值不会带给服务器
+
+3. hash模式：
+
+   1. 地址中永远带着#号，不美观
+   2. 若以后将地址通过第三方手机app分享，若app效验严格，则地址会被标记为不合法。
+   3. 兼容性较好
+
+4. history模式：
+
+   1. 地址干净，美观
+
+   2. 兼容性和hash模式相比略差
+
+   3. 应用部署上线时需要后端人员支持，解决刷新页面服务端404的问题
+
+      
+
+```js
+const router= new VueRouter({
+    mode:'hash',
+    routes: [
+        ......
+```
+
+# 九、Vue UI 组件库
+
+## 9.1、 移动端常用 UI 组件库 
+
+Vant https://youzan.github.io/vant 
+
+Cube UI https://didi.github.io/cube-ui 
+
+Mint UI http://mint-ui.github.io 
+
+## 9.2、 PC 端常用 UI 组件库 
+
+1. Element UI https://element.eleme.cn 
+2. IView UI https://www.iviewui.co
 
 
 
+# 前端部署
 
+1. `npm run build` 对vue项目进行打包，之后得到<font color='red'>dist</font>文件夹
 
+2. 新建一个文件夹并进入，执行 `npm init` 与 `npm i express`
 
+3. 在该目录下新建<font color='red'>static</font>或 <font color='red'>public</font>文件夹，并把dist文件夹内容放入其中
 
+4. 在该目录下新建文件名为 `server.js`
 
+5. 内容如下：（nodejs 不清楚 待处理）
 
+   ```js
+   const express = require('express');
+   //history工作模式
+   // const history = require('connect-history-api-fallback');
+   
+   const app =express();
+   //history工作模式 bu
+   // app.use(history());
+   
+   app.use(express.static(__dirname+'/static'));
+   app.get('/person',(req,res)=>{
+       res.send({
+           name:'Tom',
+           sex:'male'
+       })
+   })
+   app.listen('8080',(err)=>{
+       if(!err){
+           console.log('服务器启动成功了！')
+       }
+   })
+   ```
 
-
+6. 运行 `node server` 启动服务器
 
 
 
