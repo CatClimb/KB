@@ -1,5 +1,3 @@
-
-
 # 一、Java
 
 ## 1.1 Java程序运行原理
@@ -4235,252 +4233,22 @@ public int compare(Object o1, Object o2) {
   >      blue
   > ```
 
-# 项目文件详解
+# 十二、Java注解
 
-# 深入理解Class对象（不全面以后搞 待处理）
+什么是注解？
 
-[什么是RRTI？](####RRTI)
+从`JDK5`开始,Java增加对元数据的支持，也就是注解，注解与注释是有一定区别的，可以把注解理解为代码里的特殊标记，这些标记可以在编译，类加载，运行时被读取，并执行相应的处理。通过注解开发人员可以在不改变原有代码和逻辑的情况下在源代码中嵌入补充信息。
 
-## Class对象概念
+* 不是程序本身，可以对程序作出解释。（这一点和注释（comment）没什么区别）
+* 可以被<font color='orange'>其它程序</font>（比如：<font color='orange'>编译器</font>等）<font color='orange'>读取</font>
 
-​		在Java中用来表示运行时类型信息的对应类就是Class类，Class类也是一个实实在在的类，存在于JDK的java.lang包中，源码如下：
-
-```java
-public final class Class<T> implements java.io.Serializable,GenericDeclaration,Type, AnnotatedElement {
-    private static final int ANNOTATION= 0x00002000;
-    private static final int ENUM      = 0x00004000;
-    private static final int SYNTHETIC = 0x00001000;private static native void registerNatives();
-static {
-    registerNatives();
-}
-
-/*
- * Private constructor. Only the Java Virtual Machine creates Class objects.（私有构造，只能由JVM创建该类）
- * This constructor is not used and prevents the default constructor being
- * generated.
- */
-private Class(ClassLoader loader) {
-    // Initialize final field for classLoader.  The initialization value of non-null
-    // prevents future JIT optimizations from assuming this final field is null.
-    classLoader = loader;
-}
-```
-
-该类的描述如下：
-
-* 手动编写的类被编译后会产生一个Class对象，`它表示的是创建的类的类型信息，且该对象保存在同名的.class文件中（（这是其中一种保存方式的）编译后的字节码文件 ）`。比如创建一个Shapes类，编译Shapes类后就会创建其包含Shapes类相关类型信息的Class对象，并保存在Shapes.class字节码文件中。
-* 每个通过关键字class标识的类，在内存中有且只有一个与之对应的Class对象来描述其类型信息，`无论创建多少个实例对象，其依据的都是用一个Class对象`。
-* jClass类存有私有构造函数，因此对应`Class对象只能有JVM创建和加载`
-* Class类的对象作用是`运行时提供`或获得某个对象的类型信息（反射）
-
-![image-20210803125459596](F:\data\knowledge_data\md\pic\image-20210803125459596.png)
-
-## Class对象加载
-
-实际上所有的类都是在对其第一次使用时动态加载到JVM中的，加载的时机是？对类的静态成员引用（并且不是编译器常量）（大概）。
-
-![image-20210803133532687](F:\data\knowledge_data\md\pic\image-20210803133532687.png)
-
-> - 加载：类加载过程的一个阶段：通过一个类的完全限定查找此类字节码文件，并利用字节码文件创建一个Class对象
-> - 链接：验证字节码的安全性和完整性，准备阶段正式为静态域分配存储空间，注意此时只是分配静态成员变量的存储空间，不包含实例成员变量，如果必要的话，解析这个类创建的对其他类的所有引用。
-> - 初始化：类加载最后阶段，若该类具有超类，则对其进行初始化，执行静态初始化器和静态初始化成员变量。完成这个阶段后类也就加载到内存中(Class对象在加载阶段已被创建)，此时可以对类进行各种必要的操作了（如new对象，调用静态成员等）。
-
-初始化类的需求场景：
-
-* 使用new关键字实例化对象时、读取或者设置一个类的静态字段(不包含编译期常量)以及调用静态方法的时候，必须触发类加载的初始化过程(类加载过程最终阶段)。
-
-* 使用反射包(java.lang.reflect)的方法对类进行反射调用时，如果类还没有被初始化，则需先进行初始化，这点对反射很重要。
-
-* 当初始化一个类的时候，如果其父类还没进行初始化则需先触发其父类的初始化。
-
-* 当Java虚拟机启动时，用户需要指定一个要执行的主类(包含main方法的类)，虚拟机会先初始化这个主类
-
-* 当使用JDK 1.7 的动态语言支持时，如果一个java.lang.invoke.MethodHandle 实例最后解析结果为REF_getStatic、REF_putStatic、REF_invokeStatic的方法句柄，并且这个方法句柄对应类没有初始化时，必须触发其初始化。
-
-  
-
-## Class对象获取方式
-
-> * Class.forName(“com.example.A”)方法
-> * Class字面量A.class（`不触发最后的加载阶段`）
-> * boolean.class == Boolean.TYPE;
->   char.class == Character.TYPE;
->   byte.class == Byte.TYPE;
->   short.class == Short.TYPE;
->   int.class == Integer.TYPE;
->   long.class == Long.TYPE;
->   float.class == Float.TYPE;
->   double.class == Double.TYPE;
->   void.class == Void.TYPE;
-> * 继承自Object类的getClass方法
-
-类型转化问题
-
-```java
-Animal animal= new Dog();
-//这两句等同于Dog dog = (Dog) animal;
-Class<Dog> dogType = Dog.class;
-Dog dog = dogType.cast(animal)
-    
-
-```
-
-```java
-public T cast(Object obj) {
-    if (obj != null && !isInstance(obj))
-         throw new ClassCastException(cannotCastMsg(obj));
-     return (T) obj;
-  }
-```
-
-## 反射技术
-
-​		==反射机制是在运行状态中，对于任意一个类，都能够知道这个类的所有属性和方法==。在Java中，Class类与java.lang.reflect类库一起对反射技术进行了全力的支持。reflect类库中，通过`Constructor、Field、Method、Array`类来反映Class对象的所表示的构造器、属性（包括私有）、方法（包括私有）、数组。
-
-​		
-
-
-
-# Java注解
-
-## 声明注解与元注解
-
-​		==注解==：从`JDK5`开始,Java增加对元数据的支持，也就是注解，注解与注释是有一定区别的，可以把注解理解为代码里的特殊标记，这些标记可以在编译，类加载，运行时被读取，并执行相应的处理。通过注解开发人员可以在不改变原有代码和逻辑的情况下在源代码中嵌入补充信息。
-
-​		==元注解==：标记其他注解的注解。
-
-​		@Test声明如下：
-
-~~~java
-//表名该注解只能用于方法上
-@Target(ElementType.METHOD)
-/*@Target(value={CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE})*/
-//生存期是运行时
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Test{
-    
-}
-
-
-~~~
-
-​		==标记注解==不包含成员/元素，它仅用于标记声明。其中`ElementType`是枚举类型，值包括
-
-~~~java
-public enum ElementType {
-    /**标明该注解可以用于类、接口（包括注解类型）或enum声明*/
-    TYPE,
-    /** 标明该注解可以用于字段(域)声明，包括enum实例 */
-    FIELD,
-    /** 标明该注解可以用于方法声明 */
-    METHOD,
-    /** 标明该注解可以用于参数声明 */
-    PARAMETER,
-    /** 标明注解可以用于构造函数声明 */
-    CONSTRUCTOR,
-    /** 标明注解可以用于局部变量声明 */
-    LOCAL_VARIABLE,
-    /** 标明注解可以用于注解声明(应用于另一个注解上)*/
-    ANNOTATION_TYPE,
-    /** 标明注解可以用于包声明 */
-    PACKAGE,
-    /**
-     * 标明注解可以用于类型参数声明（1.8新加入）
-     * @since 1.8
-     */
-    TYPE_PARAMETER,
-    /**
-     * 类型使用声明（1.8新加入)
-     * @since 1.8
-     */
-    TYPE_USE
-}
-~~~
-
-​		`@Retention`是用来约束注解的生命周期,值有源码级别（source），类文件级别（class）或者运行时级别（runtime）。
-
-含义如下：
-
-1. ==**SOURCE：**==注解将被编译器丢弃（该类型的注解信息只会保留在源码里，源码经过编译后，注解信息会被丢弃，不会保留在编译好的class文件里）
-
-2. ==**CLASS：**==注解在class文件中可用，但会被`VM`丢弃（该类型的注解信息会保留在源码里和class文件里，在执行的时候，不会加载到虚拟机中），请注意，当注解未定义Retention值时，默认值是CLASS。例如Java内置注解，`@Override`、`@Deprecated`对应`RetentionPolicy.SOURCE`，`@SuppressWarnning`对应`RetentionPolicy.RUNTIME`等
-
-3. ==**RUNTIME：**==注解信息将在运行期(`JVM`)也保留，因此可以通过`反射机制`读取注解的信息（源码、class文件和执行的时候都有注解的信息），如`SpringMVC`中的`@Controller`、`@Autowired`、`@RequestMapping`等。
-
-------------------------------------------------
-
-
-​		该注解编译好后，会生成`Test.class`文件。
-
-## 注解元素及其数据类型
-
-​		定义一个名为`DBTable`的注解，声明一个String类型的`name元素`，其默认值为空字符，但是必须注意到对应任何元素的声明应采用方法的声明方式，同时可选择使用default提供默认值，定义如下：
-
-~~~java
-
-@Target(ElementType.TYPE)//只能应用于类上
-@Retention(RetentionPolicy.RUNTIME)//保存到运行时
-public @interface DBTable {
-    String name() default "";
-}
-
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@interface Reference{
-    boolean next() default false;
-}
-public @interface AnnotationElementDemo {
-    //枚举类型
-    enum Status {FIXED,NORMAL};
-
-    //声明枚举
-    Status status() default Status.FIXED;
-
-    //布尔类型
-    boolean showSupport() default false;
-
-    //String类型
-    String name()default "";
-
-    //class类型
-    Class<?> testCase() default Void.class;
-
-    //注解嵌套
-    Reference reference() default @Reference(next=true);
-
-    //数组类型
-    long[] value();
-}
-~~~
-
-==数据类型==
-
-- `所有基本类型（int,float,boolean,byte,double,char,long,short）`
-- `String`
-
-- `Class`
-
-- `enum`
-
-- `Annotation`
-
-- `上述类型的数组`
-
-
-
-==编译器对默认值的限制==
-
-​		对于非基本类型的元素，无论是在源代码中声明，还是在注解接口中定义默认值，都不能以null作为值，这就是限制。为了绕开这个限制，只能定义一些特殊的值，例如空字符串或负数，表示某个元素不存在。
-
-==注解不支持继承==
-
-​		注解在编译后，编译器会让它自动继承`java.lang.annotation.Annotation`接口。
-
-## Java内置注解与其它元注解
+## 1、Java内置注解
 
 内置注解主要有三个：
 
-==@Override==：用于标明此方法覆盖了父类的方法，源码如下
+### 1.1、@Override：
+
+定义在java.lang.Overiride中，此注解<font color='orange'>只</font>适用于修辞方法，<font color='green'>表示一个方法声明打算重写超类中的另一个方法的声明。</font>
 
 ```java
 @Target(ElementType.METHOD)
@@ -4489,7 +4257,11 @@ public @interface Override {
 }
 ```
 
-==@Deprecated==：用于标明已经过时的方法或类，源码如下，关于@Documented稍后分析：
+表现形式：重写的方法名写错，注解会有红线。
+
+### 1.2、@Deprecated
+
+定义在java.lang.Overiride.Deprecated中,此注解<font color='orange'>可以</font>适用于修辞方法。<font color='green'>表示不鼓励程序员使用这样的元素，通常是因为它很危险或者存在更好的选择。</font>源码如下，关于@Documented稍后分析：（不推荐程序员使用，但是可以使用，或者存在更好的方式）
 
 ```java
 @Documented
@@ -4497,431 +4269,468 @@ public @interface Override {
 @Target(value={CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE})
 public @interface Deprecated {
 }
+
+
 ```
 
-==@SuppressWarnnings==:用于有选择的关闭编译器对类、方法、成员变量、变量初始化的警告，其实现源码如下：
+表现形式： ~~test()~~
+
+### 1.3、@SuppressWarnnings:
+
+1. 用于有选择的抑制编译时编译器对类、方法、成员变量、变量初始化的警告。此注解需要添加一个参数才能使用，这些参数是已经确定好的。其实现源码如下：
+
+   ```java
+   @Target({TYPE, FIELD, METHOD, PARAMETER, CONSTRUCTOR, LOCAL_VARIABLE})
+   @Retention(RetentionPolicy.SOURCE)
+   public @interface SuppressWarnings {
+       String[] value();
+   }
+   //实现例子
+   @SuppressWarnings("all")
+   @SuppressWarnings("unchecked")
+   @SuppressWarnings("value={"unchecked","deprecation"}")
+   ```
+
+   
+
+2. 表现形式：未使用报灰色不会被启动
+
+3. 抑制信息关键字
+
+   |      抑制信息关键字      |                             描述                             |
+   | :----------------------: | :----------------------------------------------------------: |
+   |           all            |                         抑制所有警告                         |
+   |          boxing          |                 抑制装箱，拆箱操作时候的警告                 |
+   |           cast           |                      抑制映射相关的警告                      |
+   |         dep-ann          |                      抑制启用注释的警告                      |
+   |       deprecation        |                       抑制过期方法警告                       |
+   |       fallthrough        |               抑制确定switch中缺失breaks的警告               |
+   |         finally          |                抑制finally模块没有返回的警告                 |
+   |    incomplete-switch     |                   忽略没有完整的switch语句                   |
+   |           nls            |                     忽略非nls 格式的字符                     |
+   |           null           |                       忽略对null的操作                       |
+   |         rawtypes         |             使用泛型类型时忽略没有指定相应的类型             |
+   |       restriction        | to suppress warnings relative to usage of discouraged or forbidden references |
+   |          serial          |         忽略在序列化类中没有声明serialVersionUID变量         |
+   |      static-access       |                 抑制不正确的静态访问方式警告                 |
+   |     synthetic-access     |            抑制子类没有按最优方法访问内部类的警告            |
+   |        unchecked         |                抑制没有进行类型检查操作的警告                |
+   | unqualified-field-access |                  抑制没有权限访问的域的警告                  |
+   |          unused          |                  抑制没被使用过的代码的警告                  |
+
+## 2、元注解
+
+标记其他注解的注解。java定义了<font color='green'>4</font>个标准的meta-annotation类型。这些注解可以在java.lang.annotation报中可以找到。
+
+### 2.1、@Target
+
+用于描述注解的使用范围即可以标注在哪个地方（类或者方法还是属性）
+
+
+
+### 2.2、@Retention
+
+表示需要在什么级别保存该注释信息，用于约束注解的生命周期。值有<font color='red'>源码级别</font>（<font color='orange'>SOURCE</font>），<font color='red'>类文件级别</font>（<font color='orange'>CLASS</font>）或者<font color='red'>运行时级别</font>（<font color='orange'>RUNTIME</font>）。(runtime>class>source)
+
+含义如下：
+
+1. <font color='orange'>SOURCE</font>：注解将被编译器丢弃（该类型的注解信息只会保留在源码里，源码经过编译后，注解信息会被丢弃，不会保留在编译好的class文件里）
+
+2. <font color='orange'>CLASS</font>：注解在class文件中可用，但会被`VM`丢弃（该类型的注解信息会保留在源码里和class文件里，在执行的时候，不会加载到虚拟机中），请注意，当注解未定义Retention值时，默认值是CLASS。例如Java内置注解，`@Override`、`@Deprecated`对应`RetentionPolicy.SOURCE`，`@SuppressWarnning`对应`RetentionPolicy.RUNTIME`等
+
+3. <font color='orange'>RUNTIME</font>：注解信息将在运行期(`JVM`)也保留，因此可以通过`反射机制`读取注解的信息（源码、class文件和执行的时候都有注解的信息），如`SpringMVC`中的`@Controller`、`@Autowired`、`@RequestMapping`等。
+
+
+
+
+
+
+### 2.3、@Document
+
+说明该注解将被包含在javadoc中
+
+
+
+### 2.4、@Inherited
+
+说明子类可以继承该父类的该注解。可以让<font color='orange'>子类Class对象</font>使用<font color='orange'>getAnnotations()</font>获取父类被@Inherited修饰的注解。
+
+## 3、自定义注解
+
+* 使用@interface自定义注解时，自动继承了java.lang.annotation.Annotation接口，格式： `public @interface 注解名{定义内容}`。
+
+  * 其中的每一个<font color='orange'>方法</font>实际上<font color='orange'>是</font>声明了一个<font color='orange'>配置参数</font>。
+
+  * <font color='orange'>方法名</font>就是<font color='orange'>参数名</font>
+
+  * <font color='orange'>返回值类型</font>就是<font color='orange'>参数类型</font>。（返回值只能是 <font color='orange'>基本类型</font> <font color='orange'>Class String enum</font> <font color='orange'>Annotation</font> <font color='orange'>它们的数组</font>）
+
+  * default关键字声明参数的默认值
+
+  * 如果只有一个参数成员，一般参数名为value（<font color='red'>使用时可以不匹配参数名</font>）
+
+  * 注解元素<font color='orange'>必须要有值</font>。（经常定义一些默认值）
+
+    
+
+1. 没有配置参数的自定义注解：@MyAnnotation：（这种注解叫做<font color='red'>标记注解</font>：**<font color='green'>不包含成员/元素，它仅用于标记声明。</font>**）
+
+   ```java
+   //表示注解可以在什么地方使用
+   @Target(value = {ElementType.METHOD,ElementType.TYPE})//方法、类
+   //表示我们注解在什么地方有效
+   //runtime>class>source
+   @Retention(value = RetentionPolicy.RUNTIME)//运行时 
+   @Documented
+   @Inherited
+   public @interface MyAnnotation{
+       
+   }
+   ```
+
+ 2.  包含配置参数的之定义注解：
+
+     ```java
+     @Target({ElementType.METHOD,ElementType.TYPE})
+     @Retention(RetentionPolicy.RUNTIME)
+     @interface MyAnnotation2{
+     //注解的参数：参数类型+参数名();
+         String name() default "";
+         int age() default 0;
+         int id() default -1;
+         String[] school() default {"哈哈","呵呵"};
+          
+     }
+     
+     ```
+
+# 注意点  1
+
+<font color='red'>**编译器对默认值的限制**</font>
+
+​		对于非基本类型的元素，无论是在源代码中声明，还是在注解接口中定义默认值，都不能以null作为值，这就是限制。为了绕开这个限制，只能定义一些特殊的值，例如空字符串或负数，表示某个元素不存在。
+
+# 十三、Java反射与Class类与类加载器
+
+Java反射机制：<font color='orange'>是指在运行时去获取一个类的变量和方法信息。</font>然后通过获取到的信息来创建对象，调用方法的几种机制。由于这种动态性，可以极大的增强程序的灵活性，车呢光绪不用再编期间就完成确定，再运行期间任然可以扩展。
+
+* 通过 `Class c=Class.forName("java.lang.String")`获得该String类的Class对象，这个对象包含了完整的类的结构信息，通过这个对象可以看到类的结构。
+* 正常方式：引入需要的“包类”名称—>通过new实例化—>取得实例化对象。
+* <font color='orange'>反射方式</font>：实例化对象—>`getClass()` 方法—>得到完整“包类”名称
+
+> ## 动态语言
+
+是一类再运行时可以改变其结构的语言。
+
+* 例如新的函数、对象、甚至代码可以被引进，已有的函数可以被删除或时其它结构上的变化。
+* 主要的动态语言：Object-C、C#、JavaScript、PHP、Python等
+
+> ## 静态语言
+
+与动态语言相对应的，运行时结构不可变的语言就是静态语言。
+
+* 主要静态语言：Java、C、C++
+* <font color='orange'>Java不是动态语言</font>，但Java可以称之为<font color='orange'>准动态语言</font>即Java有一定的动态性，我们可以利用<font color='orange'>反射机制</font>获得类似动态语言的特性。Java的动态性让编程的时候更加灵活。
+
+## 1、概述
+
+### 1、Java反射机制提供的功能
+
+* 在运行时判断任意一个对象所属的类
+* 在运行时构造任意一个类的对象
+* 在运行时判断任意一个类所具有的成员变量和方法
+* 在运行时获取泛型信息
+* 在运行时调用任意一个对象的成员变量和方法
+* 在运行时处理注解
+* 生成动态代理（AOP）
+*  ……
+
+### 2、优缺点
+
+* 优点：
+  * 可以实现动态创建对象和编译，体现出很大的灵活性。
+* 缺点：
+  * 对性能有影响。使用反射基本上是一种解释操作，我们可以告诉JVM，我们希望做什么并且它要满足我们的要求。这类操作总是慢于直接执行相同的操作。
+
+### 3、反射相关的主要API
+
+* java.lang.Class：代表一个类
+* java.lang.reflect.Method：代表类的方法
+* java.lang.reflect.Field：代表类的的成员变量
+* java.lang.reflect.Constructor：代表类的构造器
+* ……
+
+## 2、Class类
+
+* Class对象只能由系统建立对象。
+
+* 一个类被加载后，<font color='orange'>类的整个结构</font>都会被<font color='red'>封装</font>在<font color='orange'>Class对象中</font>。
+
+* <font color='orange'>一个加载的类在内存中</font><font color='red'>只有</font><font color='orange'>一个Class对象</font>
+* <font color='orange'>一个Class对象</font><font color='red'>对应</font>的是一个加载到JVM中的<font color='orange'>一个class文件</font>
+* 在Object类中定义了以下的方法，此方法将被所有子类继承：<font color='orange'>public final Class getClass()</font>（调用这个方法就类似照了镜子，得到了信息）
+* 此类Java反射的<font color='orange'>源头</font>，唯有获得相应的Class对象才能动态、运行相应的类。
+
+### 2.1、常用方法
+
+|                  方法名                  |                          功能说明                           |
+| :--------------------------------------: | :---------------------------------------------------------: |
+|     static ClassforName(String name)     |                 返回指定类名name的Class对象                 |
+|           Object newlnstance()           |          调用缺省构造函数，返回Class对象的一个实例          |
+|                getName()                 | 返回此Class对象所表示的实体(类，接口，数组类或void)的名称。 |
+|          Class getSuperClass()           |             返回当前Class对象的父类的Class对象              |
+|         Class[] getinterfaces()          |                   获取当前Class对象的接口                   |
+|       ClassLoader getClassLoader()       |                     返回该类的类加载器                      |
+|     Constructor[] getConstructors()      |            返回一个包含某些Constructor对象的数组            |
+| Method getMethoded(String name,Class …T) |       返回一个Method对象，此对象的形参类型为paramType       |
+|       Field[] getDeclaredFields()        |                   返回Field对象的一个数组                   |
+
+### 2.2、获取Class对象的几种（待处理几种？）方式
+
+1. <font color='orange'>Class a=Person.class;</font>
+2. <font color='orange'>Class b=person.getClass()</font>
+3. <font color='orange'>Class c=Class.forName(“com.example.Student”)</font>
+4. <font color='orange'>内置基本数据类型</font>可以直接用<font color='orange'>包装类名.Type</font>
+5. <font color='orange'>内置基本数据类型</font>可以直接用<font color='orange'>基本类型.class</font>
+6. 还可以利用ClassLoader 之后讲
+
+例子如下：
 
 ```java
-@Target({TYPE, FIELD, METHOD, PARAMETER, CONSTRUCTOR, LOCAL_VARIABLE})
-@Retention(RetentionPolicy.SOURCE)
-public @interface SuppressWarnings {
-    String[] value();
-}
-```
+package com.atguigu.boot.a;
 
-
-其内部有一个String数组，主要接收值如下：
-
-> `deprecation`：使用了不赞成使用的类或方法时的警告；
-> `unchecked`：执行了未检查的转换时的警告，例如当使用集合时没有用泛型 (Generics) 来指定集合保存的类型; 
-> `fallthrough`：当 Switch 程序块直接通往下一种情况而没有 Break 时的警告;
-> `path`：在类路径、源文件路径等中有不存在的路径时的警告; 
-> `serial`：当在可序列化的类上缺少 serialVersionUID 定义时的警告; 
-> `finally`：任何 finally 子句不能正常完成时的警告; 
-> `all`：关于以上所有情况的警告。
-
-两种元注解：
-
-==@Documented==：被修饰的注解会生成到javadoc中。
-
-==@Inherited==：可以让子类Class对象使用getAnnotations()获取父类被@Inherited修饰的注解。
-
-## 注解与反射机制
-
-​		前面经过反编译后，我们知道Java所有注解都继承了Annotation接口，也就是说　Java使用Annotation接口代表注解元素，该接口是所有Annotation类型的父接口。`同时为了运行时能准确获取到注解的相关信息，Java在java.lang.reflect 反射包下新增了AnnotatedElement接口`，它主要用于表示目前正在 VM 中运行的程序中已使用注解的元素，通过该接口提供的方法可以利用反射技术地读取注解的信息，如反射包的Constructor类、Field类、Method类、Package类和Class类`都`实现了`AnnotatedElement接口`。
-
-AnnotatedElement接口方法的使用：
-
-```java
-package com.example;
-
-import java.lang.annotation.*;
-import java.util.Arrays;
-@Inherited
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@interface DocumentA{
-
-}
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@interface DocumentB{
-
-}
-@DocumentA
-class A{
-
-}
-@DocumentB
-public class Annotation1 extends A{
-    public static void main(String[] args){
-        Class<?> clazz=Annotation1.class;
-        //指定注解
-        DocumentA documentA=clazz.getAnnotation(DocumentA.class);
-        System.out.println("DocumentA:"+documentA);
-        //获取该类和其父类的所有注解
-        Annotation[] annotations=clazz.getAnnotations();
-        System.out.println("annotations:"+ Arrays.toString(annotations));
-        Annotation[] annotations1=clazz.getDeclaredAnnotations();
-        System.out.println("annotations1:"+Arrays.toString(annotations1));
-        boolean b=clazz.isAnnotationPresent(DocumentA.class);
-        System.out.println("b:"+b);
-        //没继承注解的话为false
-        
+public class Test {
+    public static void main(String[] args) throws ClassNotFoundException {
+        Person stu = new Student("张三");
+        //第一种方式：通过类的实例对象获取Class
+        Class<? extends Person> c1 = stu.getClass();
+        //第二种方式：通过类名获取Class对象
+        Class<Student> c2 = Student.class;
+        //第三种方式：通过全类名获取Class对象
+        Class<?> c3 = Class.forName("com.atguigu.boot.a.Student");
+        //第四种方式：通过内置类型包装类的Type属性
+        Class<Character> t1 = Character.TYPE;
+        Class<Character> t2 = char.class;
+        System.out.println(c1.hashCode());
+        System.out.println(c2.hashCode());
+        System.out.println(c3.hashCode());
+        System.out.println("==============");
+        System.out.println(t1.hashCode());
+        System.out.println(t2.hashCode());
 
     }
 }
 
-```
+class Person{
+    public String name;
 
-## 运行时注解处理器
-
-利用注解与反射机制组装数据库SQL的构建语句的过程
-
-```java
-/**
- * Created by wuzejian on 2017/5/18.
- * 表注解
- */
-@Target(ElementType.TYPE)//只能应用于类上
-@Retention(RetentionPolicy.RUNTIME)//保存到运行时
-public @interface DBTable {
-    String name() default "";
-}
-
-
-/**
- * Created by wuzejian on 2017/5/18.
- * 注解Integer类型的字段
- */
-@Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface SQLInteger {
-    //该字段对应数据库表列名
-    String name() default "";
-    //嵌套注解
-    Constraints constraint() default @Constraints;
-}
-
-
-/**
- * Created by wuzejian on 2017/5/18.
- * 注解String类型的字段
- */
-@Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface SQLString {
-
-    //对应数据库表的列名
-    String name() default "";
-
-    //列类型分配的长度，如varchar(30)的30
-    int value() default 0;
-
-    Constraints constraint() default @Constraints;
-}
-
-
-/**
- * Created by wuzejian on 2017/5/18.
- * 约束注解
- */
-
-@Target(ElementType.FIELD)//只能应用在字段上
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Constraints {
-    //判断是否作为主键约束
-    boolean primaryKey() default false;
-    //判断是否允许为null
-    boolean allowNull() default false;
-    //判断是否唯一
-    boolean unique() default false;
-}
-
-/**
- * Created by wuzejian on 2017/5/18.
- * 数据库表Member对应实例类bean
- */
-@DBTable(name = "MEMBER")
-public class Member {
-    //主键ID
-    @SQLString(name = "ID",value = 50, constraint = @Constraints(primaryKey = true))
-    private String id;
-
-    @SQLString(name = "NAME" , value = 30)
-    private String name;
-
-    @SQLInteger(name = "AGE")
-    private int age;
-
-    @SQLString(name = "DESCRIPTION" ,value = 150 , constraint = @Constraints(allowNull = true))
-    private String description;//个人描述
-
-   //省略set get.....
-}
-```
-
-```java
-package com.zejian.annotationdemo;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Created by zejian on 2017/5/13.
- * Blog : http://blog.csdn.net/javazejian [原文地址,请尊重原创]
- * 运行时注解处理器，构造表创建语句
- */
-public class TableCreator {
-
-  public static String createTableSql(String className) throws ClassNotFoundException {
-    Class<?> cl = Class.forName(className);
-    DBTable dbTable = cl.getAnnotation(DBTable.class);
-    //如果没有表注解，直接返回
-    if(dbTable == null) {
-      System.out.println(
-              "No DBTable annotations in class " + className);
-      return null;
-    }
-    String tableName = dbTable.name();
-    // If the name is empty, use the Class name:
-    if(tableName.length() < 1)
-      tableName = cl.getName().toUpperCase();
-    List<String> columnDefs = new ArrayList<String>();
-    //通过Class类API获取到所有成员字段
-    for(Field field : cl.getDeclaredFields()) {
-      String columnName = null;
-      //获取字段上的注解
-      Annotation[] anns = field.getDeclaredAnnotations();
-      if(anns.length < 1)
-        continue; // Not a db table column
-
-      //判断注解类型
-      if(anns[0] instanceof SQLInteger) {
-        SQLInteger sInt = (SQLInteger) anns[0];
-        //获取字段对应列名称，如果没有就是使用字段名称替代
-        if(sInt.name().length() < 1)
-          columnName = field.getName().toUpperCase();
-        else
-          columnName = sInt.name();
-        //构建语句
-        columnDefs.add(columnName + " INT" +
-                getConstraints(sInt.constraint()));
-      }
-      //判断String类型
-      if(anns[0] instanceof SQLString) {
-        SQLString sString = (SQLString) anns[0];
-        // Use field name if name not specified.
-        if(sString.name().length() < 1)
-          columnName = field.getName().toUpperCase();
-        else
-          columnName = sString.name();
-        columnDefs.add(columnName + " VARCHAR(" +
-                sString.value() + ")" +
-                getConstraints(sString.constraint()));
-      }
-
-
-    }
-    //数据库表构建语句
-    StringBuilder createCommand = new StringBuilder(
-            "CREATE TABLE " + tableName + "(");
-    for(String columnDef : columnDefs)
-      createCommand.append("\n    " + columnDef + ",");
-
-    // Remove trailing comma
-    String tableCreate = createCommand.substring(
-            0, createCommand.length() - 1) + ");";
-    return tableCreate;
-  }
-
-
-    /**
-     * 判断该字段是否有其他约束
-     * @param con
-     * @return
-     */
-  private static String getConstraints(Constraints con) {
-    String constraints = "";
-    if(!con.allowNull())
-      constraints += " NOT NULL";
-    if(con.primaryKey())
-      constraints += " PRIMARY KEY";
-    if(con.unique())
-      constraints += " UNIQUE";
-    return constraints;
-  }
-
-  public static void main(String[] args) throws Exception {
-    String[] arg={"com.zejian.annotationdemo.Member"};
-    for(String className : arg) {
-      System.out.println("Table Creation SQL for " +
-              className + " is :\n" + createTableSql(className));
+    public Person(String name) {
+        this.name = name;
     }
 
-    /**
-     * 输出结果：
-     Table Creation SQL for com.zejian.annotationdemo.Member is :
-     CREATE TABLE MEMBER(
-     ID VARCHAR(50) NOT NULL PRIMARY KEY,
-     NAME VARCHAR(30) NOT NULL,
-     AGE INT NOT NULL,
-     DESCRIPTION VARCHAR(150)
-     );
-     */
-  }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                '}';
+    }
+}
+class Student extends Person{
+    public Student(String name) {
+        super(name);
+    }
 }
 ```
 
-## Java8中注解新增
+### 2.3、可以有Class对象的类型
 
-### 元注解@Repeatable
+1. class：外部类、成员（成员内部类，静态内部类），局部内部类、匿名内部类
+2. interface：接口
+3. []：数组
+4. enum：枚举
+5. annotation：注解@interface
+6. primitive type：基本数据类型
+7. void
 
-它表示在同一个位置重复相同的注解。
-
-```java
-package com.zejian.annotationdemo;
-
-import java.lang.annotation.*;
-
-/**
- * Created by zejian on 2017/5/20.
- * Blog : http://blog.csdn.net/javazejian [原文地址,请尊重原创]
- */
-//使用Java8新增@Repeatable原注解
-@Target({ElementType.TYPE,ElementType.FIELD,ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-@Repeatable(FilterPaths.class)//参数指明接收的注解class
-public @interface FilterPath {
-    String  value();
-}
-
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@interface FilterPaths {
-    FilterPath[] value();
-}
-
-//使用案例
-@FilterPath("/web/update")
-@FilterPath("/web/add")
-@FilterPath("/web/delete")
-class AA{ }
-```
-
-
-
-* 为了处理上述的新增注解，Java8还在AnnotatedElement接口新增了`getDeclaredAnnotationsByType()` 和 `getAnnotationsByType()`两个方法并在接口给出了默认实现，在指定@Repeatable的注解时，可以通过这两个方法获取到注解相关信息。
-* 旧版API中的`getDeclaredAnnotation()`和 `getAnnotation()`是不对@Repeatable注解处理的(`除非该注解没有在同一个声明上重复出现`)。
-* 当 getAnnotationsByType()方法调用时，其内部先执行了getDeclaredAnnotationsByType方法，只有当前类不存在指定注解时，getAnnotationsByType()才会继续从其父类寻找，但请注意如果`@FilterPath和@FilterPaths`没有使用了`@Inherited`的话，仍然无法获取。
+例子如下：
 
 ```java
-package com.example;
+package com.atguigu.boot.a;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Target;
 
-/**
- * Created by zejian on 2017/5/20.
- * Blog : http://blog.csdn.net/javazejian [原文地址,请尊重原创]
- */
-//使用Java8新增@Repeatable原注解
-@Target({ElementType.TYPE, ElementType.FIELD,ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited //添加可继承元注解
-@Repeatable(FilterPaths.class)
-public @interface FilterPath {
-    String  value();
-}
-
-
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited //添加可继承元注解
-@interface FilterPaths {
-    FilterPath[] value();
-}
-
-@FilterPath("/web/list")
-@FilterPath("/web/getList")
-class CC { }
-
-//@FilterPath("/web/update")
-//@FilterPath("/web/add")
-//@FilterPath("/web/delete")
-//AA上不使用@FilterPath注解,getAnnotationsByType将会从父类查询
-class AA extends CC{
+public class Test01 {
     public static void main(String[] args) {
+        Class c1 = Object.class;
+        Class c2 = Comparable.class;
+        Class c3 = int [].class;
+        Class c4 = char[][].class;
+        Class c5 = Enum.class;
+        Class c6 = Target.class;
+        Class c7 = Integer.class;
+        Class c8 = int.class;
+        Class c9 = void.class;
+        Class c10 = Class.class;
 
-        Class<?> clazz = AA.class;
-        //通过getAnnotationsByType方法获取所有重复注解
-        FilterPath[] annotationsByType = clazz.getAnnotationsByType(FilterPath.class);
-        FilterPath[] annotationsByType2 = clazz.getDeclaredAnnotationsByType(FilterPath.class);
-        if (annotationsByType != null) {
-            for (FilterPath filter : annotationsByType) {
-                System.out.println("1:"+filter.value());
-            }
-        }
+        System.out.println(c1 );
+        System.out.println(c2 );
+        System.out.println(c3 );
+        System.out.println(c4 );
+        System.out.println(c5 );
+        System.out.println(c6 );
+        System.out.println(c7 );
+        System.out.println(c8 );
+        System.out.println(c9 );
+        System.out.println(c10);
+        //只要元素类型于维度一样，就是同一个Class
+        int[] a=new int[10];
+        int[] b=new int[100];
+        System.out.println(a.getClass().hashCode());
+        System.out.println(b.getClass().hashCode());
 
-        System.out.println("-----------------");
-
-        if (annotationsByType2 != null) {
-            for (FilterPath filter : annotationsByType2) {
-                System.out.println("2:"+filter.value());
-            }
-        }
-
-
-        System.out.println("使用getAnnotation的结果:"+clazz.getAnnotation(FilterPath.class));
-
-
-        /**
-         * 执行结果(当前类没有@FilterPath,getAnnotationsByType方法从CC父类寻找)
-         1:/web/list
-         1:/web/getList
-         -----------------
-         使用getAnnotation的结果:null
-         */
     }
 }
 ```
 
-### 新增两种Element Type
 
-1. ==TYPE_PARAMETER==：用于标注类型参数。
-2. ==TYPE_USE==：用于标注任意类型(不包括class、import)。
+
+## 3、类加载器浅理解 待处理
+
+> ### Java内存分析
+
+![image-20211228144051548](Java.assets/image-20211228144051548.png)
+
+![image-20211228144208767](Java.assets/image-20211228144208767.png)
+
+### 1、加载：
+
+将class文件字节码内容加载到内存中，并将这些静态数据转换成方法区的运行时数据结构，然后生成一个代表这个类的java.lang.Class对象。（<font color='orange'>加载阶段生成Class对象</font>）
+
+### 2、链接：
+
+将Java类的二进制代码合并到JVM的运行状态之中的过程。
+
+1. 验证：确保加载的类信息符合JVM规范，没有安全方面的问题。
+2. 准备：正式为类变量（static）<font color='red'>分配内存并设置</font><font color='orange'>类变量默认初始值</font>的阶段，这些内存都将在方法区中进行分配。（<font color='orange'>链接阶段初始化类变量</font>）
+3. 解析：虚拟机<font color='orange'>常量池</font>内的符号引用（<font color='orange'>常量名</font>）替换为直接引用（<font color='orange'>地址</font>）的过程。（<font color='orange'>链接阶段初始化常量池</font>）
+
+### 3、初始化：
+
+* 执行类构造器<font color='orange'>&lt;clinit&gt;()</font>方法的过程。类构造器<font color='orange'>&lt;clinit&gt;()</font>方法是由编译期自动收集类中所有类变量的赋值动作和静态代码块中的语句合并产生的。（<font color='red'>类构造器是构造类信息的，不是构造该类对象的构造器</font>）。
+* 当初始化一个类的时候，如果发现其父类还没有进行初始化，则需要先触发其父类的初始化。
+* 虚拟机会保证一个类的<font color='orange'>&lt;clinit&gt;()</font>方法在多线程环境中被正确加锁和同步。
+
+![image-20211228153035595](Java.assets/image-20211228153035595.png)
 
 ```java
-//TYPE_PARAMETER 标注在类型参数上
-class D<@Parameter T> { }
+package com.atguigu.boot.a;
 
-//TYPE_USE则可以用于标注任意类型(不包括class)
-//用于父类或者接口
-class Image implements @Rectangular Shape { }
+public class Test03 {
+    public static void main(String[] args) {
+        A a = new A();
+        System.out.println(a.m);
 
-//用于构造函数
-new @Path String("/usr/bin")
+        /*
+        * 1.加载到内存，会产生一个A类对应Class对象
+        * 2.链接，链接结束后m = 0
+        * 3.初始化
+        *       <clinit>(){
+        *           System.out.println("A类静态代码块初始化");
+        *           m = 300;
+        *           m = 100;
+        *       }
+        *
+        * */
 
-//用于强制转换和instanceof检查,注意这些注解中用于外部工具，它们不会对类型转换或者instanceof的检查行为带来任何影响。
-String path=(@Path String)input;
-if(input instanceof @Path String)
+    }
+}
+class A{
+    static{
+        System.out.println("A类静态代码块初始化");
+    }
 
-//用于指定异常
-public Person read() throws @Localized IOException.
+    /*
+    *m=300
+    *m=100
+    * */
+    static int m = 100;
+    public A(){
+        System.out.println("A类的无参构造初始化");
+    }
+}
 
-//用于通配符绑定
-List<@ReadOnly ? extends Person>
-List<? extends @ReadOnly Person>
-
-@NotNull String.class //非法，不能标注class
-import java.lang.@NotNull String //非法，不能标注import
 ```
 
+## 4、什么时候会发生类初始化？
 
-​		TYPE_USE，类型注解用来支持在Java的程序中做强类型检查，配合第三方插件工具（如Checker Framework），可以在编译期检测出runtime error（如UnsupportedOperationException、NullPointerException异常），避免异常延续到运行期才发现，从而提高代码质量，这就是类型注解的主要作用。
+### 4.1、类的主动引用
+
+1. 当虚拟机启动，先初始化<font color='orange'>main方法所在的类</font>
+2. <font color='orange'>new</font>一个类的对象
+3. 调用<font color='orange'>类的静态成员</font>（除了final常量）和静态方法
+4. 使用java.lang.reflect包的方法对类进行<font color='orange'>反射</font>调用
+5. <font color='orange'>当初始化一个类，如果其父类没有被初始化，则先会初始化它的父类</font>
 
 
-# 附  录
+
+### 4.2类的被动引用（不会发生类的初始化）
+
+1. 当访问一个静态域时，只有真正声明这个域的类才会被初始化。如：
+
+   1. 当通过子类引用父类的静态变量，不会导致子类初始化。
+   2. 通过数组定义类引用，不会触发此类的初始化。
+   3. 引用常量不会触发此类的初始化（常量在链接阶段就存入调用类的常量池中了）
+
+   ```java
+   package com.atguigu.boot.a;
+   
+   public class Test04 {
+       static {
+           System.out.println("Test04 主类被加载");
+       }
+       public static void main(String[] args) throws ClassNotFoundException {
+   //        //1.主动引入
+   //        Son son=new Son();//创建对象
+   //
+   //        //反射也会产生主动引用
+   //        Class.forName("com.atguigu.boot.a.Son");//反射
+           System.out.println(Son.m);//调用类的静态成员
+   
+   //        //被动引用
+   //        System.out.println(Son.b);//父类静态域
+   //        Son[] array=new Son[5];//数组
+   //        System.out.println(Son.M);//常量
+       }
+   }
+   class Father{
+       static int b=2;
+   
+       static {
+           System.out.println("父类被加载");
+       }
+   
+   }
+   class Son extends Father{
+       static {
+           System.out.println("子类被加载了");
+       }
+       static int m=100;
+       static final int M=1;
+   }
+   
+   ```
+
+   
+
+# 附录
 
 #### 联编
 

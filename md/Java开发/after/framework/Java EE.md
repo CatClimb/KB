@@ -287,27 +287,33 @@ Spring 3中为Bean定义了5中作用域，分别为singleton（单例）、prot
 
 * 注解注入（方法待做）	
 
-==**@Component**==
+**<font color='orange'>@Bean</font>**
+
+标准方法
+
+==**@Component**==（标注）
 
 该注解是一个泛化的概念，仅仅表示一个组件对象（Bean），可以作用在任何层次上。
 
-==**@Repository**==
+==**@Repository**==（标注）
 
 该注解用于将数据访问层（DAO）的类标识为Bean，即注解数据访问层Bean，其功能与@Component相同。
 
-==**@Service**==
+==**@Service**==（标注）
 
 该注解用于标注一个业务逻辑组件类（Service层），其功能与@Component相同。
 
-==**@Controller**==
+==**@Controller**==（标注）
 
 该注解用于标注一个控制器组件类（Spring MVC的Controller），其功能与@Component相同。
 
-==**@Autowired**==
 
-该注解可以对类`成员变量、方法及构造方法进行标注`，完成自动装配的工作。通过使用@Autowired来消除setter和getter方法。默认按照Bean的类型进行装配。
 
-==**@Resource(name=“”,type=“”)**==
+==**@Autowired**==（装配）
+
+该注解可以对类`成员变量、方法及构造方法进行标注`，完成自动装配的工作。通过使用@Autowired来消除setter和getter方法。默认按照Bean的类型进行装配。（该注解使用容器已有组件机型装配）
+
+==**@Resource(name=“”,type=“”)**==（装
 
 该注解与@Autowired的功能一样，区别在于该注解`默认是按照名称来装配注入的`，只有当找不到与名称匹配的Bean时才会按照类型来装配注入；而@Autowired`默认按照Bean的类型进行装配`，如果想按照名称来装配注入，则需要和@Qualifier注解一起使用。
 
@@ -318,6 +324,11 @@ Spring 3中为Bean定义了5中作用域，分别为singleton（单例）、prot
 ​		在上面几个注解中，虽然@Repository、@Service和@Controller等注解的功能与@Component注解相同，但为了使类的标注更加清晰（层次化），在实际开发中推荐使用@Repository标注数据访问层（DAO层）、使用@Service标注业务逻辑层（Service层）、使用@Controller标注控制器层（控制层）。
 
 **注意：该些注解不能注解接口**
+
+# 注意
+
+* 装配组件中，注解类默认id为类名小写
+* 装配组件中，注解方法默认id为方法名（不更改大写字符）
 
 大概原因如下：
 
@@ -3111,7 +3122,7 @@ MappingJackson2HttpMessageConverter是Spring MVC默认处理JSON格式请求响�
 |     注解      |                             说明                             |
 | :-----------: | :----------------------------------------------------------: |
 | @RequestBody  | 用于将请求体中的数据绑定到方法的形参中。该注解用在`方法的形参上` |
-| @ResponseBody |      用于直接返回return==**对象**==。该注解用在`方法上`      |
+| @ResponseBody | 用于直接返回return==**对象**==。（<font color='red'>将java对象转为json格式的数据</font>。）该注解用在`方法上` |
 
 **Spring MVC配置文件加入：**
 
