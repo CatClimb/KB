@@ -1,76 +1,3 @@
-# Spring Boot
-
-
-
- `@EnableAutoConfiguration`。此注解告知 Spring Boot 根据您添加的 jar 依赖来“猜测”您想如何配置 Spring 并进行自动配置，由于 ==**spring-boot-starter-web**== 添加了 Tomcat 和 Spring MVC，auto-configuration（自动配置）将假定您要开发 web 应用并相应设置了 Spring。
-
-
-
-main 方法通过调用 `run` 来委托 Spring Boot 的 `SpringApplication` 类，`SpringApplication` 类将引导我们的应用，启动 Spring，然后启动自动配置的 Tomcat web 服务器。我们需要将 `Example.class`  作为一个参数传递给 `run` 方法来告知 `SpringApplication`，它是 Spring 主组件。
-
- `mvn spring-boot:run`
-
-```java
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.example</groupId>
-    <artifactId>myproject</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.4</version>
-    </parent>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-    </dependencies>
-    <!-- Additional lines to be added here... -->
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
-</project>
-```
-
-
-
-
-
-
-
-材料清单
-
-https://github.com/spring-projects/spring-boot/blob/v2.0.0.RELEASE/spring-boot-project/spring-boot-dependencies/pom.xml
-
-## 配置类
-
-但我们通常建议主配置源为 `@Configuration` 类
-
-## 自动配置
-
-您需要通过将 `@EnableAutoConfiguration` 或者 `@SpringBootApplication` 注解添加到其中一个 `@Configuration` 类之上以启用自动配置。
-
-
-
-@SpringBootApplication` 注解相当于使用 `@Configuration`、`@EnableAutoConfiguration` 和 `@ComponentScan
-
-
-
-
-
-
-
 # Spring Boot2
 
 SpringBoot是整合Spring技术栈的一站式框架。
@@ -79,7 +6,7 @@ SpringBoot是简化Spring技术栈的快速开发脚手架
 
 用来组装spring生态圈或整合技术栈，简化配置。能快速创建出生产级别的Spring应用。并引入了两套方案Reactive Stack 、Servlet Stack。
 
-# 一、Spring Boot概述
+# 一、Spring Boot概述—基础入门
 
 ## 1、 Spring Boot 优缺点
 
@@ -245,7 +172,7 @@ server.port=8888
 java -jar boot-01-helloworld-1.0-SNAPSHOT.jar
 ```
 
-# 二、自动配置原理
+# 二、自动配置原理—基础入门
 
 ## 1、SpringBoot特点
 
@@ -748,7 +675,7 @@ org.springframework.boot.autoconfigure.webservices.client.WebServiceTemplateAuto
 
 ```
 
-## 3.2、按需开启自动配置项
+### 3.2、按需开启自动配置项
 
 虽然我们127个场景的所有自动配置启动的时候默认全部加载。<font color='orange'>xxxxAutoConfiguration</font>
 按照条件装配规则（<font color='orange'>@Conditional</font>），<font color='orange'>最终会按需配置。</font>
@@ -770,7 +697,7 @@ package org.springframework.boot.autoconfigure.web.servlet;
 
 ```
 
-## 3.3、修改默认配置
+### 3.3、修改默认配置
 
 SpringBoot默认会在底层配好所有的组件。但是如果用户自己配置了以用户的优先	
 
@@ -800,3 +727,239 @@ SpringBoot默认会在底层配好所有的组件。但是如果用户自己配�
 
    **<font color='red'>xxxxxAutoConfiguration ---> 组件  ---> xxxxProperties里面拿值  ----> application.properties</font>**
 
+3.4、最佳实践
+
+* 引入场景依赖
+  * [Developing with Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.build-systems.starters)
+* 查看自动配置了哪些（可选）
+  * 自己分析（看AutoConfiguration源码），引入场景对应的自动配置（一般都生效）
+  * 配置文件中，debug=true，开启自动配置报告。运行后可以在输出中看到Negitive （不生效）与Positive（生效）。
+* 是否需要修改
+  * 参照文档修改配置项
+    * [Common Application Properties (spring.io)](https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties)
+    * 自己分析。xxxProperties绑定了配置文件的哪些。
+  * 自定义加入或者替换组件
+    * @Bean、@Component
+  * 自定义器  xxxxxCustomizer
+
+## 4、开发小技巧
+
+## 4.1、Lombok
+
+简化JavaBean开发
+
+```xml
+<!--1、引入依赖-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+<!--2、idea中搜索、安装lombok插件-->
+```
+
+使用如下：
+
+```java
+===============================简化JavaBean开发===================================
+@NoArgsConstructor//无参构造
+//@AllArgsConstructor//全参构造
+@Data//getter和setter
+@ToString//toString
+@EqualsAndHashCode//重写它们
+public class User {
+
+    private String name;
+    private Integer age;
+
+    private Pet pet;
+
+    public User(String name,Integer age){
+        this.name = name;
+        this.age = age;
+    }
+
+
+}
+
+
+
+================================简化日志开发===================================
+@Slf4j//向类中注册日志变量：log
+@RestController
+public class HelloController {
+    @RequestMapping("/hello")
+    public String handle01(@RequestParam("name") String name){
+        
+        log.info("请求进来了....");
+        
+        return "Hello, Spring Boot 2!"+"你好："+name;
+    }
+}
+```
+
+## 4.2、dev-tools
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <optional>true</optional>
+    </dependency>
+</dependencies>
+```
+
+项目或者页面修改以后：Ctrl+F9；（假的热部署， loading static resource without no restarting）
+
+## 4.3、Spring Initailzr
+
+### 1、自动依赖引入
+
+图片略
+
+### 2、自动创建项目结构
+
+图片略
+
+### 3、自动编写好主配置类
+
+图片略
+
+# 三、核心技术—核心功能
+
+## 1、配置文件
+
+### 1.1、文件类型
+
+1. <font color='orange'>properties</font>
+2. <font color='orange'>yaml</font>
+
+### 1.2、yaml
+
+YAML 是 "YAML Ain't Markup Language"（YAML 不是一种标记语言）的递归缩写。在开发的这种语言时，YAML 的意思其实是："Yet Another Markup Language"（仍是一种标记语言）。 
+
+特点：<font color='red'>非常适合用来做以数据为中心的配置文件</font>
+
+#### 基本语法
+
+- key: value；kv之间有空格
+- 大小写敏感
+
+- 使用缩进表示层级关系
+- 缩进不允许使用tab，只允许空格
+
+- 缩进的空格数不重要，只要相同层级的元素左对齐即可
+- '#'表示注释
+
+- 字符串无需加引号，加'  '则不转义（如符号 `\n` result: `\\n`），  " "则转义（如符号 `\n` result: `换行`）。
+
+#### 数据类型
+
+- 字面量：单个的、不可再分的值。date、boolean、string、number、null
+
+  ```yaml
+  k: v
+  ```
+
+- 对象：键值对的集合。map、hash、set、object 
+
+  ```yml
+  行内写法：  k: {k1:v1,k2:v2,k3:v3}
+  #或
+  k: 
+  	k1: v1
+    k2: v2
+    k3: v3
+  ```
+
+- 数组：一组按次序排列的值。array、list、queue
+
+  ```yml
+  行内写法：  k: [v1,v2,v3]
+  #或者
+  k:
+   - v1
+   - v2
+   - v3
+  ```
+
+  #### 示例
+
+  ```java
+  @Data
+  public class Person {
+  	
+  	private String userName;
+  	private Boolean boss;
+  	private Date birth;
+  	private Integer age;
+  	private Pet pet;
+  	private String[] interests;
+  	private List<String> animal;
+  	private Map<String, Object> score;
+  	private Set<Double> salarys;
+  	private Map<String, List<Pet>> allPets;
+  }
+  
+  @Data
+  public class Pet {
+  	private String name;
+  	private Double weight;
+  }
+  ```
+
+  
+
+  ```yml
+  Person:
+    user-name: zhangsan
+    boss: false
+    birth: 2021/12/30 12:30:00
+    age: 18
+    pet:
+      name: Cat
+      weight: 20.0
+    interests: [篮球,乒乓球]
+    animal:
+      - 熊
+      - 鸟
+    score:
+      english:
+        first: 30
+        secode: 40
+        third: 50
+      math: [13,140,144]
+      chinese: {first: 128,secode: 136}
+    salarys: [9,9,99,999]
+    all-pets:
+      sick:
+        - {name: tom}
+        - {name: jerry,weight: 40}
+      health: [{name: mario,weight: 47}]
+  ```
+
+### 1.3、配置提示
+
+```xml
+<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+        <excludes>
+            <exclude>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-configuration-processor</artifactId>
+                //辞退打工仔 养不起
+            </exclude>
+        </excludes>
+    </configuration>
+</plugin>
+```
+
+​	

@@ -1001,7 +1001,140 @@ RTTI只针对覆盖，不针对隐藏：因为覆盖是动态绑定，是受RTTI
 
 
 
-总结：一切都建立在重写；变量是隐藏的，静态方法是隐藏的。实例方法是覆盖的。变量可以交叉隐藏，方法不能交叉覆盖或隐藏（因为讨论的是实例方法与静态方法，缺一就不能交叉了，没意义）
+总结：一切都建立在<font color='green'>重写</font>与<font color='green'>上塑造型</font>上并在<font color='red'>可以访问到的条件下进行</font>；变量是隐藏，可交叉，与权限无关；静态方法是隐藏，实例方法是覆盖。权限都必须是相等或放大的。<font color='red'>无法交叉</font>，<font color='red'>无法缩小</font>
+
+测试：
+
+```java
+package com.atguigu.boot.a;
+
+import javax.swing.plaf.synth.Region;
+
+public class B {
+    public static void main(String[] args) {
+        B tmp=new C();
+//        tmp.Test1();
+//        tmp.Test2();
+//        tmp.Test3();
+//        tmp.Test4();
+//        tmp.Test11();
+//        tmp.Test12();
+//        tmp.Test13();
+//        tmp.Test14();
+//        System.out.println(tmp.a1);
+//        System.out.println(tmp.a2);
+//        System.out.println(tmp.a3);
+//        System.out.println(tmp.a4);
+//        System.out.println(tmp.a6);
+//        System.out.println(tmp.a7);
+//        System.out.println(tmp.a8);
+//        System.out.println(tmp.a9);
+//        System.out.println(tmp.a10);
+
+        C c = (C) tmp;
+
+//        c.Test1();
+//        c.Test2();
+//        c.Test3();
+//        c.Test4();
+//        c.Test11();
+//        c.Test12();
+//        c.Test13();
+//        c.Test14();
+//        System.out.println(c.a1);
+//        System.out.println(c.a2);
+//        System.out.println(c.a3);
+//        System.out.println(c.a4);
+//        System.out.println(c.a6);
+//        System.out.println(c.a7);
+//        System.out.println(c.a8);
+//        System.out.println(c.a9);
+//        System.out.println(c.a10);
+
+    }
+
+
+
+    public static void Test1(){ System.out.println("Test1B");}
+    public static void Test2(){ System.out.println("Test2B");}
+    public static void Test3(){ System.out.println("Test3B");}
+    protected static void Test4(){ System.out.println("Test4B");}
+    private static void Test11(){ System.out.println("Test11B");}
+    public  void Test12(){ System.out.println("Test12B");}
+    public  void Test13(){ System.out.println("Test13B");}
+    public  void Test14(){ System.out.println("Test14B");}
+
+    public static int a1=1;
+    public static int a2=2;
+    public  int a3=3;
+    private static int a4=4;
+
+    public  int a6=6;
+    private int a7=7;
+    public int a8=8;
+    private static int a9=9;
+    public static int a10=10;
+}
+class C extends B{
+
+    /**
+     * 测试静态方法与自己、与实例方法隐藏
+     */
+
+    public static void Test1(){//正常隐藏
+        System.out.println("Test1C");
+    }
+//    private static void Test2(){//子类权限缩小
+//        System.out.println("Test2C");
+//    }
+//    public  void Test3(){//不能正向交叉
+//        System.out.println("Test3C");
+//    }
+    protected static void Test4(){//权限相等
+        System.out.println("Test4C");
+    }
+    public static void Test11(){//权限放大
+        System.out.println("Test11C");
+    }
+//    public static void Test12(){//不能反向交叉
+//        System.out.println("Test12C");
+//    }
+    public  void Test13(){//正常覆盖
+        System.out.println("Test13C");
+    }
+//    protected void Test14(){//权限缩小
+//        System.out.println("Test14C");
+//    }
+
+
+    /**
+     * 测试结果：静态方法是隐藏，实例方法是覆盖。权限都必须是相等或放大的
+     * 无法交叉，无法缩小
+     */
+
+    /**
+     * 测试变量：
+     */
+    public static int a1=11;//正常1
+    public  int a2=22;//反交叉
+    public static int a3=33;//正交叉
+    private static int a4=44;//权限相等1
+
+    public  int a6=66;//正常2
+    public int a7=77;//权限放大2
+    private int a8=88;//权限缩小2
+    public static int a9=99;//权限放大1
+    private static int a10=1010;//权限缩小1
+    /**
+     * 测试结果：变量是隐藏，可交叉，与权限无关。
+     *
+     */
+
+}
+
+```
+
+
 
 ### 3.6.2 上塑造型
 
@@ -4609,7 +4742,7 @@ public class Test01 {
 
 
 
-## 3、类加载器（浅理解） 待处理
+## 3、类加载器（浅理解）
 
 > ### Java内存分析
 
