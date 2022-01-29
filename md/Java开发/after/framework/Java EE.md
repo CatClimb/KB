@@ -837,6 +837,10 @@ public interface UserService{
 
 在上面几个注解中，虽然@Repository、@Service和@Controller等注解的功能与@Component注解相同，但为了使类的标注更加清晰（层次化），在实际开发中推荐使用@Repository标注数据访问层（DAO层）、使用@Service标注业务逻辑层（Service层）、使用@Controller标注控制器层（控制层）。
 
+**<font color='orange'>@Bean</font>**
+
+通常注册方法，或注解。
+
 ### 2、注入属性
 
 ==**@Autowired**==
@@ -882,7 +886,7 @@ public class UserServiceImpl implements UserService{
 
 ==**@Resource(name=“”,type=“”)**==
 
-可以根据类型注入，可以根据名称注入。<font color='red'>不是Spring中的注解</font>。（注入对象类型的属性）（<font color='orange'>不建议使用</font>）
+可以根据类型注入，可以根据名称注入（默认）。<font color='red'>不是Spring中的注解</font>。（注入对象类型的属性）（<font color='orange'>不建议使用</font>）
 
 ==**@Value**==
 
@@ -955,7 +959,7 @@ public class Myconfig {
 
 
 
-# 注意
+# 注意 1
 
 
 
@@ -963,7 +967,7 @@ public class Myconfig {
 
 ![image-20210806161256808](pic\image-20210806161256808.png)
 
-# 三、Spring AOP
+# 三、Spring AOP——Spring核心
 
 ## 3.1 什么是 AOP 
 
@@ -1111,11 +1115,14 @@ public class CgLibProxy {
 }
 ~~~
 
-## ~~3.3 JDK动态代理实现（类来实现）~~
+## ~~3.3 动态代理实现（ProxyFactoryBean实现）~~
 
-Spring AOP`默认使用JDK`动态代理的方式来实现的，在Spring中，使用`ProxyFactoryBean`是创建AOP代理的最**基本方式**。
+Spring AOP<font color='orange'>默认使用JDK动态代理</font>的方式来实现的，在Spring中，使用`ProxyFactoryBean`是创建AOP代理的最**基本方式**。
 
-### 3.3.1 Spring 通知类型
+<font color='orange'>可通过设置proxyTargetClass切换动态代理实现方式。</font>
+
+> ### 3.3.1 Spring 通知类型
+>
 
 1. 环绕通知 org.aopalliance.intercept.**MethodInterceptor**
 
@@ -1128,22 +1135,23 @@ Spring AOP`默认使用JDK`动态代理的方式来实现的，在Spring中，�
 5. 引介通知 org.springframework.aop.**IntroductionInterceptor**
 6. 最终通知
 
-### 3.3.2 ProxyFactoryBean
+> ### 3.3.2 ProxyFactoryBean
+>
 
 （我日好像没注解 待定）
 
-ProxyFactoryBean是FactoryBean的实现类，FactoryBean负责实例化一个Bean而ProxyFactoryBean负责为其他Bean创建代理实例。它的常用属性如下：
+ProxyFactoryBean是FactoryBean的实现类，FactoryBean负责实例化一个Bean而<font color='orange'>ProxyFactoryBean负责</font>为其他Bean<font color='orange'>创建代理实例</font>。它的常用属性如下：
 
 
 
-|     属性名称     |                             描述                             |
-| :--------------: | :----------------------------------------------------------: |
-|      target      |                        代理的目标对象                        |
-|  proxyInterface  | 代理要实现的接口，如果是多个接口，可以使用以下格式赋值<br /> |
-| proxyTargetClass |     是否对类代理而不是接口，设置为true时，使用CGLIB代理      |
-| interceptorNames |                    需要织入的目标的Advice                    |
-|    singleton     |      返回的代理是否为单实例，默认为true（即返回单实例）      |
-|     optimize     |                当设置为true时，强制使用CGLIB                 |
+|                   属性名称                   |                             描述                             |
+| :------------------------------------------: | :----------------------------------------------------------: |
+|                    target                    |                        代理的目标对象                        |
+|                proxyInterface                | 代理要实现的接口，如果是多个接口，可以使用以下格式赋值<br /> |
+| <font color='orange'>proxyTargetClass</font> | <font color='orange'>是否对类代理而不是接口，设置为true时，使用CGLIB代理</font> |
+|               interceptorNames               |                    需要织入的目标的Advice                    |
+|                  singleton                   |      返回的代理是否为单实例，默认为true（即返回单实例）      |
+|                   optimize                   |                当设置为true时，强制使用CGLIB                 |
 
 ```java
 package com.aop.jdk;
@@ -1198,8 +1206,9 @@ public class MyAspect implements MethodInterceptor{
 	<bean id="userDao" class="com.aop.factorybean.UserDaoImpl"></bean>
 	<!--切面类-->
 	<bean id="myAspect" class="com.aop.factorybean.MyAspect"></bean>
+    <!--代理对象-->
 	<bean id="userDaoProxy" class="org.springframework.aop.framework.ProxyFactoryBean">
-		<!--指定代理实现的接口-->
+		<!--指定代理实现的接口 不知道是不是可以没有-->
 		<property name="proxyInterfaces" value="com.aop.factorybean.UseDao"></property>
 		<!--指定目标对象-->
 		<property name="target" ref="userDao"></property>
@@ -1223,8 +1232,6 @@ public class ProxyFactoryBeanTest {
 }
 
 ```
-
-3.3.3 基于注解的Spring AOP
 
 ## 3.3 AspectJ开发（==**静态代理**== 非 Spring AOP ）
 
@@ -1401,21 +1408,34 @@ ss eating
 
 ### 3.3.2基于注解声明式AspectJ ♥♥♥♥
 
+启用 <font color='orange'>@AspectJ</font> 注解有以下两种方法：
+
+**1）使用<font color='orange'>@Configuration</font>和<font color='orange'>@EnableAspectJAutoProxy</font>注解**
+
+```
+@Configuration @EnableAspectJAutoProxypublic class Appconfig {}
+```
+
+**2）基于XML配置**
+
+在 XML 文件中添加以下内容启用 @AspectJ。
+
+<font color='orange'>&lt;aop:aspectj-autoproxy /&gt;</font>
 
 
-在明白了基于xml声明式AJ原理，我们就可以更顺畅使用注解提高开发效率，AJ注解介绍如表3-4所示：
 
-|                  注解名称                   |                             描述                             |
-| :-----------------------------------------: | :----------------------------------------------------------: |
-|     <font color='orange'>@Aspect</font>     |                       用于定义一个切面                       |
-|    <font color='orange'>@Pointcut</font>    | 用于定义切入点表达式。`在使用时还需定义一个包含名字和任意参数的方法签名来表示切入点名称`。实际上，这个方法签名就是一个返回值为void，且方法体为空的普通的方法 |
-|     <font color='orange'>@Before</font>     | 用于定义前置通知，相当于BeforeAdvice。需要一个value来指定切入点 |
-| <font color='orange'>@AfterReturing</font>  | 用于定义后置通知，相当于AfterReturingAdvice.需要一个returning指定目标方法的返回值（类型对应就行）（value略） |
-|     <font color='orange'>@Around</font>     |    用于定义环绕通知，相当于MethodInterceptor。（value略）    |
-| <font color='orange'>@After-Throwing</font> | 用于定义异常通知来处理程序中未处理的异常，相当于ThrowAdvice。需要一个throwing指定目标抛出的异常（value略） |
-|     <font color='orange'>@After</font>      |               用于定义最终final通知（value略）               |
-|               @DeclareParents               |       用于定义引介通知，相当于IntroductionInterceptor        |
-|     <font color='orange'>@Order</font>      | 需求：有多个增强类多同一个方法进行增强，设置增强类优先级。                                                （1）在增强类上面添加注解 (数字类型值)，数字类型值<font color='orange'>越小优先级越高</font> |
+|                           注解名称                           |                             描述                             |
+| :----------------------------------------------------------: | :----------------------------------------------------------: |
+|             <font color='orange'>@Aspect</font>              |                       用于定义一个切面                       |
+|            <font color='orange'>@Pointcut</font>             | 用于定义切入点表达式。`在使用时还需定义一个包含名字和任意参数的方法签名来表示切入点名称`。实际上，这个方法签名就是一个返回值为void，且方法体为空的普通的方法 |
+|             <font color='orange'>@Before</font>              | 用于定义前置通知，相当于BeforeAdvice。需要一个value来指定切入点 |
+|          <font color='orange'>@AfterReturing</font>          | 用于定义后置通知，相当于AfterReturingAdvice.需要一个returning指定目标方法的返回值（类型对应就行）（value略） |
+|             <font color='orange'>@Around</font>              |    用于定义环绕通知，相当于MethodInterceptor。（value略）    |
+|         <font color='orange'>@After-Throwing</font>          | 用于定义异常通知来处理程序中未处理的异常，相当于ThrowAdvice。需要一个throwing指定目标抛出的异常（value略） |
+|              <font color='orange'>@After</font>              |               用于定义最终final通知（value略）               |
+|                       @DeclareParents                        |       用于定义引介通知，相当于IntroductionInterceptor        |
+|              <font color='orange'>@Order</font>              | 需求：有多个增强类多同一个方法进行增强，设置增强类优先级。                                                （1）在增强类上面添加注解 (数字类型值)，数字类型值<font color='orange'>越小优先级越高</font> |
+| <font color='orange'>@EnableAspectJAutoProxy(proxyTargetClass = true)</font> | 启动基于注解的声明式AJ支持,proxyTargetClass默认为false（jdk代理），为true（cglib代理） |
 
 **切入点表达式** 
 
@@ -1541,93 +1561,23 @@ ss eating
 
 ```
 
-# 四、Spring DB 开发
+# 注意 2
+
+这里有个<font color='red'>环绕通知</font>在<font color='red'>最终通知</font>的后面的<font color='orange'>问题</font>，还有asjectj静态使用动态的问题
+
+# 四、Spring DB 开发——辅助
 
 [什么是Spring JDBC？](####Spring JDBC)
 
-## 4.1 Spring JDBC
-
-### 4.1.1 基于xml的方式 ♥♥♥♥
-
-就一个东西配置文件applicationContext.xml：
-
-```xml
-<context:property-placeholder location="classpath:db.properties"/>
-<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
-    <property name="user" value="${jdbc.user}"></property>
-    <property name="password" value="${jdbc.password}"></property>
-    <property name="driverClass" value="${jdbc.driverClass}"></property>
-    <property name="jdbcUrl" value="${jdbc.url}"></property>
-</bean>
-
-<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
-    <property name="dataSource" ref="dataSource"></property>
-</bean>
-```
-
-db.properties：
-
-```properties
-jdbc.user=root
-jdbc.password=123456
-jdbc.driverClass=com.mysql.jdbc.Driver
-jjdbc.url=jdbc:mysql://localhost:3306/db
-```
-
-### ~~4.1.2 基于注解的方式~~
-
-待处理（不建议使用）
-
-其他DB配置信息
-
-> 
->
-> 
->
-> initialPoolSize：初始化连接数量
->
-> minPoolSize：最小连接数量
->
-> maxPoolSize：最大连接数量
->
-> acquireIncrement: 当连接池用完之后一次性获取的连接数量
->
-> idleConnectionTestPeriod:根据一定的时间间隔检查连接池的连接数量 单位为秒
->
-> maxIdleTime：最大空闲时间 单位为秒
->
-> maxStatements:最大的maxStatements连接数量
->
-> maxStatementsPerConnection:最大语句缓存
+> #### 主要类：JdbcTemplate
 
 
-
-核心源码：
-
-```java
-public class JdbcTemplateTest{
-    public static void main(String[] args){
-        ApplicationContext applicationContext=new ClassPathXmlApplicationContext("applicationContext.xml");
-        JdbcTemplate jdbcTemplate=applicationContext.getBean("jdbcTemplate");
-    }
-}
-```
 
 
 
 ## 4.2 Spring JdbcTemplate类 ♥♥♥♥
 
-
-
-### 4.2.1 execute()
-
-执行SQL语句的功能。
-
-```java
-
-```
-
-### 4.2.2 update() 和 **batchUpdate()**
+### 4.2.1 插入、更新、删除
 
 **update()**
 
@@ -1655,11 +1605,9 @@ batchArgs.add(new Object[]{"cjx",8});
 jdbcTemplate.batchUpdate(sql, batchArgs);
 ```
 
+### 4.2.2 查询
 
-
-### 4.2.3 query()、queryForObject()
-
-query()
+query() 多查
 
 ```java
 String sql = "select num,name,age from student where id > ?";
@@ -1668,7 +1616,7 @@ List<stu> s = jdbcTemplate.query(sql, rowMapper,0);//最后一个参数为id值
 System.out.println(s);
 ```
 
-queryForObject()
+queryForObject() 单查
 
 ```java
 String sql="select id,name,deptid from user where id=?";
@@ -1676,9 +1624,80 @@ RowMapper<User> rowMapper=new BeanPropertyRowMapper<User>(User.class);
 User user= jdbcTemplate.queryForObject(sql, rowMapper,52);
 ```
 
+### 4.2.3 其它 
+
+执行SQL语句的功能。
+
+```java
+jdbcTemplate.execute("create table xxx(......)");
+```
 
 
-# 五、Spring tx管理
+
+## 4.1 Spring JDBC
+
+### 4.1.1 基于xml的方式 ♥♥♥♥
+
+> #### 数据池控制属性：
+
+**initialPoolSize：初始化连接数量**
+
+**minPoolSize：最小连接数量**
+
+**maxPoolSize：最大连接数量**
+
+**acquireIncrement: 当连接池用完之后一次性获取的连接数量**
+
+**idleConnectionTestPeriod:根据一定的时间间隔检查连接池的连接数量 单位为秒**
+
+**maxIdleTime：最大空闲时间 单位为秒**
+
+**maxStatements:最大的maxStatements连接数量**
+
+**maxStatementsPerConnection:最大语句缓存**
+
+
+
+```xml
+<context:property-placeholder location="classpath:db.properties"/>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          destroy-method="close">
+        <property name="url" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.user}" />
+        <property name="password" value="${jdbc.password}"/>
+        <property name="driverClassName" value="${jdbc.driverClass}" />
+    </bean>
+
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+```
+
+db.properties：
+
+```properties
+jdbc.user=root
+jdbc.password=123456
+jdbc.driverClass=com.mysql.jdbc.Driver
+jjdbc.url=jdbc:mysql://localhost:3306/db
+```
+
+```java
+public class JdbcTemplateTest{
+    public static void main(String[] args){
+        ApplicationContext applicationContext=new AnnotationConfigApplicationContext(MyConfig.class);
+        JdbcTemplate jdbcTemplate=applicationContext.getBean("jdbcTemplate");
+    }
+}
+```
+
+### ~~4.1.2 基于注解的方式（没有）~~
+
+
+
+
+
+# 五、Spring tx管理——实现
 
 [什么是事务？](####事务)
 
@@ -1686,7 +1705,19 @@ User user= jdbcTemplate.queryForObject(sql, rowMapper,52);
 
 指作为单个逻辑工作单元执行的一系列操作，要么完全地执行，要么完全地不执行。 简单的说，事务就是并发控制的单位，是用户定义的一个操作序列。
 
+事务四个特性（ACID）
 
+（1）原子性 
+
+（2）一致性 
+
+（3）隔离性 
+
+（4）持久性
+
+提供一个接口，代表事务管理器，这个接口针对不同的框架提供不同的实现类
+
+![image-20220101212907069](Java EE.assets/image-20220101212907069.png)
 
 <img src="pic\image-20210811115914876.png" alt="image-20210811115914876" style="zoom:150%;" />
 
@@ -1704,24 +1735,46 @@ User user= jdbcTemplate.queryForObject(sql, rowMapper,52);
 
 
 
-<center><b>图5.3 &lt;tx:method&gt;元素的属性 </b></center>
+**4、timeout：超时时间** 
+
+（1）事务需要在一定时间内进行提交，如果不提交进行回滚
+
+ （2）默认值是 -1 ，设置时间以秒单位进行计算
+
+ **5、readOnly：是否只读** 
+
+（1）读：查询操作，写：添加修改删除操作 
+
+（2）readOnly 默认值 false，表示可以查询，可以添加修改删除操作 
+
+（3）设置 readOnly 值是 true，设置成 true 之后，只能查询 
+
+**6、rollbackFor：回滚** 
+
+（1）设置出现哪些异常进行事务回滚 
+
+**7、noRollbackFor：不回滚** 
+
+（1）设置出现哪些异常不进行事务回滚
+
+
 
 ## 5.1 编程式事务管理
 
-是通过编写代码实现的事务管理，包括定义事务的开始、正常执行后的事务提交和异常时的事务回滚。
+是通过<font color='orange'>编写代码实现的事务管理</font>，包括定义事务的开始、正常执行后的事务提交和异常时的事务回滚。
 
 
 
 ## 5.2 声明式事务管理
 
-是通过AOP技术实现的事务管理，其主要思想是将事务管理作为一个“`切面`”单独编写，然后通过AOP技术将事务管理的“切面”代码织入到业务目标类中。
+是通过<font color='orange'>AOP技术实现的事务管理</font>，其主要思想是将<font color='orange'>事务管理</font>作为一个<font color='orange'>切面</font>单独编写，然后通过AOP技术将事务管理的“切面”代码织入到业务目标类中。
 
-### 5.2.1 基于XML方式的声明式事务
+### ~~5.2.1 基于XML方式的声明式事务~~（有错 待处理）
 
 applicationContext.xml：
 
 ```xml
-1.配置数据源
+<!--1.配置数据源-->
 <context:property-placeholder location="classpath:db.properties"/>
 <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
     <property name="user" value="${jdbc.user}"></property>
@@ -1729,32 +1782,41 @@ applicationContext.xml：
     <property name="driverClass" value="${jdbc.driverClass}"></property>
     <property name="jdbcUrl" value="${jdbc.jdbcUrl}"></property>
 </bean>
-2.配置JDBC模板
+<!--2.配置JDBC模板-->
 <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
     <property name="dataSource" ref="dataSource"></property>
 </bean>
- 3.定义id为accountDao的Bean
+<!-- 3.定义id为accountDao的Bean-->
 <bean id="accountDao" class="com.itheima.jdbc.AccountDaoImpl">
 	<property name="jdbcTemplate" ref="jdbcTemplate"/>
 </bean>
-4.事务管理器，依赖于数据源
+
+
+
+
+<!--1 创建事务管理器-->
 <bean id="transactionManger" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
     <property name="dataSource" ref="dataSource"/>
 </bean>
-5.编写通知：对事物进行增强，需要编写对切入点和具体执行事务细节
+<!--2 配置通知-->
 <tx:advice id="txAdice" transaction-manager="transactionManager">
 	<tx:attributes>
-    name：表示任意方法名称
+    <!--指定哪种规则的方法上面添加事务-->
         <tx:method name="*" propagation="REQUIRED" isolation="DEFAULT" read-only="false"/>
     </tx:attributes>
 </tx:advice>
 
-6.编写aop，让spring自动对目标生成代理，需要使用AJ的表达式
+
 <aop:config>
-    切入点
+   <!--配置切入点-->
     <aop:pointcut expression="execution(* com.itheima.jdbc.*.*(..))" id="txPointCut"/>
+    <!--配置切面-->
     <aop:advisor advice-ref="txAdvice" pointcut-ref="txPointCut"/>
 </aop:config>
+
+
+<!--开启事务注解-->
+<tx:annotation-driven transaction-manager=“transactionManager”/>
 ```
 
 测试方法：
@@ -1773,9 +1835,15 @@ public void annotationTest(){
 
 ### 5.2.2 基于注解方式的声明式事务♥♥♥♥
 
-`@EnableTransactionManagement`等同于`<tx:annotation-driven transaction-manager=“transactionManager”/>`,在SpringBoot中已经自动配置了。
+启用 <font color='orange'>@Transactional</font> 注解有以下两种方法：
 
-==**@Transactional**==标注到Bean类上，则对所有方法有效，标注到方法上则只对该方法有效。
+**（1）@Configuration和 @EnableTransactionManagement**
+
+（2）**<tx:annotation-driven transaction-manager=“transactionManager”/>**
+
+==**@Transactional**==
+
+<font color='orange'>标注类上，则对   所有方法   有效，</font><font color='red'>标注到方法上则只对   该方法   有效。</font>
 
 目标方法：
 
@@ -4432,7 +4500,7 @@ ASM是一个多用途的<font color='orange'>Java字节码</font><font color='re
 
 #### 事务
 
-指作为单个逻辑工作单元执行的一系列操作，要么完全地执行，要么完全地不执行。 简单的说，事务就是并发控制的单位，是用户定义的一个操作序列。
+指作为<font color='orange'>单个逻辑工作单元</font>执行的<font color='orange'>一系列操作，</font>要么完全地执行，要么完全地不执行。 简单的说，事务就是并发控制的单位，是用户定义的一个操作序列。
 
 **事务特性：**
 

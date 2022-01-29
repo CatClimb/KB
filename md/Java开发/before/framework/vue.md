@@ -4519,6 +4519,7 @@ props:['id','title','a','b']
            },
          })
    },
+      / 跟 router.push 很像，唯一的不同就是，它不会向 history 添加新记录，而是跟它的方法名一样 —— 替换掉当前的 history 记录。
        replaceShow(item) {
          this.$router.replace({
            name: 'D',
@@ -4535,7 +4536,7 @@ props:['id','title','a','b']
    // 前进3步
    this.$router.go(3);
    ```
-
+   
    
 
 ## 10、缓存路由组件

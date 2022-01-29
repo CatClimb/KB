@@ -761,8 +761,8 @@ SpringBoot默认会在底层配好所有的组件。但是如果用户自己配�
 
 ```java
 ===============================简化JavaBean开发===================================
-@NoArgsConstructor//无参构造
-//@AllArgsConstructor//全参构造
+@NoArgsConstructor//t无参构造
+@AllArgsConstructor//全参构造
 @Data//getter和setter
 @ToString//toString
 @EqualsAndHashCode//重写它们
@@ -770,15 +770,9 @@ public class User {
 
     private String name;
     private Integer age;
-
     private Pet pet;
 
-    public User(String name,Integer age){
-        this.name = name;
-        this.age = age;
-    }
-
-
+    
 }
 
 
