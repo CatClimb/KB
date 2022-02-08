@@ -839,9 +839,11 @@ public interface UserService{
 
 **<font color='orange'>@Bean</font>**
 
-通常注册方法，或注解。
+通常注入方法参数，或注解。
 
 ### 2、注入属性
+
+
 
 ==**@Autowired**==
 

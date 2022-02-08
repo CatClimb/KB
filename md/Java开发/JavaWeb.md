@@ -382,7 +382,7 @@ public class Servlet extends HttpServlet {
 
 请求分为 GET 请求和 POST 请求两种：
 
-(1) GET 请求：由请求行、请求头两部分组成，如下图所示：
+(1) <font color='orange'>GET 请求</font>：由<font color='orange'>请求行、请求头两部分组成</font>，如下图所示：
 ![img](https://img-blog.csdnimg.cn/20200808125116481.png)
 
 内容分析：
@@ -407,7 +407,7 @@ Closed：回传完数据马上关闭
 
 
 
-(2) POST 请求：由请求行、请求头、空行、请求体组成，如下图所示：
+(2) <font color='orange'>POST</font> 请求：由<font color='orange'>请求行、请求头、空行、请求体</font>组成，如下图所示：
 ![img](https://img-blog.csdnimg.cn/20200808125150164.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80OTM0MzE5MA==,size_16,color_FFFFFF,t_70)
 
 
@@ -416,12 +416,20 @@ Closed：回传完数据马上关闭
 请求头：
 ①Referer：表示请求发起时，浏览器地址栏中的地址
 ②Content-Type：表示发送的数据的类型：
-i. <font color='orange'>application/x-www-form-ur lencoded：</font>表示提交的数据的格式是 name=value&name=value，然后对其进行 url 编码，url 编码是把非英文内容转换为：%xx%xx
-ii. <font color='orange'>multipart/form-data</font>：表示以多段的形式提交数据给服务器，即以流的形式提交，用于上传
+i. <font color='orange'>application/x-www-form-ur lencoded：</font>表示<font color='red'>提交的数据的格式是 name=value&name=value，然后对其进行 url 编码，url 编码是把非英文内容转换为：%xx%xx</font>
+ii. <font color='orange'>multipart/form-data</font>：表示以多段的形式提交数据给服务器，<font color='orange'>即以流的形式提交，用于上传</font>
 ③Content-Length：表示发送的数据的长度
 ④Cache-Control：表示如何控制缓存，no-cache 不缓存
 
 
+
+> 补充：
+>
+> 1. XMLHttpRequest规范不支持get、delete携带请求体，HTTP规范没说不能用。
+> 2. put、delete 所有现代浏览器都支持
+> 3. *form表单*只*支持*get和post的方式提交
+>
+> 
 
 ### 响应的 HTTP 协议格式
 
