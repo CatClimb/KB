@@ -214,7 +214,7 @@ public class HelloController {
 <!-- 开启mvc注解驱动 -->
 <mvc:annotation-driven>
     <mvc:message-converters>
-        <!-- 处理响应中文内容乱码 -->
+        <!-- 处理响应中文内容乱码 针对@Res-->
         <bean class="org.springframework.http.converter.StringHttpMessageConverter">
             <property name="defaultCharset" value="UTF-8" />
             <property name="supportedMediaTypes">
