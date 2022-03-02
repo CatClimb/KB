@@ -1117,7 +1117,7 @@ public class CgLibProxy {
 }
 ~~~
 
-## ~~3.3 动态代理实现（ProxyFactoryBean实现）~~
+## 3.3 动态代理实现（ProxyFactoryBean实现）
 
 Spring AOP<font color='orange'>默认使用JDK动态代理</font>的方式来实现的，在Spring中，使用`ProxyFactoryBean`是创建AOP代理的最**基本方式**。
 
@@ -1530,7 +1530,7 @@ public class UserDaoImplProxy{
 </beans>
 ```
 
-**5配置类**（简化）
+**4配置类**（简化）
 
 ```java
 @Configuration
@@ -1873,7 +1873,7 @@ public void annotationTest(){
 
 
 
-# 六、MyBatis
+# ~~六、MyBatis~~
 
 [什么是MyBatis？](####ORM)
 
@@ -1911,7 +1911,7 @@ public void annotationTest(){
 
 #### （一） SqlSessionFactory
 
-SqlSessionFactory是MyBatis框架中十分重要的对象，它是单个数据库映射关系经过编译后的内存镜像，其主要作用是创建SqlSession。
+它是单个数据库映射关系经过编译后的内存镜像，其主要作用是创建SqlSession。
 
 SqlSessionFactory`对象是线程安全的`，它一旦被创建，在整个应用执行期间都会存在。`如果我们多次地创建同一个数据库的SqlSessionFactory，那么此数据库的资源将很容易被耗尽`，通常每一个数据库都会只对应一个SqlSessionFactory，在构建实例时，建议使用单例模式。
 
@@ -1926,7 +1926,7 @@ SqlSessionFactory sqlSessionFactory =new SqlSessionFactoryBuilder().build(inputS
 
 SqlSession是MyBatis的另一个重要的对象，他是应用程序与持久层之间执行交互操作的一个单线程对象，`其主要执行持久化操作`。SqlSession对象包含了数据库中所有执行SQL的方法，由于其底层封装了JDBC连接，所以可以用其实例来执行已映射 的SQL语句。
 
-`每个线程都应该有一个自己的SqlSession实例，并且该实例是不能被共享的。`同时SqlSession实例也是`线程不安全的`，因此其使用范围最好在一 次请求或一个方法中，绝不能将其放在一个类的静态字段、实例字段或任何类型的管理范围（如Servlet 的 HttpSession）中使用。
+`每个线程都应该有一个自己的SqlSession实例，并且该实例是不能被共享的。`同时**SqlSession**实例也是**线程不安全的**，因此其使用范围最好在一次请求或一个方法中，绝不能将其放在一个类的静态字段、实例字段或任何类型的管理范围（如Servlet 的 HttpSession）中使用。
 
 其查询方法如下：（核心源码）
 
@@ -1953,9 +1953,6 @@ public class MybatisUtils {
 	}
 }
 
-
-
-
 public void someToSomeByIdOders() {
 		SqlSession sqlSession =MybatisUtils.getSession();
 		Orders orders =sqlSession.selectOne("com.itheima.mapper.OrdersMapper.someToSomeByIdOders", 1);
@@ -1963,9 +1960,7 @@ public void someToSomeByIdOders() {
 	}
 ```
 
-
-
-
+sql映射文件略、mybatis配置文件略、javaBean略
 
 ### 6.1.3 核心配置文件 ♥♥♥♥
 
@@ -2038,7 +2033,9 @@ mybatis-config.xml
 </dataSource>
 ```
 
+resource：引入类路径下的资源
 
+url：引入网络路径或磁盘路径下的资源 
 
 #### 3&lt;setting&gt;元素
 
@@ -2048,19 +2045,19 @@ mybatis-config.xml
 
 <center><b>表6.1 &lt;settings&gt;元素中的常见配置</b></center>
 
-|         设置参数          |                             描述                             |        有效值        |  默认值  |
-| :-----------------------: | :----------------------------------------------------------: | :------------------: | :------: |
-|       cacheEnabled        |           该配置影响所有映射器中配置的缓存全局开关           |     true\|false      |  false   |
-|    lazyLoadingEnabled     | 延迟加载的全局开关。开启时，所有关联对象都会延迟加载。特定关联关系中可以通过设置fetchType属性来覆盖该项的开关状态 |     true\|false      |  false   |
-|   aggressiveLazyLoading   | 关联对象属性的延迟加载开关。当启用时，对任意延迟属性的调用会使带有延迟加载属性的对象完整加载；反之，每种属性都会按需加载 |     true\|false      |   true   |
-| multipleResultSetsEnabled |         是否允许单一语句返回多结果集（需要兼容驱动）         |     true\|false      |   true   |
-|      useColumnLabel       | 使用列标签代替列名。不同的驱动在这方面有不同的表现。具体可参考驱动文档或通过测试两种模式业观察所用驱动的行为 |     true\|false      |   true   |
-|      useGenerateKeys      | 允许JDBC支持自动生成主键，需要驱动兼容。如果设置为true，则这个设置强制使用自动生成主键，尽管一些驱动不兼容但仍可正常工作 |     true\|false      |  false   |
-|    autoMappingBehavior    | 指定MyBatis应如何自动映射列到字段或属性。NONE表示取消自动映射；PARTIAL`只会自动映射没有定义嵌套结果集映射的结果集`；FULL会自动映射任意复杂的结果集（无论是否嵌套） | NONE、PARTIAL、FULL  | PARTIAL  |
-|    defaultExecutorType    | 配置默认的执行器。SIMPLE就是普通的执行器；REUSE执行器会重用预处理语句（prepared statements）；BATCH执行器将重用语句并执行批量更新 | SIMPLE、REUSE、BATCH |  SIMPLE  |
-|  defaultStatementTimeout  | 设置超时时间，它决定驱动等待数据库响应的秒数。当没有设置的时候，它取的就是驱动默认的时间 |      任何正整数      | 没有设置 |
-| mapUnderscoreToCamelCase  |          是否开启自动驼峰命名规则（camel case）映射          |     true\|false      |  false   |
-|      jdbcTypeForNull      | 当没有为参数提供特定的JDBC类型，为空值指定JDBC类型。某些驱动需要指定列的JDBC类型，多数情况直接用一般类型即可，比如NULL、VARCHAR或OTHER | NULL、VARCHAR、OTHER |  OTHER   |
+|           设置参数           |                             描述                             |        有效值        |  默认值  |
+| :--------------------------: | :----------------------------------------------------------: | :------------------: | :------: |
+|         cacheEnabled         |           该配置影响所有映射器中配置的缓存全局开关           |     true\|false      |  false   |
+|      lazyLoadingEnabled      | 延迟加载的全局开关。开启时，所有**关联对象**都会**延迟加载**。特定关联关系中可以通过设置fetchType属性来覆盖该项的开关状态 |     true\|false      |  false   |
+|    aggressiveLazyLoading     | 关联对象属性的延迟加载开关。当启用时，对任意延迟属性的调用会使带有延迟加载属性的对象完整加载；反之，每种属性都会**按需加载** |     true\|false      |   true   |
+|  multipleResultSetsEnabled   |         是否允许单一语句返回多结果集（需要兼容驱动）         |     true\|false      |   true   |
+|        useColumnLabel        | 使用列标签代替列名。不同的驱动在这方面有不同的表现。具体可参考驱动文档或通过测试两种模式业观察所用驱动的行为 |     true\|false      |   true   |
+|     **useGenerateKeys**      | 允许JDBC支持自动生成主键，需要驱动兼容。如果设置为true，则这个设置强制使用自动生成主键，尽管一些驱动不兼容但仍可正常工作 |     true\|false      |  false   |
+|   **autoMappingBehavior**    | 指定MyBatis应如何自动映射列到字段或属性。NONE表示取消自动映射；PARTIAL`只会自动映射没有定义嵌套结果集映射的结果集`；FULL会自动映射任意复杂的结果集（无论是否嵌套）<br />注意：在非嵌套结果集中，不管列名与实体属性名是否满足**mapUnderscoreToCamelCase**=true，只要指定**resultType**，都可以被映射 | NONE、PARTIAL、NULL  | PARTIAL  |
+|     defaultExecutorType      | 配置默认的执行器。SIMPLE就是普通的执行器；REUSE执行器会重用预处理语句（prepared statements）；BATCH执行器将重用语句并执行批量更新 | SIMPLE、REUSE、BATCH |  SIMPLE  |
+|   defaultStatementTimeout    | 设置超时时间，它决定驱动等待数据库响应的秒数。当没有设置的时候，它取的就是驱动默认的时间 |      任何正整数      | 没有设置 |
+| **mapUnderscoreToCamelCase** | 是否开启自动驼峰命名规则（camel case）映射，db字段名：last_name javabean属性名:lastName |     true\|false      |  false   |
+|       jdbcTypeForNull        | 当没有为参数提供特定的JDBC类型，为空值指定JDBC类型。某些驱动需要指定列的JDBC类型，多数情况直接用一般类型即可，比如NULL、VARCHAR或OTHER | NULL、VARCHAR、OTHER |  OTHER   |
 
 示例如下：
 
@@ -2077,15 +2074,15 @@ mybatis-config.xml
 
 #### 4&lt;typeAliases&gt;元素
 
-定义类别名：
+1.定义**类别名：**
 
 ```xml
 <typeAliases>
-    <typeAlias alias="user" type-"com.itheima.po.User"/>
+    <typeAlias alias="user" type=com.itheima.po.User"/>
 </typeAliases>
 ```
 
-批量定义包下的类默认别名：
+2.批量定义包下的<font color='orange'>类默认别名</font>：
 
 ```xml
 <typeAliases>
@@ -2094,61 +2091,81 @@ mybatis-config.xml
 </typeAliases>
 ```
 
+3.@Alias注解别名
+
+![image-20220213171119446](F:\data\knowledge_data\知识\md\Java开发\after\framework\Java EE.assets\image-20220213171119446.png)
+
+基本类型以及包装类型默认的别名：
+
+[](https://mybatis.org/mybatis-3/zh/configuration.html#typeHandlers)
+
+![image-20220213173715812](F:\data\knowledge_data\知识\md\Java开发\after\framework\Java EE.assets\image-20220213173715812.png)
+
 #### 5 &lt;typeHandler&gt;元素
 
 Mybatis在预处理语句（PreparedStatement）中设置一个参数或从结果集（ResultSet）中取出一个值时，都会用其框架内部注册了的typeHandler（类型处理器）进行相关处理。`typeHandler的作用就是将预处理语句中传入的参数从javaType（Java类型）转换为jdbcType（JDBC类型），或者从数据库取出结果时将jdbcType转换为javaType。`
 
+[](https://mybatis.org/mybatis-3/zh/configuration.html#typeHandlers)
+
 常用的类型处理器如下：
 
-- BooleanTypeHandler：用于 java 类型 boolean，jdbc 类型 bit、boolean
+![image-20220213181715383](F:\data\knowledge_data\知识\md\Java开发\after\framework\Java EE.assets\image-20220213181715383.png)
 
-- ByteTypeHandler：用于 java 类型 byte，jdbc 类型 TINYINT
 
-- ShortTypeHandler：用于 java 类型 short，jdbc 类型 SMALLINT
-
-- IntegerTypeHandler：用于 INTEGER 类型
-
-- LongTypeHandler：用于 long 类型
-
-- FloatTypeHandler：用于 FLOAT 类型
-
-- DoubleTypeHandler：用于 double 类型
-
-- StringTypeHandler：用于 java 类型 string，jdbc 类型 CHAR、VARCHAR
-
-- ArrayTypeHandler：用于 jdbc 类型 ARRAY
-
-- BigDecimalTypeHandler：用于 java 类型 BigDecimal，jdbc 类型 REAL、DECIMAL、NUMERIC
-
-- DateTypeHandler：用于 java 类型 Date，jdbc 类型 TIMESTAMP
-
-- DateOnlyTypeHandler：用于 java 类型 Date，jdbc 类型 DATE
-
-- TimeOnlyTypeHandler：用于 java 类型 Date，jdbc 类型 TIME
-
-  
 
 当不能满足实际需求时，注册自定义类型处理器：
 
-1. **注册一个类的类型处理器**
+你可以重写已有的类型处理器或创建你自己的类型处理器来处理不支持的或非标准的类型。 具体做法为：实现 `org.apache.ibatis.type.TypeHandler` 接口， 或继承一个很便利的类 `org.apache.ibatis.type.BaseTypeHandler`， 并且可以（可选地）将它映射到一个 JDBC 类型。比如：
 
-   ```xml
-   <typeHandlers>
-       <typeHandler handler="com.itheima.type.CustomtypeHandler"/>
-   </typeHandlers>
-   ```
+1. **编写typeHandler类**（不懂以后说）
 
-2. **注册一个包中所有的类型处理器**
+```java
+// ExampleTypeHandler.java
+@MappedJdbcTypes(JdbcType.VARCHAR)
+public class ExampleTypeHandler extends BaseTypeHandler<String> {
 
-   ```xml
-   <typeHandlers>
-       <package name="com.itheima.type"
-   </typeHandlers>
-   ```
+  @Override
+  public void setNonNullParameter(PreparedStatement ps, int i, String parameter, JdbcType jdbcType) throws SQLException {
+    ps.setString(i, parameter);
+  }
 
-#### 6 &lt;objectFactory&gt;元素
+  @Override
+  public String getNullableResult(ResultSet rs, String columnName) throws SQLException {
+    return rs.getString(columnName);
+  }
 
-MyBatis框架每次创建结果对象的新实例时，都会使用一个对象工厂（ObjectFactory）的实例来完成。`Mybatis中默认的ObjectFactory的作用就是实例化目标类`，它既可以通过默认构造方法实例化，也可以在参数映射存在的时候通过参数构造方法来实例化。
+  @Override
+  public String getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+    return rs.getString(columnIndex);
+  }
+
+  @Override
+  public String getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+    return cs.getString(columnIndex);
+  }
+}
+```
+
+2. **注册一个类的类型处理器**
+
+```xml
+<!-- mybatis-config.xml -->
+<typeHandlers>
+  <typeHandler handler="org.mybatis.example.ExampleTypeHandler"/>
+</typeHandlers>
+```
+
+3. 或：**注册一个包中所有的类型处理器**
+
+```xml
+<typeHandlers>
+    <package name="org.mybatis.example"
+</typeHandlers>
+```
+
+#### 6 &lt;objectFactory&gt;元素（了解）
+
+**MyBatis框架每次创建结果对象的新实例时，都会使用一个对象工厂（ObjectFactory）的实例来完成。**`Mybatis中默认的ObjectFactory的作用就是实例化目标类`，它既可以通过默认构造方法实例化，也可以在参数映射存在的时候通过参数构造方法来实例化。
 
 使用自定义对象工厂，实例如下：
 
@@ -2182,14 +2199,20 @@ public class MyObjectFactory extends DefaultObjectFactory{
 
 #### 7 &lt;plugins&gt;元素
 
-略（待处理）
+MyBatis **允许你在映射语句执行过程中的某一点进行拦截调用**。默认情况下，MyBatis 允许使用插件来拦截的方法调用包括：
+
+- Executor (update, query, flushStatements, commit, rollback, getTransaction, close, isClosed)
+- ParameterHandler (getParameterObject, setParameters)
+- ResultSetHandler (handleResultSets, handleOutputParameters)
+- StatementHandler (prepare, parameterize, batch, update, query)
 
 #### 8 &lt;environments&gt;元素
 
-可以通过<environments>元素配置多种数据源，即`配置多种数据库。`
+可以通过<environments>元素配置多种数据源，即`配置多种数据库。
 
 ```xml
-<environments default="development">
+
+<environments default="development"> <!--默认跳转指定id环境-->
     <environment id="development">
     使用JDBC事务管理
         <transactionManager type="JDBC" />
@@ -2205,13 +2228,15 @@ public class MyObjectFactory extends DefaultObjectFactory{
 </environments>
 ```
 
-在MyBatis中，可以配置两种类型的==事务管理器==，分别时JDBC和MANAGED，描述如下：
+在MyBatis中，可以配置两种类型的==**事务管理器**==，分别时JDBC和MANAGED，描述如下：
 
-`JDBC`：此配置直接使用了JDBC的提交和回滚设置，它依赖于从数据源得到的连接来管理事务的作用域。
+`JDBC`：此配置直接使用了JDBC的提交和回滚设置，它<font color='orange'>依赖于从数据源得到的连接来管理事务的作用域。</font>
 
 `MANAGED`：此配置从来不提交或回滚一个连接，而是让容器来管理事务的整个生命周期。在默认情况下，它会关闭连接，但一些容器并不希望这样，为此可以将closeConnect属性设置为false来阻止它默认的关闭行为。
 
-MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，具体如下：
+
+
+MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==**数据源类型**==，具体如下：
 
 1. UNPOOLED
 
@@ -2237,11 +2262,19 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，
 
    <center><b>图6.4 JNDI数据源需要配置的属性</b></center>
 
+4. 自定义数据数据源：实现DataSourceFactory接口，type是全类名
 
+> 注意
+>
+> ​	事务管理和数据源都会用spring来做，这里需要了解即可
+>
+> ​	可以在Configuration.class查看一些别名对应的类，如JDBC
 
 #### 9 &lt;mappers&gt;元素
 
 <mappers>元素用于指定MyBatis映射文件的位置。
+
+**这里是注册配置文件的**
 
 1. 使用类路径引入
 
@@ -2259,6 +2292,8 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，
    </mappers>
    ```
 
+   **之下是注册接口的（可以是注解，也可以是配置文件，但配置文件必须在com.itheima.mapper包下）**
+
 3. 使用接口类引入
 
    ```xml
@@ -2274,6 +2309,34 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，
        <mapper package="com.itheima.mapper"/>
    </mappers>
    ```
+
+#### 10 &lt;databaseIdProvider&gt;元素
+
+支持多数据库厂商
+
+```XML
+<databaseIdProvider type="DB_VENDOR">
+    
+    <!--为不同的数据库厂商起别名-->
+	<property name="MySQL" value="mysql"/>
+    <property name="Oracle" value="oracle"/>
+    <property name="SQL Server"
+</databaseIdProvider>
+```
+
+得到数据库厂商标识，mybatis就能根据数据库厂商标识来执行不同的sql，标识有MySQL、Oracle等等
+
+使用：通过select标签的属性
+
+```xml
+
+<!--mysql是别名哦-->
+<select id="getEmpById" resultType="com.atguigu.mybatis.bean.Employee" databaseId="mysql">
+	select * from tbl_employee where id=#{id}
+</select> 
+```
+
+
 
 ### 6.1.4 核心映射文件
 
@@ -2292,27 +2355,111 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，
 
 <center><b>表6.2 &lt;select&gt;元素的常用属性</b></center>
 
-|     属性      |                             说明                             |
-| :-----------: | :----------------------------------------------------------: |
-|      id       | 表示命名空间中的唯一标识符，常与命名空间组合起来使用。组合后如果不唯一，MyBatis会抛出异常 |
-| parameterType | 该属性表示传入SQL语句的参数类型的全限定名或者别名。因为MyBatis可以通过TypeHandler推断出具体传入语句的参数。器默认值是unset（依赖于驱动） |
-|   resultMap   | 表示外部resultMap的命名引用。返回时可以使用resultType或resultMap。 |
-|  flushCache   | 表示在调用SQL语句之后，是否需要MyBatis清空之前查询的本地缓存和二级缓存。其值为布尔类型（true\|false），默认为false。如果设置为true，则任何时候只要SQL语句被调用，都会清空本地缓存和二级缓存 |
-|   useCache    | 用于控制二级缓存的开启和关闭。其值为布尔类型（true\|false），默认值true，表示将查询结果存入二级缓存 |
-|    timeout    |  用于设置超时参数，单位为秒。超时时将抛出异常（数字123456）  |
-|   fetchSize   |     获取记录的总条数设定，其默认值是unset（依赖于驱动）      |
-| statementType | 用于设置MyBatis使用哪个JDBC的Statement工作，其值为STATEMENT、PREPARED（默认值）或CALLABLE，分别对应JDBC中的Statement、PreparedStatement和CallableStatement |
-| resultSetType | 表示结果集的类型。其值可设置为FORWARD_ONLY、SCROLL_SENSITIVE或SCROLL_INSENSITIVE，它的默认值是unset（依赖于驱动） |
+|       属性        |                             说明                             |
+| :---------------: | :----------------------------------------------------------: |
+|      **id**       | 表示命名空间中的唯一标识符，常与命名空间组合起来使用。组合后如果不唯一，MyBatis会抛出异常 |
+| **parameterType** | 该属性表示传入SQL语句的参数类型的全限定名或者别名。因为MyBatis可以通过TypeHandler推断出具体传入语句的参数。默认值是unset（依赖于驱动）<br />**可以省略** |
+|   **resultMap**   | 表示外部resultMap的命名引用。返回时可以使用resultType或resultMap。 |
+|    flushCache     | 表示在调用SQL语句之后，是否需要MyBatis清空之前查询的本地缓存和二级缓存。其值为布尔类型（true\|false），默认为false。如果设置为true，则任何时候只要SQL语句被调用，都会清空本地缓存和二级缓存 |
+|     useCache      | 用于控制二级缓存的开启和关闭。其值为布尔类型（true\|false），默认值true，表示将查询结果存入二级缓存 |
+|      timeout      |  用于设置超时参数，单位为秒。超时时将抛出异常（数字123456）  |
+|     fetchSize     |     获取记录的总条数设定，其默认值是unset（依赖于驱动）      |
+|   statementType   | 用于设置MyBatis使用哪个JDBC的Statement工作，其值为STATEMENT、PREPARED（默认值）或CALLABLE，分别对应JDBC中的Statement、PreparedStatement和CallableStatement |
+|  **resultType**   | 表示结果集的类型。其值可设置为FORWARD_ONLY、SCROLL_SENSITIVE或SCROLL_INSENSITIVE，它的默认值是unset（依赖于驱动） |
+
+> ##### 属性resultType使用：
+
+目的：把结果集封装到指定的类型
+
+**当mapper接口的返回值类型为List，resultType为==List的元素类型==。**
+
+**当mapper接口的返回值类型为map且只返回一条记录，resultType为==map==类型**
+
+当mapper接口的返回值类型为**map**且返回**多条记录**时，在其上标注@MapKey("javaBean属性主键名")，**resultType为记录的javaBean类型**。
+
+如：
+
+```xml
+    @MapKey("id")
+    public Map<Integer,Object> aa();
+    
+    <select id="aa" resultType="com.example.lims.modules.user.entity.UserEntity">
+        select * from user
+    </select>
+```
+
+结果：
+
+![image-20220218135443800](F:\data\knowledge_data\知识\md\Java开发\after\framework\Java EE.assets\image-20220218135443800.png)
+
+> ##### 属性resultMap使用：
+
+目的：指定某个javaBean的映射规则
+
+* resultMap与resultType之间只存在一个。
+
+* 它可以解决表名与javaBean名的冲突。
+
+  * 其它的解决方法：
+
+    * 1. ```xml
+         <!--**mapUnderscoreToCamelCase**是否开启自动驼峰命名规则（camel case）映射，db字段名：last_name javabean属性名:lastName -->
+         <!--只能解决命名-->
+         <setting name="mapUnderscoreToCamelCase" value="true"/>
+         ```
+
+    * 2. 对查询结果集取别名
+
+         ```sql
+         select name 名字 from user
+         #or
+         select name as 名字 from user
+         #效果一样
+         ```
+
+         
+
+    * 3. 也就是resultMap，自定义映射规则
+
+
+
+
 
 #### 3&lt;insert&gt;元素
 
 <center><b>表6.3 &lt;insert&gt;元素中的属性</b></center>
 
-|       属性       |                             说明                             |
-| :--------------: | :----------------------------------------------------------: |
-|   keyProperty    | （仅对insert和update有用）此属性的作用是将插入或更新操作时的返回值赋给PO类的某个属性，通常会设置为主键对应的属性。如果需要设置联合主键，可以在多个值之间用逗号隔开（`用于接收自增长id值并返回到指定的PO类的属性`） |
-|    keyColumn     | （仅对insert和update有用）此属性用于设置第几列时主键，当主键列不是表中的第一列时需要设置。在需要主键联合时，值可以用逗号隔开（`比keyProperty只有指定作用吧`（==大概==）） |
-| useGeneratedKeys | （仅对insert和update有用）此属性会使MyBatis使用JDBC的getGeneratedKeys()方法来获取由`数据库内部生产`的主键，如MySQL和SQL Server等自动递增的字段，其默认值为false |
+|         属性         |                             说明                             |
+| :------------------: | :----------------------------------------------------------: |
+|   **keyProperty**    |     （**`用于接收自增长id值并返回到指定的PO类的属性`）**     |
+|      keyColumn       | （仅对insert和update有用）此属性用于设置第几列时主键，当主键列不是表中的第一列时需要设置。在需要主键联合时，值可以用逗号隔开（`比keyProperty只有指定作用吧`（==大概==）） |
+| **useGeneratedKeys** | （仅对insert和update有用）此属性会使MyBatis使用JDBC的**statement.getGeneratedKeys()**方法来获取由`数据库内部生产`的主键，如MySQL和SQL Server等自动递增的字段，其默认值为false<br />**当数据库设置了自增长就不用弄这里了** |
+
+在mybatis设置自动增长主键：
+
+```xml
+
+<!--假如存在uid字段，数据库中并未设置自增长-->
+<insert id="add"  useGenerateKeys="true" keyProperty="id">
+	insert into user(name,sex,age) values('哈哈',1,18)
+</insert>
+ 
+```
+
+Oracle不支持自增，Oracle使用序列来模拟自增，每次插入的数据的主键是从序列中拿到的值：
+
+```xml
+<insert id="add">
+	<selectKey keyProperty="id" order="BEFORE" resultType="Integer" >
+    	select EMPLOYEES_SEQ.nextval from dual
+    </selectKey>
+    insert into employees(EMPLOYEE_ID,LAST_NAME,EMAIL) values(#{id},#{lastName},#{email})
+</insert>
+```
+
+
+
+
 
 #### 4&lt;update&gt;元素
 
@@ -2322,7 +2469,8 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，
         set
         role_name=#{role_name},status=#{status},scribe=#{scribe},update_time=sysdate()
         where role_id=#{role_id}
-    </update>
+</update>
+
 ```
 
 
@@ -2339,6 +2487,18 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==数据源类型==，
 </delete>
 ```
 
+> 注意：
+>
+> ​	mybatis允许CURD	直接定义以下类型返回值：
+>
+> ​	Integer、Login、Boolean void
+>
+> ​	增删改需要提交事务：
+>
+> ​	sqlSessionFactory.openSession(); ==》需手动提交
+>
+> ​	sqlSessionFactory.openSession(true);==》自动提交
+
 #### 6&lt;sql&gt;元素
 
 抽取重复使用的列，提高效率。
@@ -2354,7 +2514,7 @@ where id=#{id}
 
 #### 7&lt;resultMap&gt;元素 ♥♥♥♥
 
-它表示结果映射集，主要作用是`定义映射规则`、`级联的更新`以及`定义类型转化器`等。
+它表示结果映射集，主要作用是`自定义映射规则`、`级联的更新`以及`定义类型转化器`等。
 
 <resultMap>中的一些子元素：
 
@@ -2368,7 +2528,7 @@ where id=#{id}
     <result/>注入到字段或JavaBean属性的普遍结果
     <association property=""/>用于一对一关联
     <collection property=""/>用于一对多关联
-    <discriminator jaaType="">使用结果值来决定使用哪个结果映射
+    <discriminator javaType="">使用结果值来决定使用哪个结果映射
         <case value=""/>基于某些值的结果映射
     </discriminator>
 </resultMap>
@@ -2377,10 +2537,12 @@ where id=#{id}
 例子如下：
 
 ```xml
-<resultMap type="con.itheima.mapper.UserMapper" id="resultMap">
-    <id property="id" column="t_id"/>
-    <result property="name" column="t_name"/>
-    <result property="age" column="t_age"/>
+<resultMap type="con.itheima.mapper.UserMapper" id="MyResultMap">
+  	<!--id标签：会做底层优化-->
+    <id  column="t_id" property="id"/>
+    <result  column="t_name" property="name"/>
+  <!--	尽量把result映射规则都写上，不然其它列会自动封装-->
+    <result column="t_age" property="age" />
 </resultMap>
 
 <select id="findAllUser" resultMap="resultMap">
@@ -2388,7 +2550,7 @@ where id=#{id}
 </select>
 ```
 
-##### &lt;association&gt;子元素：
+##### &lt;association&gt;子元素： 
 
 用于一对一关联
 
@@ -2397,7 +2559,7 @@ where id=#{id}
 |   属性    |                             说明                             |
 | :-------: | :----------------------------------------------------------: |
 | property  |          指定映射到实体类对象属性，与表字段一一对应          |
-|  column   |                      指定表中对应的字段                      |
+|  column   | （嵌套查询）指定将哪一列的值传给这个方法法:select="com.itheima.mapper.IdCardMapper.findCodeById"结果给 property="idcard"<br />可以传递多列的值![image-20220302100536151](F:\data\knowledge_data\知识\md\Java开发\after\framework\Java EE.assets\image-20220302100536151.png) |
 | javaType  |             ==**指定映射到实体对象属性的类型**==             |
 |  select   | 指定引入嵌套查询的子SQL语句，该属性用于关联映射中的嵌套查询  |
 | fetchType | 指定在关联查询时是否启用延迟加载。值为lazy和eager。默认为lazy |
@@ -2405,23 +2567,70 @@ where id=#{id}
 使用方式为：
 
 ```xml
-嵌套查询 效率不高，多执行一个sql语句
-<association property="idcard" column="card_id" javaType="IdCard"
-	select="com.itheima.mapper.IdCardMapper.findCodeById"/>
+嵌套查询也叫分段查询，多执行一个sql语句，效率不高，但可以通过延迟加载（也就是使用的时候在查询）
+显示的指定每个我们需要更改的配置的值，即使他是默认的。防止版本更新
+触发：在查询到关联表的属性时触发
+<setting name="lazyLoadingEnabled" value="true"/>
+<setting name="aggressiveLazyLoading" value="false"/>
+流程：使用select指定的方法（传入column指定的这列参数的值）查出对象，并封装给property指定的属性
+<association property="idcard"  
+             column="card_id" select="com.itheima.mapper.IdCardMapper.findCodeById"/>
 嵌套结果
-<association property="idcard" column="card_id" javaType="IdCard">
+<association property="idcard"  javaType="IdCard">
 	<id property="id" column="card_id"/>
     <result property="code" column="code"/>
 </association>
+联合查询：通过级联属性封装结果集（也就是外键）
+<resultMap type="con.itheima.mapper.UserMapper" id="MyResultMap">
+ 		<id  column="t_id" property="id"/>
+    <result  column="t_name" property="name"/>
+    <result column="t_age" property="age" />
+  
+  	<result column="card_id" property="idcard.id" />
+    <result column="code" property="idcard.code" />
+ 
+</resultMap>
+
 ```
 
 ##### &lt;collection&gt;元素：
 
 用于一对多关联
 
-属性与<association>相同，其中它的==**ofType**==属性对应<association>的==**javaType**==属性。
+属性与<association>相同，其中它的==**ofType**==指映射集合对象属性中元素的类型
 
 待扩展
+
+<discriminator javaType="">鉴别器：
+
+mybatis可以使用discriminator判断某列的值，然后根据某列的值改变封装行为.
+
+```xml
+<resultMap type="com.atguigu.mybatis.bean.Employee" id="MyEmpDepartment">
+	<id column="id" property="id"/>
+  <result column="last_name" property="LastName"/>
+  <result column="email" property="email"/>
+  <result column="gender" property="gender"/>
+  <discriminator javaType="string" clolumn="genger">
+    <!--女生-->
+  	<case value="0" type="com.atguigu.mybatis.bean.Employee">
+    	<association property="dept"
+                   column="d_id" select="com.atguigu.mybatis.dao.DepartmentMapper">
+      
+      </association>
+    </case>
+    <!--男生 ,把last_name这一列赋值给email-->
+    <case value="1" type="com.atguigu.mybatis.bean.Employee">
+    	<id column="id" property="id"/>
+      <result column="last_name" property="LastName"/>
+      <result column="last_name" property="email"/>
+      <result column="gender" property="gender"/>
+    </case>
+  </discriminator>
+</resultMap>
+```
+
+
 
 #### 8&lt;selectKey&gt;元素
 
@@ -2431,9 +2640,10 @@ where id=#{id}
 
 ```xml
 <selectKey
-    keyProperty=
-    resultType=
-    order=
+	
+    keyProperty="这里是javaBean属性如：uid"
+    resultType="查出的数据的返回值类型"
+    order="表示当前sql在slectKey外围sql的执行顺序，值为：BEFORE OR AFTER"
     statementType=
 >
 ```
@@ -2441,7 +2651,7 @@ where id=#{id}
 实例如下：
 
 ```xml
-<insert id-"insertCustomer" parameterType="com.itheima.po.Customer">
+<insert id="insertCustomer" parameterType="com.itheima.po.Customer">
     <selectKey keyProperty="id" resultType="Integer" order="BEFORE">
         select if(max(id) is null,1,max(id)+1) as newId from t_customer
     </selectKey>
@@ -2450,9 +2660,280 @@ where id=#{id}
 </insert>
 ```
 
+### 6.1.5 参数处理
+
+1. 单个参数：mybatis不会做特殊处理
+
+​	#{参数名}，取出参数值。
+
+2. 多个参数：mybatis会做特殊处理。
+
+​	多个参数会被封装成一个map：
+
+​		key：param1...paramN,或者参数的索引也可以
+
+​		value：传入的参数值
+
+​	如：
+
+```java
+interface DemoDao{
+    public Demo methodDao(Integer id,String name);
+}
+```
+
+```xml
+<select id="methodDao" resultType="Demo">
+	select * from demo_table where id=#{param1},name=#{param2}
+</select>
+or
+<select id="methodDao" resultType="Demo">
+	select * from demo_table where id=#{0},name=#{1}
+</select>
+```
+
+3. 命名参数：明确指定封装参数时map的key：
+
+   ```java
+   interface DemoDao{
+       public Demo methodDao(@Param("id")Integer id,@Param("name")String name);
+   }
+   ```
+
+   ```xml
+   <select id="methodDao" resultType="Demo">
+   	select * from demo_table where id=#{id},name=#{name}
+   </select>
+   ```
+
+4. pojo参数：如果多个参数正好是我们业务逻辑的数据模型，我们就可以直接传入pojo；
+
+   #{属性名}：属性名为pojo属性名 
+
+5. Map参数：
+
+   如果多个参数不是业务模型中的数据，没有对应的pojo，不经常使用，为了方便，我们也可以传入map
+
+   ​	#{key}：key为map的key
+
+   如果多个参数不是业务模型中的数据，没有对应的pojo，经常使用，推荐来编写一个TO（Transfer Object）数据传输对象
+
+   [(34条消息) Map是不是集合？_紫眸的博客-CSDN博客_map是集合吗](https://blog.csdn.net/zimou5581/article/details/52706283)
+
+6. Collection参数：如果是（List、Set）类型或者数组，也会特殊处理。
+
+   也是把传入的list或者数组封装在map中。
+
+   key：Collection（collection），如果是List可以使用这个key（list），数组（array）
+
+7. 扩展
+
+   ```
+   public Employee getEmp(@Param("id") Integer id,String lastName);
+   	取值: id==>#{id/param1/0} lastName==>#{param2/1}
+   public Employee getEmp(Integer id,@Param("e") Employee emp);
+   	取值: id==>{param1/0} lastName==>#{param2.lastName/1.lastName/e.lastName}
+   public Employee getEmpById(List<Integer> ids);
+   	取值：取出第一个id的值：#{list[0]}
+   ```
+
+> ### 源码解析
+>
+> 通过
+>
+> UserDao mapper = sqlSession.getMapper(xxx.class);
+> mapper.findxxx(1,"Tom");//进入到代理对象MapperProxy的invoke方法
+>
+> 之中调用this.mapperMethod.execute(sqlSession, args);
+>
+> 查看到如下代码后：
+>
+> ​	param = this.method.convertArgsToSqlCommandParam(args);
+>
+> ​	result = sqlSession.selectOne(this.command.getName(), param);
+>
+> 可知处理参数函数名为convertArgsToSqlCommandParam；
+>
+> 之中是：
+>
+> ​	return this.paramNameResolver.getNamedParams(args);
+>
+> 再之中是最终**参数处理**的函数：
+>
+> ```java
+> public class ParamNameResolver {
+>  public Object getNamedParams(Object[] args) {
+>      //names是已经处理好的：通过paramNameResolver的构造函数
+>      //eg：public Demo methodDao(@Param("id")Integer id,@Param("lastName")String lastName,Integer asjdio);
+>      //mapper.findxxx("ss");
+>      //args【0,"tom"】
+>      //names为：{0=id,1=lastName,2=2}
+> 
+> 
+>          int paramCount = this.names.size();
+>          if (args != null && paramCount != 0) {
+>              //1.如果只有一个元素，并且没有Param注解：args[0]：单个参数直接返回
+>              if (!this.hasParamAnnotation && paramCount == 1) {
+>                  Object value = args[(Integer)this.names.firstKey()];
+>                  return wrapToMapIfCollection(value, this.useActualParamName ? (String)this.names.get(0) : null);
+>              } else {
+>                  //2.多个参数或者有Param标注
+>                  Map<String, Object> param = new ParamMap();
+>                  int i = 0;
+> 					//3.遍历names集合：{0=id，1=lastName}
+>                  for(Iterator var5 = this.names.entrySet().iterator(); var5.hasNext(); ++i) {
+>                      Entry<Integer, String> entry = (Entry)var5.next();
+>                      //names集合的value作为key；names集合的key又作为取值的参考args[0]: args【0,"tom"】
+>                      param.put(entry.getValue(), args[(Integer)entry.getKey()]);
+>                      //额外将每一个参数也保存到map中，使用新的key：param1...paramN
+>                      //效果就是@Param标注的方法的Mapper的sql标签的#{指定key}，或者#{param1}
+>                      String genericParamName = "param" + (i + 1);
+>                      if (!this.names.containsValue(genericParamName)) {
+>                          param.put(genericParamName, args[(Integer)entry.getKey()]);
+>                      }
+>                  }
+> 
+>                  return param;
+>              }
+>          } else {
+>              return null;
+>          }
+>      }
+> 
+>  public ParamNameResolver(Configuration config, Method method) {
+>          this.useActualParamName = config.isUseActualParamName();
+>          Class<?>[] paramTypes = method.getParameterTypes();
+>          Annotation[][] paramAnnotations = method.getParameterAnnotations();
+>          SortedMap<Integer, String> map = new TreeMap();
+>          int paramCount = paramAnnotations.length;
+> 
+>          for(int paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
+>              if (!isSpecialParameter(paramTypes[paramIndex])) {
+>                  String name = null;
+>                  Annotation[] var9 = paramAnnotations[paramIndex];
+>                  int var10 = var9.length;
+> 
+>                  for(int var11 = 0; var11 < var10; ++var11) {
+>                      Annotation annotation = var9[var11];
+>                      if (annotation instanceof Param) {
+>                          this.hasParamAnnotation = true;
+>                          name = ((Param)annotation).value();
+>                          break;
+>                      }
+>                  }
+> 
+>                  if (name == null) {
+>                      if (this.useActualParamName) {
+>                          name = this.getActualParamName(method, paramIndex);
+>                      }
+> 
+>                      if (name == null) {
+>                          name = String.valueOf(map.size());
+>                      }
+>                  }
+> 
+>                  map.put(paramIndex, name);
+>              }
+>          }
+> 
+>          this.names = Collections.unmodifiableSortedMap(map);
+>      }
+> }
+> ```
+>
+> 总结：
+>
+> ​	参数多时会封装map，为了不混乱，我们可以使用@Param来指定封装时使用的key。
+
+
+
+### #{}${}
+
+> 注意：
+>
+> #{}是预编译 防止sql注入
+>
+> ${}不防
+>
+> ${}使用的地方就是：原生jdbc不支持占位符的地方我们就可以使用${}
+>
+> eg：
+>
+> ​	select * from ${year}_salary where xxx;
+>
+> ​	select * from tbl_employee order by ${f_name} ${order}
+
+#{}：更丰富的用法：
+
+规定参数的一些规则：
+
+==javaType、jdbcType、mode（存储过程）、numbericScale、resultMap、typeHandler、jdbcTypeName、expression（未来准备支持的功能）==
+
+jdbcType通常需要再某种特定条件下被设置：
+
+​	如：再我们数据为null的时候，有些数据库可能不能识别mybatis对null的默认处理。
+
+​	如：Oracle（报错）； 错误信息：JdbcType OTHER：无效的类型。原因：==mybatis对所有的null都映射的是Jdbc OTHER，Oracle不能正确处理==。 
+
+解决办法：
+
+由于全局配置中：jdbcTypeForNull=OTHER：Oracle不支持。
+
+ 1. ```xml
+    <setting name="jdbcTypeForNull" value="NULL"></setting>
+    ```
+
+ 2. #{字段,jdbcType=NULL}
+
+> 注意：
+>
+> ​	可以查看下JdbcType.class
+
+### 6.1.6 内置参数
+
+两个内置参数：
+
+* _parameter:代表整个参数
+  * 单个参数：_parameter就是这个参数
+  * 多个参数：参数会被封装为一个map：_parameter就是代表这个map
+* _databaseId:如果配置了databaseIdProvider标签。
+* _databaseId就是代表当前数据库的别名oracle
+
+使用如下：
+
+```xml
+<!--public List<employee> getEmpsTestInnerParameter(Employee employee);-->
+<select id="getEmpsTestInnerParameter" resultType="com.atguigu.mybatis.bean.xxx">
+<!--  mysql 和oracle是别名-->
+  <if test="_databaseId == 'mysql'">
+  	select * from tbl_employee
+    <if test="_parameter != null">
+    	where last_name = #{lastName}
+      也可以 where last_name = #{_parameter.lastName}
+    </if>
+  </if>
+  <if test="_databaseId=='oracle'">
+  	select * from employees
+  </if>
+  
+</select>
+```
+
+
+
 ## 6.2 MyBatis动态SQL
 
 MyBatis 3采用了功能强大的基于[OGNL](####OGNL)的表达式来完成动态SQL。
+
+> #### 什么是OGNL？
+
+![image-20220302115807846](F:\data\knowledge_data\知识\md\Java开发\after\framework\Java EE.assets\image-20220302115807846.png)
+
+> #### OGNL使用注意
+
+`test="username != null and username.trim()!='' "`等效于`test="username != null &amp;&amp; username.trim()!='' "`;
+
+ognl会进行字符串与数字转换判断：`"0"==0 为真`
 
 主要元素如下：
 
@@ -2469,6 +2950,7 @@ MyBatis 3采用了功能强大的基于[OGNL](####OGNL)的表达式来完成动�
 ### 1 &lt;if&gt;元素
 
 ```xml
+<!--test从参数中取值进行判断--> 
 <if test="username != null and username !='' "></if>
 ```
 
@@ -2487,7 +2969,9 @@ MyBatis 3采用了功能强大的基于[OGNL](####OGNL)的表达式来完成动�
 
 ### 2 &lt;where&gt;元素
 
-`只有<where>元素内条件成立时，才会在拼接SQL中加入where关键字，否则将不会添加,即使where之后又多余的and 或 or 它也会自动将它们去除。`
+`只有<where>元素内条件成立时，才会在拼接SQL中加入where关键字，否则将不会添加,即使where之后又多余的`
+
+==where只会去掉前面多出来的 and 或 or，而不是后面==
 
 ```xml
 select * from t_customer
@@ -2503,6 +2987,8 @@ select * from t_customer
 ```
 
 ### 3 &lt;trim&gt;元素
+
+==trim可以解决后面多出的and或or==
 
 mybatis的**trim**标签一般用于去除sql语句中多余的and关键字，逗号，或者给sql语句前拼接 “where“、“set“以及“values(“ 等前缀，或者添加“)“等后缀，可用于选择性插入、更新、删除或者条件查询等操作。
 
@@ -2523,11 +3009,41 @@ select * from t_customer
         and jobs like concat('%',#{jobs},'%')
     </if>
 </trim>
+
+select * from t_customer
+<trim  prefix="where" suffixOverrides="and">
+    <if test="username != null and username !='' ">
+         username like concat('%',#{username},'%') and
+    </if>
+    <if test="jobs != null and jobs !='' ">
+         jobs like concat('%',#{jobs},'%') and
+    </if>
+</trim>
 ```
 
-### 4 &lt;set>元素
+### 4 &lt;choose&gt;元素
 
-主要作用是在动态包含的SQL语句钱输出一个SET关键字，并将SQL语句中最后一个多余的逗号去除。shilie示例如下：
+```xml
+<!--三选一-->
+select * from t_customer
+	<where>	
+    <then test="username!=null">
+    	 username like concat('%',#{username},'%')
+    </then>
+		 <then test="jobs!=null">
+    	 jobs like concat('%',#{jobs},'%')
+    </then>
+    <otherwise>
+    	 1=1
+    </otherwise>
+	</where>	
+```
+
+
+
+### 5 &lt;set>元素
+
+主要作用是在动态包含的SQL语句钱输出一个SET关键字，并将SQL语句中**最后一个多余的逗号去除**。示例如下：（trim也行）
 
 
 
@@ -2544,26 +3060,64 @@ update t_customer
 where id=#{id}
 ```
 
-### 5 &lt;foreach&gt;元素
+### 6 &lt;foreach&gt;元素
 
 ```xml
- <update id="mulUpdate_statusToCloseByIds" parameterType="java.util.List">
+ 
+<update id="mulUpdate_statusToCloseByIds" parameterType="java.util.List">
         update t_role_info
         SET
         status='禁用', update_time=sysdate()
         where 1=1
         and role_id in
+  		 <!--list为参数变名，这里看得不舒服看下面的-->
         <foreach collection="list" index="index" separator="," item="item" open="(" close=")">
             #{item}
         </foreach>
     </update>
+
+<!--public List<Teacher> getTeacherByIdIn(@Param("ids")List<Integer> ids);-->
+<select id="getTeacherByIdIn" resultMap="teacherMap">
+		SELECT * FROM  t_teacher WHERE id IN
+		<foreach collection="ids" item="id_item">
+  		#{id_item}
+  	</foreach>
+</select>
+        
 ```
 
-collection：属性值有list or array or collection，也可以对应参入的参数名。
+ 
 
-index：指当前元素在集合位置的索引。
+**collection：**
 
-### 6 &lt;bind&gt;元素
+* 指定要遍历的集合；
+* List类型的参数会特殊处理封装在map中，map的key就叫**list**
+
+**item：**
+
+将当前遍历出的元素赋值给指定的变量
+
+**separator：**
+
+每个元素之间的分隔符
+
+**open：**
+
+遍历所有的结果拼接一个开始字符
+
+**close：**
+
+遍历所有的结果拼接一个结束字符
+
+**index：**
+
+索引<font color='orange'>。遍历list的时候是索引，item就是当前元素</font>；
+
+**遍历map的时候index表示就是map的key，item就是map的值**
+
+​	
+
+### 7 &lt;bind&gt;元素
 
 它是用于模糊查询中不同数据库的不同实现方式而存在的同一口径元素。
 
@@ -2691,8 +3245,8 @@ PersonMapper
  	<result property="age" column="age"/>
  	<result property="sex" column="sex"/>
     嵌套查询 效率不高，执行了两条SQL 应使用嵌套结果
- 	<association property="idcard" column="card_id" javaType="IdCard"
- 		select="com.itheima.mapper.IdCardMapper.findCodeById"/>
+ 	<association property="idcard" 
+               column="card_id" select="com.itheima.mapper.IdCardMapper.findCodeById"/>
 </resultMap>
 测试结果如下：
     DEBUG [main] - ==>  Preparing: select * from tb_person where id=? 
@@ -3020,7 +3574,7 @@ public interface IUserDao {
 
 
 
-# 七、MyBatis与Spring整合
+# ~~七、MyBatis与Spring整合~~
 
 ## 7.1整合核心
 
@@ -3256,7 +3810,7 @@ Mapper代理开发
     </mappers>
 ```
 
-# 八、Spring MVC
+# ~~八、Spring MVC~~
 
 [什么是Spring MVC？](####Spring MVC)
 
@@ -4688,8 +5242,6 @@ Spring MVC会根据客户端请求参数的不同，将`请求消息中`的`信�
 #### MVVM
 
 待处理
-
-
 
 
 
