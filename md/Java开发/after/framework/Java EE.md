@@ -1699,7 +1699,7 @@ public class JdbcTemplateTest{
 
 
 
-# 五、Spring tx管理——实现
+# 五、Spring 事务管理——实现
 
 [什么是事务？](####事务)
 
@@ -1734,6 +1734,21 @@ public class JdbcTemplateTest{
 <center><b>图5.2 传播行为的种类</b></center>
 
 ![image-20210811121348380](pic\image-20210811121348380.png)
+
+
+
+**事务隔离级别：**
+
+|    隔离级别     |                             描述                             |
+| :-------------: | :----------------------------------------------------------: |
+|     DEFAULT     | 使用数据库本身使用的隔离级别<br>ORACLE(读已提交）MySQL（可重复读） |
+|                 |                                                              |
+| READ_UNCOMITTED |        读未提交（脏读）最低的隔离级别，一切皆有可能。        |
+|  READ_COMMITED  |   读已提交，ORACLE默认隔离级别，有幻读以及不可重复读风险。   |
+| REPEATABLE_READ |    可重复读，解决不可重复读的隔离级别，但还是有幻读风险。    |
+|  SERLALIZABLE   | 串行化，最高的事务隔离级别，不管多少事务，挨个运行完一个事务的所有子事务之后才可以执行另外一个事务里面的所有子事务，这样就解决了脏读、不可重复读和幻读的问题了 |
+
+![image-20220427071403207](Java EE.assets\image-20220427071403207.png)
 
 
 
@@ -1979,7 +1994,7 @@ MyBatis核心配置文件<a name="SqlMapConfig.xml">SqlMapConfig.xml</a>例子�
 <typeAliases>
  <package name="com.itheima.po"/>
  </typeAliases> 
-<!-- <typeAliases>typeAliases alias="customer" type="com.itheima.po.Customer"<typeAliases> -->
+<!-- <typeAliases alias="customer" type="com.itheima.po.Customer"></typeAliases> -->
  <environments default="mysql">
 <!--  1.1配置id为mysql的数据库环境 -->
  <environment id="mysql">
@@ -2078,7 +2093,7 @@ url：引入网络路径或磁盘路径下的资源
 
 ```xml
 <typeAliases>
-    <typeAlias alias="user" type=com.itheima.po.User"/>
+    <typeAlias alias="user" type="com.itheima.po.User"/>
 </typeAliases>
 ```
 
@@ -2491,7 +2506,9 @@ Oracle不支持自增，Oracle使用序列来模拟自增，每次插入的数�
 >
 > ​	mybatis允许CURD	直接定义以下类型返回值：
 >
-> ​	Integer、Login、Boolean void
+> ​	Integer、Long、Boolean void
+>
+> 实例：public int deleteEmpById(Integer id);
 >
 > ​	增删改需要提交事务：
 >
@@ -2503,13 +2520,24 @@ Oracle不支持自增，Oracle使用序列来模拟自增，每次插入的数�
 
 抽取重复使用的列，提高效率。
 
+1. sql抽取，经常将要查询的列名，或者插入用的列名抽取出来方便引用。
+2. include来引用已经抽取的sql
+3. include还可以自定义一些property，sql标签内部就能使用自定义的属性，include-property：取值的正确方式${prop}，#{不能使用这种方式}
+
 ```xml
-<sql id="customerColumns">id,username,jobs,phone</sql>
+<sql id="customerColumns">id,username,jobs,phone,${sb}</sql>
 
 
 
 select <include refid="customerColumns"/> from t_customer
 where id=#{id}
+
+也可以自定义一些属性：
+select 
+<include refid="customerColumns">
+	<property name="sb" value="yes,for you"/>
+</include>
+from t_customer where id=#{id}  
 ```
 
 #### 7&lt;resultMap&gt;元素 ♥♥♥♥
@@ -2559,10 +2587,10 @@ where id=#{id}
 |   属性    |                             说明                             |
 | :-------: | :----------------------------------------------------------: |
 | property  |          指定映射到实体类对象属性，与表字段一一对应          |
-|  column   | （嵌套查询）指定将哪一列的值传给这个方法法:select="com.itheima.mapper.IdCardMapper.findCodeById"结果给 property="idcard"<br />可以传递多列的值![image-20220302100536151](F:\data\knowledge_data\知识\md\Java开发\after\framework\Java EE.assets\image-20220302100536151.png) |
+|  column   | （嵌套查询）指定将哪一列的值传给这个方法法:select="com.itheima.mapper.IdCardMapper.findCodeById"结果给 property="idcard"<br />可以传递多列的值![image-20220302100536151](Java EE.assets\image-20220302100536151.png)这个传的是参数给到第二个查询语句 |
 | javaType  |             ==**指定映射到实体对象属性的类型**==             |
 |  select   | 指定引入嵌套查询的子SQL语句，该属性用于关联映射中的嵌套查询  |
-| fetchType | 指定在关联查询时是否启用延迟加载。值为lazy和eager。默认为lazy |
+| fetchType | 指定在关联查询时是否启用延迟加载。值为**lazy**和**eager**（立即）。默认为**lazy**![image-20220423004239176](Java EE.assets\image-20220423004239176.png)==延迟加载效果== |
 
 使用方式为：
 
@@ -2573,13 +2601,31 @@ where id=#{id}
 <setting name="lazyLoadingEnabled" value="true"/>
 <setting name="aggressiveLazyLoading" value="false"/>
 流程：使用select指定的方法（传入column指定的这列参数的值）查出对象，并封装给property指定的属性
-<association property="idcard"  
-             column="card_id" select="com.itheima.mapper.IdCardMapper.findCodeById"/>
-嵌套结果
+嵌套查询：
+<association property="idcard"  idcard是个对象哦
+             column="card_id" select="com.itheima.mapper.IdCardMapper.findCodeById"
+             fetchType="lazy"/>延迟加载
+
+或
+
+<association 
+             column="{Id=card_id}" select="com.itheima.mapper.IdCardMapper.findCodeById"/>这个传的是参数给到第二个查询语句 com.itheima.mapper.IdCardMapper.findCodeById的参数名为 Id 则comlum={Id=card_id}
+
+
+
+嵌套结果1：
 <association property="idcard"  javaType="IdCard">
 	<id property="id" column="card_id"/>
     <result property="code" column="code"/>
 </association>
+嵌套结果2（抽取复用）：
+<association property="idcard"  javaType="IdCard" resultMap="haha">
+</association>
+<resultMap id="haha" type="IdCard">
+  <id property="id" column="card_id"/>
+    <result property="code" column="code"/>
+</resultMap>
+
 联合查询：通过级联属性封装结果集（也就是外键）
 <resultMap type="con.itheima.mapper.UserMapper" id="MyResultMap">
  		<id  column="t_id" property="id"/>
@@ -2591,6 +2637,7 @@ where id=#{id}
  
 </resultMap>
 
+延迟加载例子以及效果
 ```
 
 ##### &lt;collection&gt;元素：
@@ -2611,7 +2658,7 @@ mybatis可以使用discriminator判断某列的值，然后根据某列的值改
   <result column="last_name" property="LastName"/>
   <result column="email" property="email"/>
   <result column="gender" property="gender"/>
-  <discriminator javaType="string" clolumn="genger">
+  <discriminator javaType="string" column="gender">
     <!--女生-->
   	<case value="0" type="com.atguigu.mybatis.bean.Employee">
     	<association property="dept"
@@ -3027,7 +3074,8 @@ select * from t_customer
 <!--三选一-->
 select * from t_customer
 	<where>	
-    <then test="username!=null">
+    <choose>
+      <then test="username!=null">
     	 username like concat('%',#{username},'%')
     </then>
 		 <then test="jobs!=null">
@@ -3036,6 +3084,8 @@ select * from t_customer
     <otherwise>
     	 1=1
     </otherwise>
+    </choose>
+    
 	</where>	
 ```
 
@@ -3121,6 +3171,8 @@ where id=#{id}
 
 它是用于模糊查询中不同数据库的不同实现方式而存在的同一口径元素。
 
+**可以将OGNL表达式的值绑定到一个变量中，方便后来引用这个变量的值**
+
 其属性有：
 
 * name
@@ -3132,10 +3184,12 @@ where id=#{id}
 <bind name="patter_name" value="'%'+username+'%'"/>
 select * from t_customer
 where
-username = #{patter_name}
+username like #{patter_name}
+当然也可以这样拼接
+username like '%${patter_name}%'
 ```
 
-## 6.3 MyBatis关联映射
+## 6.3 MyBatis关联映射例子
 
 MyBatis关联映射主要用来处理Java对象中的三种映射关系。
 
@@ -3569,6 +3623,23 @@ public interface IUserDao {
     List<User> findAll();
 }
 ```
+
+## 6.5 MyBatis二级缓存
+
+* MyBatis包含一个非常强大的查询缓存特性，它可以非常方便地配置和定制。缓存可以极大的提升查询效率。
+* MyBatis系统中默认定义了两级缓存：
+  * 一级缓存（也称为本地缓存）和二级缓存（也称为全局缓存）
+    * 1、默认情况下，只有一级缓存（SqlSession级别的缓存，也称为本地缓存）开启。
+    * 2、二级缓存需要手动开启和配置，他是基于namespace级别的缓存。
+    * 3、为了提高扩展性。MyBatis定义了缓存接口Cache。我们可以通过实现Cache接口来自定义二级缓存
+
+一级缓存：
+
+​	与数据库同一次会话期间查询到的数据会放在本地缓存中。以后如果需要获取相同的数据，直接从缓存中拿，没必要再去查询数据库；
+
+一级体验：
+
+
 
 
 

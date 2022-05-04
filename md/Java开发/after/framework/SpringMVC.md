@@ -1683,7 +1683,8 @@ public class SpringConfig {
 @ComponentScan("com.atguigu.mvc.controller")
 //开启MVC注解驱动
 @EnableWebMvc
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig implements 
+{
 
     //使用默认的servlet处理静态资源
     @Override

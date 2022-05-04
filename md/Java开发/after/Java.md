@@ -1169,7 +1169,7 @@ class Son extends Father{
 }
 public class Test {
     public static void main(String[] args) {
-        Father f = new Father();
+        Father f = new Son();
         Son s=(Son)f;
         System.out.println(f.i);//属性隐藏
         f.say();//实例方法覆盖
@@ -1596,6 +1596,7 @@ public class MyBox{
       * IdentityHashMap：
 
 * `Map`：实现键值到值得映射。
+  
   * * 
 
 
@@ -5529,3 +5530,6 @@ Hairpin技术又被称为Hairpin NAT、Loopback NAT或Hairpin Translation。Hair
 
 # ==**未完成 常量池 深入Class对象 URLConnection JDBC**==
 
+
+
+# [运行时异常和非运行时异常]([Java运行时异常和非运行时异常 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/358304606))
