@@ -1888,7 +1888,7 @@ public void annotationTest(){
 
 
 
-# ~~六、MyBatis~~
+# 六、MyBatis
 
 [什么是MyBatis？](####ORM)
 
@@ -2353,7 +2353,7 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==**数据源类型**=
 
 
 
-### 6.1.4 核心映射文件
+### 6.1.4 核心映射文件与←（主要元素在这里）
 
 #### 1主要元素
 
@@ -2415,25 +2415,27 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==**数据源类型**=
 
 * 它可以解决表名与javaBean名的冲突。
 
-  * 其它的解决方法：
+  
 
+  * 其它的解决方法：
+  
     * 1. ```xml
          <!--**mapUnderscoreToCamelCase**是否开启自动驼峰命名规则（camel case）映射，db字段名：last_name javabean属性名:lastName -->
          <!--只能解决命名-->
-         <setting name="mapUnderscoreToCamelCase" value="true"/>
+       <setting name="mapUnderscoreToCamelCase" value="true"/>
          ```
 
     * 2. 对查询结果集取别名
-
+  
          ```sql
          select name 名字 from user
          #or
          select name as 名字 from user
-         #效果一样
+       #效果一样
          ```
 
          
-
+  
     * 3. 也就是resultMap，自定义映射规则
 
 
@@ -2894,7 +2896,7 @@ or
 
 
 
-### #{}${}
+### #{}${}区别
 
 > 注意：
 >
@@ -2914,7 +2916,21 @@ or
 
 规定参数的一些规则：
 
-==javaType、jdbcType、mode（存储过程）、numbericScale、resultMap、typeHandler、jdbcTypeName、expression（未来准备支持的功能）==
+* javaType
+
+* jdbcType
+
+* mode（存储过程）
+
+* numbericScale
+
+* resultMap
+
+* typeHandler
+
+* jdbcTypeName
+
+* expression（未来准备支持的功能）
 
 jdbcType通常需要再某种特定条件下被设置：
 
@@ -3129,8 +3145,8 @@ where id=#{id}
 <!--public List<Teacher> getTeacherByIdIn(@Param("ids")List<Integer> ids);-->
 <select id="getTeacherByIdIn" resultMap="teacherMap">
 		SELECT * FROM  t_teacher WHERE id IN
-		<foreach collection="ids" item="id_item">
-  		#{id_item}
+		<foreach collection="ids" item="id_item" index="index">
+  		ids[#{index}]=#{id_item}
   	</foreach>
 </select>
         
@@ -3143,33 +3159,27 @@ where id=#{id}
 * 指定要遍历的集合；
 * List类型的参数会特殊处理封装在map中，map的key就叫**list**
 
-**item：**
+**item：**将当前遍历出的元素赋值给指定的变量
 
-将当前遍历出的元素赋值给指定的变量
+**separator：**每个元素之间的分隔符
 
-**separator：**
+**open：**遍历所有的结果拼接一个开始字符
 
-每个元素之间的分隔符
-
-**open：**
-
-遍历所有的结果拼接一个开始字符
-
-**close：**
-
-遍历所有的结果拼接一个结束字符
+**close：**遍历所有的结果拼接一个结束字符
 
 **index：**
 
-索引<font color='orange'>。遍历list的时候是索引，item就是当前元素</font>；
+索引<font color='orange'>。遍历List的时候是index就是索引，item就是当前元素</font>；
 
-**遍历map的时候index表示就是map的key，item就是map的值**
+**遍历Map的时候index表示就是map的key，item就是map的值**
 
-​	
+
+
+> 注意：
+
+​	[可去官网查询MySQL连接属性](https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-connp-props-security.html)，例如要解决语句中可以出现“;” 则**allowMultiQueries**就为**true**
 
 ### 7 &lt;bind&gt;元素
-
-它是用于模糊查询中不同数据库的不同实现方式而存在的同一口径元素。
 
 **可以将OGNL表达式的值绑定到一个变量中，方便后来引用这个变量的值**
 
@@ -3188,6 +3198,12 @@ username like #{patter_name}
 当然也可以这样拼接
 username like '%${patter_name}%'
 ```
+
+
+
+
+
+
 
 ## 6.3 MyBatis关联映射例子
 
@@ -3624,28 +3640,190 @@ public interface IUserDao {
 }
 ```
 
-## 6.5 MyBatis二级缓存
+## 6.5 自带缓存（不专业）
 
-* MyBatis包含一个非常强大的查询缓存特性，它可以非常方便地配置和定制。缓存可以极大的提升查询效率。
-* MyBatis系统中默认定义了两级缓存：
+* （目的）MyBatis包含一个非常强大的查询缓存特性，它可以非常方便地配置和定制。缓存可以极大的提升查询效率。
+* （是什么）MyBatis系统中默认定义了两级缓存：
   * 一级缓存（也称为本地缓存）和二级缓存（也称为全局缓存）
     * 1、默认情况下，只有一级缓存（SqlSession级别的缓存，也称为本地缓存）开启。
+    
     * 2、二级缓存需要手动开启和配置，他是基于namespace级别的缓存。
+    
     * 3、为了提高扩展性。MyBatis定义了缓存接口Cache。我们可以通过实现Cache接口来自定义二级缓存
+    
+      
 
-一级缓存：
+* 一级缓存（==本地缓存==）：（**SqlSession级别的缓存**）（**一直都会开启**）(**放在map中**)
+  * 与数据库同一次会话期间查询到的数据会放在本地缓存中。以后如果需要获取相同的数据，直接从缓存中拿，没必要再去查询数据库；
+  * 一级缓存失效的情况
+    * 1. SqlSession不同
+      2. SqlSession相同。查询条件不同（当前一级缓存中还没有这个数据）
+      3. SqlSession相同。两次查询之间执行了增删改操作（这次 增删改 对当前数据有影响）
+      4. SqlSession相同。手动清楚了一级缓存（缓存清空）sqlSession.clearCache();
 
-​	与数据库同一次会话期间查询到的数据会放在本地缓存中。以后如果需要获取相同的数据，直接从缓存中拿，没必要再去查询数据库；
+* 二级缓存：（==全局缓存==），基于namespace级别的缓存，一个namespace对应一个二级缓存。
 
-一级体验：
+  * 工作机制：
+
+    * 1. 一个会话查询一条数据，这个数据就会被放在当前会话的一级缓存中。
+
+      2. 如果会话关闭，一级缓存中的数据会被保存到二级缓存中；新的会话查询信息，就可以参照二级缓存中的内容。
+
+      3. sqlSession===EmployeeMapper ==>Employee
+
+         ​			 DepartmentMapper===>Department
+
+          不同namespace查出的数据会放在自己对应的的缓存中（map中）
+
+  * 使用：
+
+    * 1. 开启器全局二级缓存配置：` <setting name="cacheEnabled" value="true"/>`
+
+      2. 到mapper.xml中配置使用二级缓存。
+
+      3. `<cache></cache>`
+
+         1. eviction:缓存回收策略：
+
+            * LRU - 最近最少使用的，移除最长时间不被使用的对象。
+            * FIFO - 先进先出：按对象进行缓存的顺序来移除它们。
+            * SOFT - 软引用：更积极地移除基于垃圾收集器状态和弱引用规则的对象。
+            * 默认的使LRU
+
+         2. flushInterval：缓存刷新间隔。缓存多长时间清空一次，默认不清空，设置一个毫秒值。
+
+         3. readOnly：是否只读：
+
+            * true 只读：mybatis认为所有从缓存中获取数据的操作都是只读操作，不会修改数据。
+
+              mybatis为了加快获取速度。直接就会将数据在缓存中的引用交给用户。不安全（**不知道**）。 速度快。
+
+            * false 非只读：mybatis觉得获取的数据可能会被修改。
+
+              mybatis会利用序列化&反序列的技术克隆一份新的数据给你。安全。速度慢。
+
+         4. size：缓存存放多少元素。
+
+         5. type：指定自定义缓存的全类名。
+
+            实现Cache接口即可
+
+            
+
+      4. 我们的POJO需要实现序列化接口
+
+  * 效果：
+
+    * 数据会从二级缓存中获取
+    * 查出的数据都会被默认先放在一级缓存中。
+    * 只有会话提交或关闭以后，一级缓存中的数据才会转移到二级缓存中
+    * 之后会按照顺序（二级缓存 - 一级缓存 - 查询数据库）获取数据
+    * 猜测 命中日志针对二级缓存显示
+
+  * 和缓存相关的设置/属性：
+
+    * 1. cacheEnabled=true：false 关闭缓存（二级缓存关闭）（一级缓存一直可用）
+      2. 每个select标签都有`useCache="true"`false的话：不使用缓存（一级缓存依然使用，二级缓存不使用）（每个select都有 flushCache="false"）
+      3. 每个增删改标签都有`flushCache="true"` 一级缓存就清空了，二级也会被清除
+      4. sqlSession.clearCache();只是清除当前会话的一级缓存。
+      5. localCacheScope：本地缓存作用域，有两个值：SESSION | STATEMENT（在全局配置文件中配置：`<setting></setting>`）
+         1. SESSION：当前会话的所有数据保存在会话缓存中。
+         2. STATEMENT:禁用一级缓存。
+
+一级缓存体验结果：
+
+```java
+ public static void main(String[] args) {  
+			 SqlSessionFactory sqlSessionFactory = (SqlSessionFactory) run.getBean("sqlSessionFactory");
+        SqlSession sqlSession = sqlSessionFactory.openSession( );
+        ConsumeDao mapper = sqlSession.getMapper(ConsumeDao.class);
+          ConsumeEntity consumeEntity = mapper.selectById(1);
+        System.out.println(consumeEntity);
+        ConsumeEntity consumeEntity2 = mapper.selectById(1);
+        System.out.println(consumeEntity2);
+        System.out.println(consumeEntity==consumeEntity2 );
+    }
+
+
+2022-05-06 15:02:28, 180 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao.selectById - ==>  Preparing: SELECT * FROM consume WHERE id=?
+2022-05-06 15:02:28, 208 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao.selectById - ==> Parameters: 1(Integer)
+2022-05-06 15:02:28, 223 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao.selectById - <==      Total: 1
+ConsumeEntity(id=1, smeName=易耗品1, smeCount=50, inRecordEntities=null, outRecordEntities=null)
+ConsumeEntity(id=1, smeName=易耗品1, smeCount=50, inRecordEntities=null, outRecordEntities=null)
+true
+
+```
 
 
 
+二级缓存体验
+
+```java
+ public static void main(String[] args) { 
+SqlSessionFactory sqlSessionFactory = (SqlSessionFactory) run.getBean("sqlSessionFactory");
+
+        SqlSession sqlSession = sqlSessionFactory.openSession( );
+        ConsumeDao mapper = sqlSession.getMapper(ConsumeDao.class);
+
+        SqlSession sqlSession2 = sqlSessionFactory.openSession( );
+        ConsumeDao mapper2 = sqlSession2.getMapper(ConsumeDao.class);
+
+        ConsumeEntity consumeEntity = mapper.selectById(1);
+        System.out.println(consumeEntity);
+        sqlSession.close();
+
+        ConsumeEntity consumeEntity2 = mapper2.selectById(1);
+        System.out.println(consumeEntity2);
+
+ }
+2022-05-06 17:01:34, 389 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao - Cache Hit Ratio [com.example.demo.modules.dao.ConsumeDao]: 0.0
+2022-05-06 17:01:34, 876 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao.selectById - ==>  Preparing: SELECT * FROM consume WHERE id=?
+2022-05-06 17:01:34, 895 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao.selectById - ==> Parameters: 1(Integer)
+2022-05-06 17:01:34, 913 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao.selectById - <==      Total: 1
+ConsumeEntity(id=1, smeName=易耗品1, smeCount=50, inRecordEntities=null, outRecordEntities=null)
+2022-05-06 17:01:34, 917 [restartedMain] WARN  org.apache.ibatis.io.SerialFilterChecker - As you are using functionality that deserializes object streams, it is recommended to define the JEP-290 serial filter. Please refer to https://docs.oracle.com/pls/topic/lookup?ctx=javase15&id=GUID-8296D8E8-2B93-4B9A-856E-0A65AF9B8C66
+2022-05-06 17:01:34, 917 [restartedMain] DEBUG com.example.demo.modules.dao.ConsumeDao - Cache Hit Ratio [com.example.demo.modules.dao.ConsumeDao]: 0.5
+ConsumeEntity(id=1, smeName=易耗品1, smeCount=50, inRecordEntities=null, outRecordEntities=null)
+
+
+```
 
 
 
+## 6.6三方缓存（专业）
 
-# ~~七、MyBatis与Spring整合~~
+三方缓存整合步骤：
+
+1. 导入第三方缓存包即可；
+2. 导入与第三方缓存整合的适配包
+3. 配置三方缓存的配置文件
+4. mapper.xml中使用自定义缓存
+
+
+
+例子：
+
+到mybatis[顶级目录](https://github.com/mybatis)中找到整合或适配包。
+
+到三方官网找到核心包[Ehcache](https://www.ehcache.org/)
+
+看查考文档[mybatis-ehcache – MyBatis Ehcache | Reference Documentation](http://mybatis.org/ehcache-cache/)
+
+
+
+# 七、MyBatis与Spring整合
+
+整合步骤：
+
+1. 在github的Mybatis顶级目录中找到Spring，
+
+2. 并在Spring提供的链接跳转到整合[参考文档](http://mybatis.org/spring/)。
+
+3. 在github的Mybatis顶级目录中找到Spring，
+
+4. 并下载整合包。
+
+   
 
 ## 7.1整合核心
 
@@ -3655,9 +3833,11 @@ public interface IUserDao {
 
 ### 7.1.2 SqlSessionDaoSupport
 
+
+
 是一个抽象支持类，它继承了DaoSupport类，主要是作为DAO的基类来使用。可以通过SqlSessionDaoSupport类的`getSqlSession()方法`来获取所需的SqlSession。
 
-## 7.2 传统DAO方式的开发整合
+## ~~7.2 传统DAO方式的开发整合~~
 
 
 
@@ -3679,7 +3859,7 @@ getxx setxx toString 略...
 
 MyBatis配置文件：
 
-```java
+```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE configurationPUBLIC "-//mybatis.org//DTD Config 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-config.dtd">
@@ -3688,6 +3868,22 @@ MyBatis配置文件：
     <mappers>
         <mapper resource="sqlmap/User.xml"/>
     </mappers>
+  <settings>
+
+    <setting name="mapUnderscoreToCamelCase" value="true"/>
+    <setting name="jdbcTypeForNull" value="NULL"/>
+
+    <!--显式的指定每个我们需要更改的配置的值，即使他是默认的。防止版本更新带来的问题  -->
+    <setting name="cacheEnabled" value="true"/>
+    <setting name="lazyLoadingEnabled" value="true"/>
+    <setting name="aggressiveLazyLoading" value="false"/>
+  </settings>
+
+  <databaseIdProvider type="DB_VENDOR">
+  <property name="MySQL" value="mysql"/>
+  <property name="Oracle" value="oracle"/>
+  <property name="SQL Server" value="sqlserver"/>
+  </databaseIdProvider>
 </configuration>
 ```
 
@@ -3746,7 +3942,7 @@ Spring文件配置：
 
 ```java
 package com.itheima.dao.impl;
-@@Component
+@Component
 public class CustomerDaoImpl extends SqlSessionDaoSupport implement CustomerDao{
     public Customer findCustomerById(Integer id){
         return this.getSqlSession().selectOne("com.iheima.po"+".CustomerMapper.findCustomerById",id);
@@ -3801,7 +3997,7 @@ Mapper配置文件： 略
 
 MyBatis配置文件：
 
-```java
+```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE configurationPUBLIC "-//mybatis.org//DTD Config 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-config.dtd">
@@ -3810,6 +4006,22 @@ MyBatis配置文件：
     <mappers>
         <mapper resource="sqlmap/User.xml"/>
     </mappers>
+  <settings>
+
+    <setting name="mapUnderscoreToCamelCase" value="true"/>
+    <setting name="jdbcTypeForNull" value="NULL"/>
+
+    <!--显式的指定每个我们需要更改的配置的值，即使他是默认的。防止版本更新带来的问题  -->
+    <setting name="cacheEnabled" value="true"/>
+    <setting name="lazyLoadingEnabled" value="true"/>
+    <setting name="aggressiveLazyLoading" value="false"/>
+  </settings>
+
+  <databaseIdProvider type="DB_VENDOR">
+  <property name="MySQL" value="mysql"/>
+  <property name="Oracle" value="oracle"/>
+  <property name="SQL Server" value="sqlserver"/>
+  </databaseIdProvider>
 </configuration>
 ```
 
@@ -3842,11 +4054,14 @@ Spring MVC配置文件：
     <property name="configLocation" value="classpath:mybatis-config.xml"/>
 </bean>
 
-Mapper代理开发
+Mapper代理开发 多种可看7.3.2： MapperScannerConfigurer  和 另一种
 <bean id="customerMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
 	<property name="mapperInterface" value="com.itheima.mapper.CustomerMapper"/>
      <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
 </bean>
+另一种：
+<mybatis-spring:scan base-package="com.itheima.mapper"/>
+
 
 ```
 
@@ -4849,137 +5064,6 @@ SSM（Spring Spring MVC MyBatis）。由于Spring MVC 是Spring框架的一部�
 
 开始整合：
 
-**db.properties文件：**
-
-```properties
-jdbc.user=root
-jdbc.password=123456
-jdbc.driverClass=com.mysql.jdbc.Driver
-jdbc.jdbcUrl=jdbc\:mysql\:///test
-jdbc.maxTotal=30
-jdbc.maxIdle=10
-jdbc.initialSize=5
-```
-
-**Spring配置文件（applicationContext.xml）：**
-
-```xml
-<beans>
-<context:property-placehoder location="classpath:db.properties"/>
-数据源
-<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
-    <property name="driverClassName" value="${jbdc.driver}"/>
-    <property name="url" value="${jbdc.url}"/>
-    <property name="username" value="${jbdc.username}"/>
-    <property name="password" value="${jbdc.password}"/>
-    <property name="maxTatal" value="${jdbc.maxTotal}"/>
-    <property name="maxIdle" value="${jdbc.maxIdle}"/>
-    <property name="initialSize" value="${jdbc.initialSize}"/>         
-</bean>
-
-
-事务管理器
-<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
-    注入数据源
-    <property name="dataSource" ref="dataSource"/>
-</bean>
-开启事务注解
-<tx:annotation-driven transaction-manager="transactionManager" />
-
-
-配置MyBatis工厂
-<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
-    注入数据源
-    <property name="datasource" ref="dataSource"/>
-    指定mybatis配置文件位置
-    <property name="configLocation" value="classpath:mybatis-config.xml"/>
-</bean>
-
-
-Mapper代理开发
-<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-	<property name="basePackage" value="com.itheima.dao"/>
-</bean>
-
-
-扫描Service new！(属于扫描bean注解)
-<context:component-scan base-package="com.itheima.service"/>
-</beans>
-```
-
-**MyBatis配置文件（mybatis-config.xml）：**
-
-```xml
-<configuration>
-    <typeAliases>
-    	<package name="com.itheima.po"/>
-    </typeAliases>
-</configuration>
-```
-
-**Spring MVC配置文件（springmvc-config.xml）：**
-
-```xml
-<beans>
-<context:component-scan base-package="com.itheima.controller"/>
-<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
-	<property name="prefix" value="/WEB-INF/jsp/"/>
-	<property name="suffix" value=".jsp"/>
-</bean>
-</beans>
-
-```
-
-**web.xml（文件监听器、编码过滤器以及Spring MVC的前端控制器）：**
-
-```xml
-配置加载Spring文件监听器
-<context-param>
-	<param-name>contextConfigLocation</param-name>
-	<param-value>classpath:applicationContext.xml</param-value>
-</context-param>
-<listener>
-	<listener-class>
-		org.springframework.web.context.ContextLoaderListener
-	</listener-class>
-</listener>
-
-编码过滤器
-<filter>
-    <filter-name>encoding</filter-name>
-    <filter-class>
-        org.springframework.web.filter.CharacterEncodingFilter
-    </filter-class>
-    <init-param>
-    	<param-name>encoding</param-name>
-		<param-value>UTF-8</param-value>
-    </init-param>
-</filter>
-<filter-mapping>
-	<filter-name>encoding</filter-name>
-	<url-pattern>*.action</url-pattern>
-    扩展名匹配
-</filter-mapping>
-
-
-<servlet>
-    配置前端过滤器
-    <servlet-name>springmvc</servlet-name>
-    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-    初始化时加载配置文件
-    <init-param>
-        <param-name>contextConfigLocation</param-name>
-        <param-value>classpath:springmvc-config.xml</param-value>
-    </init-param>
-    表示容器在启动时立即加载
-    <load-on-startup>1</load-on-startup>
-</servlet>
-<servlet-mapping>
-    <servlet-name>springmvc</servlet-name>
-    <url-pattern>/</url-pattern>
-</servlet-mapping>
-```
-
 **Customer类：**
 
 ```java
@@ -5072,6 +5156,218 @@ public class customerController{
     </table>
 </body>
 ```
+
+
+
+**web.xml（文件监听器、编码过滤器以及Spring MVC的前端控制器）：**
+
+```xml
+配置加载Spring文件监听器
+<context-param>
+	<param-name>contextConfigLocation</param-name>
+	<param-value>classpath:applicationContext.xml</param-value>
+</context-param>
+<listener>
+	<listener-class>
+		org.springframework.web.context.ContextLoaderListener
+	</listener-class>
+</listener>
+
+<!--编码过滤器 非必要-->
+<filter>
+    <filter-name>encoding</filter-name>
+    <filter-class>
+        org.springframework.web.filter.CharacterEncodingFilter
+    </filter-class>
+    <init-param>
+    	<param-name>encoding</param-name>
+		<param-value>UTF-8</param-value>
+    </init-param>
+</filter>
+<filter-mapping>
+	<filter-name>encoding</filter-name>
+	<url-pattern>*.action</url-pattern>
+    扩展名匹配
+</filter-mapping>
+
+
+<servlet>
+    配置前端过滤器
+    <servlet-name>springmvc</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    初始化时加载配置文件
+    <init-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:springmvc-config.xml</param-value>
+    </init-param>
+    表示容器在启动时立即加载
+    <load-on-startup>1</load-on-startup>
+</servlet>
+<servlet-mapping>
+    <servlet-name>springmvc</servlet-name>
+    <url-pattern>/</url-pattern>
+</servlet-mapping>
+```
+
+
+
+**db.properties文件：**
+
+```properties
+jdbc.user=root
+jdbc.password=123456
+jdbc.driverClass=com.mysql.jdbc.Driver
+jdbc.jdbcUrl=jdbc\:mysql\:///test
+jdbc.maxTotal=30
+jdbc.maxIdle=10
+jdbc.initialSize=5
+```
+
+**Spring配置文件（applicationContext.xml）：**
+
+```xml
+<beans>
+<context:property-placehoder location="classpath:db.properties"/>
+数据源
+<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+    <property name="driverClassName" value="${jbdc.driver}"/>
+    <property name="url" value="${jbdc.url}"/>
+    <property name="username" value="${jbdc.username}"/>
+    <property name="password" value="${jbdc.password}"/>
+    <property name="maxTatal" value="${jdbc.maxTotal}"/>
+    <property name="maxIdle" value="${jdbc.maxIdle}"/>
+    <property name="initialSize" value="${jdbc.initialSize}"/>         
+</bean>
+
+
+事务管理器
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    注入数据源
+    <property name="dataSource" ref="dataSource"/>
+</bean>
+开启事务注解
+<tx:annotation-driven transaction-manager="transactionManager" />
+
+
+配置MyBatis工厂
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    注入数据源
+    <property name="datasource" ref="dataSource"/>
+    指定mybatis配置文件位置
+    <property name="configLocation" value="classpath:mybatis-config.xml"/>
+  	或
+  	<property name="mapperLocations" value="classpath:mybatis/mapper/*.xml"/>
+</bean>
+
+
+Mapper代理开发 (这里的方案很多，使用过就一一例举) 
+  一：
+  <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+    <property name="basePackage" value="com.itheima.dao"/>
+  </bean>
+	二：
+	<mybatis-spring:scan base-package="com.itheima.dao"/>
+  
+
+  由Spring管理的Bean (这里的方案很多，使用过就一一例举) 
+  一：
+<context:component-scan base-package="com.itheima.service"/>
+  二：
+  <context:component-scan base-package="com.example.main">
+         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+     </context:component-scan>
+</beans>
+```
+
+**MyBatis配置文件（mybatis-config.xml）：**
+
+```xml
+<configuration>
+    <typeAliases>
+    	<package name="com.itheima.po"/>
+    </typeAliases>
+</configuration>
+```
+
+**Spring MVC配置文件（springmvc-config.xml）：**
+
+如若使用@ResponseBody 不使用视图可不要。但要导入
+
+```xml
+<dependency>
+  　　<groupId>com.fasterxml.jackson.core</groupId>
+  　　<artifactId>jackson-core</artifactId>
+  　　<version>2.7.3</version>
+</dependency>
+ 
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-databind</artifactId>
+  <version>2.7.3</version>
+</dependency>
+ 
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-annotations</artifactId>
+  <version>2.7.3</version>
+</dependency>
+```
+
+
+
+```xml
+<beans>
+<context:component-scan base-package="com.itheima.controller"/>
+  如若使用@ResponseBody 不使用视图可不要。
+<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+	<property name="prefix" value="/WEB-INF/jsp/"/>
+	<property name="suffix" value=".jsp"/>
+</bean>
+</beans>
+
+```
+
+相关包：
+
+![image-20220517145426566](Java EE.assets\image-20220517145426566.png)
+
+> 文字总结：
+
+到github的mybatis项目的顶级目录中找到该项目的子项目Spring，并找到Spring与Mybatis的整合文档。下载相关整合版本的核心包与适配包。（适配包在Mybatis项目下的子项目Spring）。写好控制层、服务层、数据访问层，和JavaBean。创建好和写好mybatis的配置文件和映射文件。开始写Spring配置文件applicationContext.xml，步骤如下：
+
+首先把原来在Mybatis中配置的数据源移动到该配置文件中进行管理。
+
+其次注册事务组件DataResourceTransactionManager,注入数据源。然后开启事务注解。
+
+开始SM整合（目的：Spring管理所有组件。包括mybatis的mapper实现类）
+
+配置MyBatis会话工厂注册SqlSessionFactoryBean，注入数据源，也可以可选的注入配置属性。
+
+由于Spring希望管理所有的业务逻辑组件，所以配置Spring只扫描业务相关的组件。
+
+配置扫描数据访问层的包（也就是mapper接口，让这些mapper能够自动注入）
+
+完成。
+
+开始写SpringMVC配置文件spring-servlet配置文件。
+
+步骤：
+
+扫描控制层相关的包
+
+配置视图解析器（可选。）
+
+配置转换器(可选)
+
+开启mvc注解。
+
+配置默认servlet处理（可选）
+
+写web.xml
+
+​	
+
+
 
 
 
