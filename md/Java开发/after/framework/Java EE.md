@@ -5295,13 +5295,13 @@ Mapper代理开发 (这里的方案很多，使用过就一一例举)
 
 ```xml
 <dependency>
-  　　<groupId>com.fasterxml.jackson.core</groupId>
+  　　<groupId>com.fasterxml.jackson.databind</groupId>
   　　<artifactId>jackson-core</artifactId>
   　　<version>2.7.3</version>
 </dependency>
- 
-<dependency>
-  <groupId>com.fasterxml.jackson.core</groupId>
+ 以下可不要
+<!--<dependency>
+  <groupId>com.fasterxml.jackson.annotation</groupId>
   <artifactId>jackson-databind</artifactId>
   <version>2.7.3</version>
 </dependency>
@@ -5310,7 +5310,7 @@ Mapper代理开发 (这里的方案很多，使用过就一一例举)
   <groupId>com.fasterxml.jackson.core</groupId>
   <artifactId>jackson-annotations</artifactId>
   <version>2.7.3</version>
-</dependency>
+</dependency>-->
 ```
 
 
