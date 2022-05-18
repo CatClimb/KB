@@ -4306,7 +4306,7 @@ public class FirstController{
 
 Controller接口的实现类只能处理一个单一的请求动作，基于注解的控制器可以同时处理多个请求动作，在使用上更加的灵活。
 
-# 九、Spring 数据绑定
+# 九、数据绑定
 
 [什么是Spring 数据绑定？](####Spring 数据绑定)
 
@@ -4369,7 +4369,7 @@ public String selectUser(Integer id){
 
 ==**注意**==
 
-当前端请求中参数名和后台控制器类方法中的形参名不一样时，会报错，需使用==**@RequestParam**==注解来进行`间接对应`。
+当前端请求参数名和后台控制器类方法中的形参名不一样时，会报错，需使用==**@RequestParam**==注解来进行`间接对应`。
 
 例子如下：
 
@@ -5364,6 +5364,20 @@ Mapper代理开发 (这里的方案很多，使用过就一一例举)
 配置默认servlet处理（可选）
 
 写web.xml
+
+步骤：
+
+配置SpringIOC容器跟随web一起启动（配置web应用参数contextConfigLocation，参数值为配置文件applicationContext.xml的类路径）
+
+在配置容器的加载监听器。
+
+之后配置SpringMVC的DispatchServlet，配置其初始化参数contextConfigLocation，参数值为配置文件spring-servlet.xml的类路径
+
+启动测试
+
+
+
+
 
 ​	
 
