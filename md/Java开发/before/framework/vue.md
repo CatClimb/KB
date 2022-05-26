@@ -4716,7 +4716,7 @@ Mint UI http://mint-ui.github.io
 
 
 
-# 前端部署
+# ~~前端部署~~
 
 1. `npm run build` 对vue项目进行打包，之后得到<font color='red'>dist</font>文件夹
 

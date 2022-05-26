@@ -193,6 +193,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class User {
   	
@@ -223,6 +224,14 @@ public interface UserMapper extends BaseMapper<User> {
 }
 
 ```
+
+**UserService接口**
+
+```java
+
+```
+
+
 
 测试结果：
 
@@ -415,5 +424,252 @@ import com.example.mybatis_plus_test.service.UserService;
 public class UserServiceImpl extends ServiceImpl<UserMapper,User> implements UserService{
 }
 
+```
+
+# 四、常用注解
+
+**以下注解遵循 实体类的驼峰命名（包括大小驼峰）转为下划线命名的规则。（下文规则说的是这里的规则）**
+
+## 1、@TableName
+
+
+
+目的：保证实体类名与数据库中表名一致，或规则命名符合。（这里规则说的是上文规则）
+
+解决方式：
+
+1. 按照规则命名就行，不需要注解。
+
+2. 通过设置实体类注解@tableName的value为表名
+
+   ```java
+   @Data
+   @NoArgsConstructor
+   @AllArgsConstructor
+   @TableName("th_user")
+   public class User {
+       private Long id;
+       private String name;
+       private Integer age;
+       private String email;
+   
+   }
+   TestResult：
+     SELECT id,name,age,email FROM th_user
+   ```
+
+   
+
+3. 通过设置全局配置
+
+   ```yml
+   mybatis-plus:
+     global-config:
+       db-config:
+         table-prefix: th_
+         
+         
+     TestResult：
+     SELECT id,name,age,email FROM th_user
+   ```
+
+## 2、@TableId
+
+MyBatis-Plus在实现CRUD时，会==默认==将<font color='green'>实体属性名id</font>作为主键列，并在插入数据时，`默认`==基于雪花算法的策略生成id==
+
+目的：保证实体属性字段与主键字段一致，或规则命名符合。（这里规则说的是上文规则）
+
+解决方式：
+
+1. 按照规则命名就行，不需要注解
+   2. 通过在实体主键属性设置注解@TableId的value值为主键字段名
+
+### a @TableId的Type属性
+
+```java
+@Getter
+public enum IdType {
+    /**
+     * 数据库ID自增
+     * <p>该类型请确保数据库设置了 ID自增 否则无效</p>
+     */
+    AUTO(0),
+    /**
+     * 该类型为未设置主键类型(注解里等于跟随全局,全局默认 ASSIGN_ID)
+     */
+    NONE(1),
+    /**
+     * 用户输入ID
+     * <p>该类型可以通过自己注册自动填充插件进行填充</p>
+     */
+    INPUT(2),
+
+    /* 以下3种类型、只有当插入对象ID 为空，才自动填充。 */
+    /**
+     * 分配ID (主键类型为number或string）,
+     * 默认实现类 {@link com.baomidou.mybatisplus.core.incrementer.DefaultIdentifierGenerator}(雪花算法)
+     *
+     * @since 3.3.0
+     */
+    ASSIGN_ID(3),
+    /**
+     * 分配UUID (主键类型为 string)
+     * 默认实现类 {@link com.baomidou.mybatisplus.core.incrementer.DefaultIdentifierGenerator}(UUID.replace("-",""))
+     */
+    ASSIGN_UUID(4);
+
+    private final int key;
+
+    IdType(int key) {
+        this.key = key;
+    }
+}
+
+```
+
+### b 雪花算法
+
+> #### 背景
+
+需要选择合适的方案去应对数据规模的增长，以应对主键增长的访问压力和数据量。
+
+数据库的扩展方式主要包括：业务分库、主从复制，数据库分表。
+
+> #### 数据库分表
+
+单表数据拆分有两种方式：垂直分表和水平分表。示意图如下：
+
+![image-20220526231934501](MyBatis-Plus.assets\image-20220526231934501.png)
+
+1. ##### 垂直分表
+
+垂直分表适合将表中某些不常用且占了大量空间的列拆出去。
+
+1. ##### 水平分表
+
+水平分表适合行数特别大的表，有的公司要求单表行数超过5000万九必须进行分表，这个数字可以作为参考，但并不是绝对标准，关键还是要看表的访问性能。对于一些比较复杂的表，可能超过1000万就要分表了，而对于一些简单的表，即使存储数据超过1亿行，也可以不分表。
+
+但不管怎么样当看到表的数据量达到千万级别时，作为架构师就要警觉起来，因为这很可能时架构的性能瓶颈或者隐患。
+
+<font color='green'>水平分表相比垂直分表，会引入更多的复杂性，例如要求全局唯一的数据id该如何处理：</font>
+
+> ###### 主键自增
+
+①以最常见的用户 ID 为例，可以按照 1000000 的范围大小进行分段，1 ~ 999999 放到表 1中， 1000000 ~ 1999999 放到表2中，以此类推。
+
+②**复杂点：**分段大小的选取。分段太小会导致切分后子表数量过多，增加维护复杂度；分段太大可能会 导致单表依然存在性能问题，一般建议分段大小在 100 万至 2000 万之间，具体需要根据业务选取合适 的分段大小。 
+
+③**优点：**可以随着数据的增加平滑地扩充新的表。例如，现在的用户是 100 万，如果增加到 1000 万， 只需要增加新的表就可以了，原有的数据不需要动。 ④缺点：分布不均匀。假如按照 1000 万来进行分表，有可能某个分段实际存储的数据量只有 1 条，而 另外一个分段实际存储的数据量有 1000 万条。
+
+> ###### 取模
+
+①同样以用户 ID 为例，假如我们一开始就规划了 10 个数据库表，可以简单地用 user_id % 10 的值来 表示数据所属的数据库表编号，ID 为 985 的用户放到编号为 5 的子表中，ID 为 10086 的用户放到编号 为 6 的子表中。 ②复杂点：初始表数量的确定。表数量太多维护比较麻烦，表数量太少又可能导致单表性能存在问题。 ③优点：表分布比较均匀。 ④缺点：扩充新的表很麻烦，所有数据都要重分布。
+
+②**复杂点：**初始表数量的确定。表数量太多维护比较麻烦，表数量太少又可能导致单表性能存在问题。 
+
+③**优点：**表分布比较均匀。 ④缺点：扩充新的表很麻烦，所有数据都要重分布。
+
+> ###### 雪花算法
+
+雪花算法是由Twitter公布的分布式主键生成算法，它能够保证不同表的主键的不重复性，以及相同表的 主键的有序性。
+
+①**核心思想：** 
+
+* 长度共64bit（一个long型）。 
+
+* 首先是一个符号位，1bit标识，由于long基本类型在Java中是带符号的，最高位是符号位，正数是0，负 数是1，所以id一般是正数，最高位是0。
+
+* 41bit时间截(毫秒级)，存储的是时间截的差值（当前时间截 - 开始时间截)，结果约等于69.73年。 
+* 10bit作为机器的ID（5个bit是数据中心，5个bit的机器ID，可以部署在1024个节点）。
+* 12bit作为毫秒内的流水号（意味着每个节点在每毫秒可以产生 4096 个 ID）。
+
+
+
+![image-20220526233413123](MyBatis-Plus.assets\image-20220526233413123.png)
+
+②**优点：**整体上按照时间自增排序，并且整个分布式系统内不会产生ID碰撞，并且效率较高。
+
+
+
+## 3、@TableField
+
+目的：保证实体类属性与数据库中表字段一致，或规则命名符合。
+
+解决方式：
+
+1. 按照规则命名就行，不需要注解
+2. 通过设置实体类非主键属性注解@tableField的value为普通字段名
+
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+    private Long id;
+    @TableField("name")
+    private String xx;
+    private Integer age;
+    private String email;
+}
+
+TestResult:
+SELECT id,name AS xx,age,email FROM user
+```
+
+
+
+## 4、@TableLogic
+
+### a 逻辑删除：
+
+* 物理删除：真实删除，将对应数据从数据库中删除
+* 逻辑删除：假删除，修改代表删除的状态字段。
+* 使用场景：数据恢复
+
+### b 实现逻辑删除步骤：
+
+> ###### step 1
+
+执行sql语句，添加状态字段。
+
+```sql
+alter table user add column is_delete boolean default false
+```
+
+> ###### step 2
+
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+    private Long id;
+    private String name;
+    private Integer age;
+    private String email;
+    @TableLogic
+    private boolean isDelete;
+}
+
+```
+
+> ###### step 3
+
+测试删除功能：（服务层接口或数据访问层接口）
+
+```java
+userMapper.deleteById(1529858049893744642L);
+
+TestResult:
+UPDATE user SET is_delete=1 WHERE id=? AND is_delete=0
+```
+
+测试查询功能：（）
+
+```java
+List<User> users = userService.list();
+
+TestResult:
+SELECT id,name,age,email,is_delete FROM th_user WHERE is_delete=0
 ```
 
