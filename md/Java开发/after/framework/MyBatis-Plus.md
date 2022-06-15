@@ -626,6 +626,27 @@ SELECT id,name AS xx,age,email FROM user
 * 逻辑删除：假删除，修改代表删除的状态字段。
 * 使用场景：数据恢复
 
+```java
+public @interface TableLogic {
+
+    /**
+     * 默认逻辑未删除值（该值可无、会自动获取全局配置）
+     */
+    String value() default "";
+
+    /**
+     * 默认逻辑删除值（该值可无、会自动获取全局配置）
+     */
+    String delval() default "";
+}
+```
+
+
+
+> 注意
+
+注意以下boolean 类型 和tinyint
+
 ### b 实现逻辑删除步骤：
 
 > ###### step 1
@@ -671,5 +692,601 @@ List<User> users = userService.list();
 
 TestResult:
 SELECT id,name,age,email,is_delete FROM th_user WHERE is_delete=0
+```
+
+# 五、条件构造器
+
+## 1、Wrapper
+
+![image-20220529152829617](MyBatis-Plus.assets\image-20220529152829617.png)
+
+* Wrapper：条件构造抽象类，最顶端父类
+  * Abstractwrapper：
+    * QueryWrapper：查询条件封装、查询字段封装等
+    * UPdateWrapper：更新条件封装，更新字段封装等
+    * AbstractLambdaWrapper：使用Lambda语法
+      * LambdaQueryWrapper：
+      * LambdaUpdateWrapper：
+
+## 2、QueryWrapper
+
+### a例 组装查询条件
+
+```java
+@Test
+    public void test01(){
+        /**
+         * 查询用户名包含a，年龄在20到30之间，并且邮箱不为null的用户信息
+         *         SELECT id,name,age,email,is_delete FROM th_user WHERE
+         *                 is_delete=0 AND (name LIKE ? AND age BETWEEN ? AND ? AND email IS NOT NULL)
+         */
+        QueryWrapper<User> wrapper = new QueryWrapper<>( );
+        wrapper.like("name","a")
+                .between("age",20,30)
+                .isNotNull("email");
+        List<User> users = userMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+```
+
+### b例 组装排序条件
+
+```java
+    @Test
+    public void test02(){
+        /**
+         * 按年龄降序查询用户，如果年龄相同则按id升序排列
+         * SELECT id,name,age,email,is_delete FROM th_user WHERE is_delete=0 ORDER BY age DESC,id ASC
+         */
+        QueryWrapper<User> queryWrapper=new QueryWrapper<>(  );
+        queryWrapper.orderByDesc("age").orderByAsc("id");
+        List<User> users = userMapper.selectList(queryWrapper);
+        users.forEach(System.out::println);
+    }
+```
+
+
+
+### c例 组装删除条件
+
+```java
+@Test
+    public void test03(){
+        /**
+         * 逻辑删除email为空的用户
+         * UPDATE th_user SET is_delete=1 WHERE is_delete=0 AND (email IS NULL)
+         */
+        QueryWrapper<User> objectQueryWrapper = new QueryWrapper<>( );
+        objectQueryWrapper.isNull("email");
+        int delete = userMapper.delete(objectQueryWrapper);
+        System.out.println("受影响的行数："+delete);
+    }
+```
+
+
+
+### d例 条件的优先级
+
+```java
+/**条件的优先级
+         * 将用户名中包含有a并且（年龄大于20或邮箱为null）的用户信息修改
+         * UPDATE th_user SET age=? WHERE is_delete=0 AND (name LIKE ? AND (age > ? OR email IS NULL))
+         *
+         */
+        QueryWrapper<User> objectQueryWrapper = new QueryWrapper<>( );
+        objectQueryWrapper.like("name","a")
+                .and(i -> i.gt("age",20).or().isNull("email"));
+        User user =new User(  );
+        user.setAge(200);
+        int update = userMapper.update(user, objectQueryWrapper);//注意这是自动填充：该实体类不为空的属性数据填充到set字段
+        System.out.println("受影响的行数"+update);
+```
+
+
+
+### e例 组装select子句
+
+```java
+@Test
+    public void test06(){
+        /**
+         * 组装select子句
+         */
+        //查询用户信息的name字段和age字段
+//        SELECT username,age FROM t_user
+        QueryWrapper<User> userQueryWrapper=new QueryWrapper<>(  );
+        userQueryWrapper.select("name","age");
+        List<User> users = userMapper.selectList(userQueryWrapper);
+        users.forEach(System.out::println);
+    }
+```
+
+### f例 实现子查询
+
+```java
+    @Test
+    public void test022(){
+        /**
+         * 查询id小于等于3的用户信息
+         *
+         */
+        QueryWrapper<User> queryWrapper=new QueryWrapper<>(  );
+        queryWrapper.inSql("id","select id from t_user where id <=3");
+        List<User> users = userMapper.selectList(queryWrapper);
+        users.forEach(System.out::println);
+    }
+```
+
+## 3、UpdateWrapper
+
+```java
+    @Test
+    public void test292(){
+        /**
+         * updateWrapper
+         * 将（年龄大于20或邮箱为null）并且用户名中包含有a的用户信息修改
+         * 组装set子句以及修改条件
+         *
+         */
+        UpdateWrapper<User> updateWrapper=new UpdateWrapper<>(  );
+        updateWrapper.set("age",18);
+        updateWrapper.set("email","110232@qq.com");
+        updateWrapper.like("name","a")
+                .and(i->i.gt("age",20).or().isNull("email"));
+        int result = userMapper.update(null, updateWrapper);
+        System.out.println(result);
+
+//UPDATE t_user SET username=?, age=?,email=? WHERE (username LIKE ? AND
+//        (age > ? OR email IS NULL))
+        //User user = new User();
+        //user.setName("张三");
+//这里必须要创建User对象，否则无法应用自动填充。如果没有自动填充，可以设置为null
+//int result = userMapper.update(user, updateWrapper);
+//UPDATE t_user SET age=?,email=? WHERE (username LIKE ? AND (age > ? OR
+//        email IS NULL))
+
+
+    }
+```
+
+## 4、condition（组装条件）
+
+在进行更新或查询条件组装前，的一些条件判断。（如判空）
+
+```java
+    @Test
+    public void test203(){
+            //定义查询条件
+        String name=null;
+        Integer ageBegin=10;
+        Integer ageEnd=24;
+        QueryWrapper<User> queryWrapper =new QueryWrapper<>(  );
+        queryWrapper
+                .like(StringUtils.isNotBlank(name),"name","a")
+                .ge(ageBegin!=null,"age",ageBegin)
+                .le(ageEnd!=null,"age",ageEnd);
+        List<User> users = userMapper.selectList(queryWrapper);
+        users.forEach(System.out::println);
+    }
+```
+
+## 5、LambdaQueryWrapper
+
+```java
+@Test
+public void test09() {
+//定义查询条件，有可能为null（用户未输入）
+String username = "a";
+Integer ageBegin = 10;
+Integer ageEnd = 24;
+LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+//避免使用字符串表示字段，防止运行时错误
+queryWrapper
+.like(StringUtils.isNotBlank(username), User::getName, username)
+.ge(ageBegin != null, User::getAge, ageBegin)
+.le(ageEnd != null, User::getAge, ageEnd);
+List<User> users = userMapper.selectList(queryWrapper);
+users.forEach(System.out::println);
+}
+```
+
+## 6、LambdaUpdateWrapper
+
+```java
+@Test
+public void test10() {
+  //组装set子句
+  LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+  updateWrapper
+  .set(User::getAge, 18)
+  .set(User::getEmail, "user@atguigu.com")
+  .like(User::getName, "a")
+  .and(i -> i.lt(User::getAge, 24).or().isNull(User::getEmail)); //lambda
+  表达式内的逻辑优先运算
+  User user = new User();
+  int result = userMapper.update(user, updateWrapper);
+  System.out.println("受影响的行数：" + result);
+}
+
+```
+
+# 六、插件
+
+## 1、分页插件
+
+MyBatis Plus自带分页插件，只要简单的配置即可实现分页功能
+
+### a 添加配置类
+
+```java
+@Configuration
+@MapperScan("com.example.mybatis_plus_test.mapper")
+public class MyBatisPlusConfig {
+
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor(){
+        MybatisPlusInterceptor mybatisPlusInterceptor = new MybatisPlusInterceptor( );
+        mybatisPlusInterceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        return mybatisPlusInterceptor;
+    }
+}
+```
+
+### b 测试
+
+```java
+@Test
+    public void test1232(){
+        Page<User> page=new Page<>(2,3  );//当前页和每页显示的条数
+        Page<User> page1 = userMapper.selectPage(page, null);
+        //page和page1为同一个对象
+        System.out.println("xxxxxx:"+page );
+        System.out.println("yyyyy:"+page1 );
+
+        List<User> records = page.getRecords( );
+        records.forEach(System.out::println);
+        System.out.println("获取当前页："+page.getCurrent() );
+        System.out.println("每页显示的条数："+page.getSize() );
+        System.out.println("总记录数："+page.getTotal() );
+        System.out.println("总页数："+page.getPages() );
+        System.out.println("是否有上一页："+page.hasPrevious() );
+        System.out.println("是否有下一页："+page.hasNext() );
+
+
+    }
+TestResult:
+
+  Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@481e91b6] was not registered for synchronization because synchronization is not active
+2022-06-12 11:27:57.729  INFO 14116 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2022-06-12 11:27:57.973  INFO 14116 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+JDBC Connection [HikariProxyConnection@220689785 wrapping com.mysql.cj.jdbc.ConnectionImpl@5db6b845] will not be managed by Spring
+==>  Preparing: SELECT COUNT(*) AS total FROM th_user WHERE is_delete = 0
+==> Parameters: 
+<==    Columns: total
+<==        Row: 6
+<==      Total: 1
+==>  Preparing: SELECT id,name,age,email,is_delete FROM th_user WHERE is_delete=0 LIMIT ?,?
+==> Parameters: 3(Long), 3(Long)
+<==    Columns: id, name, age, email, is_delete
+<==        Row: 4, Sandy, 17, 1109442@qq.com, 0
+<==        Row: 5, Billie, 24, test5@baomidou.com, 0
+<==        Row: 7, Billi, 24, test5@baomidou.com, 0
+<==      Total: 3
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@481e91b6]
+xxxxxx:com.baomidou.mybatisplus.extension.plugins.pagination.Page@4f5b08d
+yyyyy:com.baomidou.mybatisplus.extension.plugins.pagination.Page@4f5b08d
+User(id=4, name=Sandy, age=17, email=1109442@qq.com, isDelete=false)
+User(id=5, name=Billie, age=24, email=test5@baomidou.com, isDelete=false)
+User(id=7, name=Billi, age=24, email=test5@baomidou.com, isDelete=false)
+获取当前页：2
+每页显示的条数：3
+总记录数：6
+总页数：2
+是否有上一页：true
+是否有下一页：false
+
+```
+
+## 2、自定义分页功能（如 条件分页）
+
+### 例1：
+
+> #### a 自定义mapper接口
+
+```java
+//传递参数 Page 即自动分页,（非必须放在第一位，测过不知道为什么必须。 待处理    ）
+public void selectPageVo(@Param("page") Page<User> page,@Param("age") Integer age);
+//或
+public Page<User> selectPageVo(@Param("page") Page<User> page,@Param("age") Integer age);
+```
+
+> #### b mapper文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mybatis_plus_test.mapper.UserMapper">
+    <select id="selectPageVo" resultType="com.example.mybatis_plus_test.pojo.User">
+        select * from th_user where age>#{age}
+    </select>
+   
+
+< /mapper>
+```
+
+> #### c 测试
+
+```java
+    @Test
+    public void test1233(){
+        Page<User> page = new Page<>(2, 2);
+        userMapper.selectPageVo(page, 20);
+        List<User> list = page.getRecords();
+        list.forEach(System.out::println);
+        System.out.println("当前页："+page.getCurrent());
+        System.out.println("每页显示的条数："+page.getSize());
+        System.out.println("总记录数："+page.getTotal());
+        System.out.println("总页数："+page.getPages());
+        System.out.println("是否有上一页："+page.hasPrevious());
+        System.out.println("是否有下一页："+page.hasNext());
+    }
+```
+
+### 例2：
+
+#### a 自定义mapper接口（如何自定义使用Wrapper）
+
+```java
+/**
+     * //@Param(Constants.WRAPPER)的值是 ew
+     * 
+     * @param wrapper
+     * @param page
+     * @return
+     */
+public Page<User> selectPageImpl(@Param(Constants.WRAPPER) Wrapper<User> wrapper, @Param("page") Page<User> page);
+
+```
+
+#### b mapper文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mybatis_plus_test.mapper.UserMapper">
+   
+    <select id="selectPageImpl" resultType="com.example.mybatis_plus_test.pojo.User">
+        select * from th_user  ${ew.customSqlSegment}
+      <!--customSqlSegment 未知 待处理-->
+    </select>
+
+</mapper>
+```
+
+#### c 测试
+
+```java
+ @Test
+    public void test123sdd3(){
+        Page<User> page = new Page<>(2, 2);
+        LambdaQueryWrapper<User> lambdaQueryWrapper=new LambdaQueryWrapper<>(  );
+        lambdaQueryWrapper.gt(User::getAge,20);
+        userMapper.selectPageImpl(lambdaQueryWrapper,page);
+        List<User> list = page.getRecords();
+        list.forEach(System.out::println);
+        System.out.println("当前页："+page.getCurrent());
+        System.out.println("每页显示的条数："+page.getSize());
+        System.out.println("总记录数："+page.getTotal());
+        System.out.println("总页数："+page.getPages());
+        System.out.println("是否有上一页："+page.hasPrevious());
+        System.out.println("是否有下一页："+page.hasNext());
+    }
+```
+
+## 3、乐观锁
+
+### a 场景
+
+> 一件商品，成本价是80元，售价是100元。老板先是通知小李，说你去把商品价格增加50元。小 李正在玩游戏，耽搁了一个小时。正好一个小时后，老板觉得商品价格增加到150元，价格太 高，可能会影响销量。又通知小王，你把商品价格降低30元。 此时，小李和小王同时操作商品后台系统。小李操作的时候，系统先取出商品价格100元；小王 也在操作，取出的商品价格也是100元。小李将价格加了50元，并将100+50=150元存入了数据 库；小王将商品减了30元，并将100-30=70元存入了数据库。是的，如果没有锁，小李的操作就 完全被小王的覆盖了。 现在商品价格是70元，比成本价低10元。几分钟后，这个商品很快出售了1千多件商品，老板亏1 万多。
+
+### b 乐观锁与悲观锁
+
+> 上面的故事，如果是乐观锁，小王保存价格前，会检查下价格是否被人修改过了。如果被修改过 了，则重新取出的被修改后的价格，150元，这样他会将120元存入数据库。 如果是悲观锁，小李取出数据后，小王只能等小李操作完之后，才能对价格进行操作，也会保证 最终的价格是120元。
+
+
+
+### c 乐观锁实现流程
+
+> ##### 数据库中增加商品表
+
+```mysql
+CREATE TABLE t_product
+(
+id BIGINT(20) NOT NULL COMMENT '主键ID',
+NAME VARCHAR(30) NULL DEFAULT NULL COMMENT '商品名称',
+price INT(11) DEFAULT 0 COMMENT '价格',
+VERSION INT(11) DEFAULT 0 COMMENT '乐观锁版本号',
+PRIMARY KEY (id)
+);
+
+```
+
+> ##### 添加数据
+
+```mysql
+INSERT INTO t_product (id, NAME, price) VALUES (1, '外星人笔记本', 100);
+
+```
+
+> ##### 添加实体
+
+```java
+package com.atguigu.mybatisplus.entity;
+import lombok.Data;
+@Data
+public class Product {
+private Long id;
+private String name;
+private Integer price;
+private Integer version;
+}
+```
+
+> ##### 添加mapper
+
+```java
+public interface ProductMapper extends BaseMapper<Producct>{
+}
+```
+
+数据库中添加version字段 取出记录时，获取当前version
+
+```mysql
+SELECT id,name,price,version FROM product WHERE id=1
+```
+
+更新时，version+1，如果where语句中的version版本不对，则更新失败
+
+```mysql
+UPDATE product SET price=price+50,version=version+1 WHERE id=1 AND version=1
+```
+
+
+
+
+
+### d Mybatis-Plus实现乐观锁
+
+> ##### 修改实体类
+
+```java
+package com.atguigu.mybatisplus.entity;
+import com.baomidou.mybatisplus.annotation.Version;
+import lombok.Data;
+@Data
+public class Product {
+private Long id;
+private String name;
+private Integer price;
+@Version //关键
+private Integer version;
+}
+
+```
+
+> ##### 添加乐观锁插件配置
+
+```java
+@Configuration
+public class MybatisPlusConfig{
+  @Bean
+  public MybatisPlusInterceptor mybatisPlusInterceptor(){
+    //添加分页插件
+    interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+    //添加乐观锁插件
+    interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+  }
+}
+```
+
+> ##### 流程
+
+```java
+Test
+public void testConcurrentVersionUpdate() {
+//小李取数据
+Product p1 = productMapper.selectById(1L);
+//小王取数据
+Product p2 = productMapper.selectById(1L);
+//小李修改 + 50
+p1.setPrice(p1.getPrice() + 50);
+int result1 = productMapper.updateById(p1);
+System.out.println("小李修改的结果：" + result1);
+//小王修改 - 30
+p2.setPrice(p2.getPrice() - 30);
+int result2 = productMapper.updateById(p2);
+System.out.println("小王修改的结果：" + result2);
+if(result2 == 0){
+//失败重试，重新获取version并更新
+p2 = productMapper.selectById(1L);
+更多Java –大数据 – 前端 – UI/UE - Android - 人工智能资料下载，可访问百度：尚硅谷官网(www.atguigu.com)
+七、通用枚举
+表中的有些字段值是固定的，例如性别（男或女），此时我们可以使用MyBatis-Plus的通用枚举
+来实现
+a>数据库表添加字段sex
+b>创建通用枚举类型
+p2.setPrice(p2.getPrice() - 30);
+result2 = productMapper.updateById(p2);
+}
+System.out.println("小王修改重试的结果：" + result2);
+//老板看价格
+Product p3 = productMapper.selectById(1L);
+System.out.println("老板看价格：" + p3.getPrice());
+}
+```
+
+结果：
+
+```mysql
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@282ffbf5] was not registered for synchronization because synchronization is not active
+2022-06-15 22:45:28.220  INFO 3520 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2022-06-15 22:45:28.486  INFO 3520 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+JDBC Connection [HikariProxyConnection@267533031 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+==>  Preparing: SELECT id,name,price,version FROM t_product WHERE id=?
+==> Parameters: 1(Long)
+<==    Columns: id, name, price, version
+<==        Row: 1, 外星人笔记本, 100, 0
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@282ffbf5]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445bb139] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@194672584 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+==>  Preparing: SELECT id,name,price,version FROM t_product WHERE id=?
+==> Parameters: 1(Long)
+<==    Columns: id, name, price, version
+<==        Row: 1, 外星人笔记本, 100, 0
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445bb139]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2eeb0f9b] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@935552520 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+
+
+
+
+version默认是0，这里修改后是1。
+
+
+==>  Preparing: UPDATE t_product SET name=?, price=?, version=? WHERE id=? AND version=?
+==> Parameters: 外星人笔记本(String), 150(Integer), 1(Integer), 1(Long), 0(Integer)
+<==    Updates: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2eeb0f9b]
+
+小王修改：1
+
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@352ed70d] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@117911771 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+==>  Preparing: UPDATE t_product SET name=?, price=?, version=? WHERE id=? AND version=?
+==> Parameters: 外星人笔记本(String), 100(Integer), 1(Integer), 1(Long), 0(Integer)
+<==    Updates: 0
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@352ed70d]
+
+小王修改：0
+
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@12704e15] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@1361409513 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+==>  Preparing: SELECT id,name,price,version FROM t_product WHERE id=?
+==> Parameters: 1(Long)
+<==    Columns: id, name, price, version
+<==        Row: 1, 外星人笔记本, 150, 1
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@12704e15]
+
+最终价格：150
+
 ```
 
