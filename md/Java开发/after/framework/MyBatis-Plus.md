@@ -1193,100 +1193,147 @@ public class MybatisPlusConfig{
 > ##### 流程
 
 ```java
-Test
-public void testConcurrentVersionUpdate() {
-//小李取数据
-Product p1 = productMapper.selectById(1L);
-//小王取数据
-Product p2 = productMapper.selectById(1L);
-//小李修改 + 50
-p1.setPrice(p1.getPrice() + 50);
-int result1 = productMapper.updateById(p1);
-System.out.println("小李修改的结果：" + result1);
-//小王修改 - 30
-p2.setPrice(p2.getPrice() - 30);
-int result2 = productMapper.updateById(p2);
-System.out.println("小王修改的结果：" + result2);
-if(result2 == 0){
-//失败重试，重新获取version并更新
-p2 = productMapper.selectById(1L);
-更多Java –大数据 – 前端 – UI/UE - Android - 人工智能资料下载，可访问百度：尚硅谷官网(www.atguigu.com)
-七、通用枚举
-表中的有些字段值是固定的，例如性别（男或女），此时我们可以使用MyBatis-Plus的通用枚举
-来实现
-a>数据库表添加字段sex
-b>创建通用枚举类型
-p2.setPrice(p2.getPrice() - 30);
-result2 = productMapper.updateById(p2);
-}
-System.out.println("小王修改重试的结果：" + result2);
-//老板看价格
-Product p3 = productMapper.selectById(1L);
-System.out.println("老板看价格：" + p3.getPrice());
-}
+@Test
+    public void test12323(){
+        //小王获取数据
+        Product product1 = productMapper.selectById(1L);
+        //小李获取数据
+        Product product2 = productMapper.selectById(1L);
+
+        product1.setPrice(product1.getPrice()+50);
+        //小王修改+50
+        int a1 = productMapper.updateById(product1);
+        System.out.println("小王修改："+a1 );
+
+        product1.setPrice(product1.getPrice()-30);
+        //小李修改+50
+        int a2 = productMapper.updateById(product2);
+        System.out.println("小李修改："+a2 );
+        System.out.println("最终价格："+productMapper.selectById(1L).getPrice() );
+    }
 ```
 
 结果：
 
 ```mysql
 Creating a new SqlSession
-SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@282ffbf5] was not registered for synchronization because synchronization is not active
-2022-06-15 22:45:28.220  INFO 3520 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2022-06-15 22:45:28.486  INFO 3520 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-JDBC Connection [HikariProxyConnection@267533031 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@6cd164a6] was not registered for synchronization because synchronization is not active
+2022-06-16 21:06:12.845  INFO 13204 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2022-06-16 21:06:13.087  INFO 13204 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+JDBC Connection [HikariProxyConnection@253558788 wrapping com.mysql.cj.jdbc.ConnectionImpl@6e4f263e] will not be managed by Spring
 ==>  Preparing: SELECT id,name,price,version FROM t_product WHERE id=?
 ==> Parameters: 1(Long)
 <==    Columns: id, name, price, version
-<==        Row: 1, 外星人笔记本, 100, 0
+<==        Row: 1, 外星人笔记本, 100, 2
 <==      Total: 1
-Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@282ffbf5]
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@6cd164a6]
 Creating a new SqlSession
-SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445bb139] was not registered for synchronization because synchronization is not active
-JDBC Connection [HikariProxyConnection@194672584 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5f254608] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@787156891 wrapping com.mysql.cj.jdbc.ConnectionImpl@6e4f263e] will not be managed by Spring
 ==>  Preparing: SELECT id,name,price,version FROM t_product WHERE id=?
 ==> Parameters: 1(Long)
 <==    Columns: id, name, price, version
-<==        Row: 1, 外星人笔记本, 100, 0
+<==        Row: 1, 外星人笔记本, 100, 2
 <==      Total: 1
-Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445bb139]
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5f254608]
 Creating a new SqlSession
-SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2eeb0f9b] was not registered for synchronization because synchronization is not active
-JDBC Connection [HikariProxyConnection@935552520 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
-
-
-
-
-version默认是0，这里修改后是1。
-
-
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@55d58825] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@423095039 wrapping com.mysql.cj.jdbc.ConnectionImpl@6e4f263e] will not be managed by Spring
 ==>  Preparing: UPDATE t_product SET name=?, price=?, version=? WHERE id=? AND version=?
-==> Parameters: 外星人笔记本(String), 150(Integer), 1(Integer), 1(Long), 0(Integer)
+==> Parameters: 外星人笔记本(String), 150(Integer), 3(Integer), 1(Long), 2(Integer)
 <==    Updates: 1
-Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2eeb0f9b]
-
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@55d58825]
 小王修改：1
-
 Creating a new SqlSession
-SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@352ed70d] was not registered for synchronization because synchronization is not active
-JDBC Connection [HikariProxyConnection@117911771 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2373ad99] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@862146308 wrapping com.mysql.cj.jdbc.ConnectionImpl@6e4f263e] will not be managed by Spring
 ==>  Preparing: UPDATE t_product SET name=?, price=?, version=? WHERE id=? AND version=?
-==> Parameters: 外星人笔记本(String), 100(Integer), 1(Integer), 1(Long), 0(Integer)
+==> Parameters: 外星人笔记本(String), 100(Integer), 3(Integer), 1(Long), 2(Integer)
 <==    Updates: 0
-Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@352ed70d]
-
-小王修改：0
-
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2373ad99]
+小李修改：0
 Creating a new SqlSession
-SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@12704e15] was not registered for synchronization because synchronization is not active
-JDBC Connection [HikariProxyConnection@1361409513 wrapping com.mysql.cj.jdbc.ConnectionImpl@423b2b62] will not be managed by Spring
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7601bc96] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@1218496682 wrapping com.mysql.cj.jdbc.ConnectionImpl@6e4f263e] will not be managed by Spring
 ==>  Preparing: SELECT id,name,price,version FROM t_product WHERE id=?
 ==> Parameters: 1(Long)
 <==    Columns: id, name, price, version
-<==        Row: 1, 外星人笔记本, 150, 1
+<==        Row: 1, 外星人笔记本, 150, 3
 <==      Total: 1
-Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@12704e15]
-
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7601bc96]
 最终价格：150
+```
+
+# 七、通用枚举
+
+## a、数据库添加字段
+
+```mysql
+ALTER TABLE t_user ADD COLUMN sex int DEFAULT 0;
+```
+
+## b、添加枚举类
+
+```java
+@Getter
+public enum SexEnum {
+    FEMALE(0,"女"),
+    MALE(1,"男");
+
+    @EnumValue//	标注那个属性写入数据库。 					注意：必要
+    private Integer sex;
+    private String sexName;
+
+    SexEnum(Integer sex, String sexName) {
+        this.sex=sex;
+        this.sexName=sexName;
+    }
+}
+```
+
+## c、配置扫描通用枚举
+
+application.yml:
+
+```yml
+type-enums-package: com.example.mybatis_plus_test.enums
+```
+
+## d、修改实体类
+
+字段属性修改为枚举类型。
+
+```java
+private SexEnum sex;
+```
+
+## e、测试
+
+```java
+		@Test
+    public void test213(){
+        User user = new User( );
+        user.setId(2L);
+      //
+        user.setSex(SexEnum.MALE);
+      //
+        System.out.println("更新result："+userMapper.updateById(user) );
+    }
+
+TestResult:
+
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@39c385d6] was not registered for synchronization because synchronization is not active
+2022-06-16 22:08:12.819  INFO 10072 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2022-06-16 22:08:13.046  INFO 10072 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+JDBC Connection [HikariProxyConnection@2136291489 wrapping com.mysql.cj.jdbc.ConnectionImpl@72fd8a3c] will not be managed by Spring
+==>  Preparing: UPDATE t_user SET sex=? WHERE id=? AND is_delete=0
+==> Parameters: true(Boolean), 2(Long)
+<==    Updates: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@39c385d6]
+更新result：1
 
 ```
+
+# 八、代码生成器
 
