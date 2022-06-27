@@ -324,16 +324,16 @@ E-R（entity-relationship，实体-联系）模型中有三个主要概念是：
 
 
 
-# 二、基本操作演示与目录结构
+# 二、基本操作与目录结构
 
 ## 1. MySQL操作
 
-### 1.1对库操作。
+### 1.1 对库操作。
 
-```
-    --查看数据库的创建信息:
+```mysql
+    -- 查看数据库的创建信息:
     show create database 数据库名;
-    --结果：
+    -- 结果：
     +----------+---------------------------------------------------------------------------------------------------------------------------------+
     | Database | Create Database                                                                                                                 |
     +----------+---------------------------------------------------------------------------------------------------------------------------------+
@@ -347,119 +347,128 @@ E-R（entity-relationship，实体-联系）模型中有三个主要概念是：
     -- 创建数据库：
     create database 数据库名;
 
-    --使用或者说选择数据库：
+    -- 使用或者说选择数据库：
     use database 数据库名;
 
-    --删除数据库：小心，use了也能删。
+    -- 删除数据库：小心，use了也能删。
     drop database 数据库名;
 
-```mysql
-### 1.3对表操作
 ```
-    --查看表的创建信息:
-    show create table 表名;
-    --结果：
-    +-------+-------------------------------------------------------------------------------------------------------------------------------------------    -----------------------------------------------------------------------------+
-    | Table | Create Table                                                                                                                                                                                                                  |
-    +-------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    | user  | CREATE TABLE `user` (
-      `id` bigint NOT NULL,
-      `name` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8_general_ci DEFAULT NULL,
-      PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
-    +-------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+### 1.2 对表操作
 
-
-    --查看表的字段信息:
-    desc 表名;
-
-    --创建表 
-    create Table: CREATE TABLE `student` (
-    `id` int(11) NOT NULL,
-    `name` varchar(20) DEFAULT NULL,
-    PRIMARY KEY (`id`)
-    )
-    ENGINE=InnoDB DEFAULT CHARSET=utf8
-
-
-    --查看某个库的所有表格1：
-    show tables from 数据库名;
-
-    --已经选择了某个数据库，查看该数据库下的所有表格：
-    show tables;
-
-    --删除表
-    drop table 表名;
 ```mysql
+-- 查看表的创建信息:
+show create table 表名;
+-- 结果：
++-------+-------------------------------------------------------------------------------------------------------------------------------------------    -----------------------------------------------------------------------------+
+| Table | Create Table                                                                                                                                                                                                                  |
++-------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| user  | CREATE TABLE `user` (
+  `id` bigint NOT NULL,
+  `name` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
++-------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+-- 查看表的字段信息:
+desc 表名;
+
+-- 创建表 
+create Table: CREATE TABLE `student` (
+`id` int(11) NOT NULL,
+`name` varchar(20) DEFAULT NULL,
+PRIMARY KEY (`id`)
+)
+ENGINE=InnoDB DEFAULT CHARSET=utf8
 
 
-### 1.2解决字符集
- 
-   a ==解决全局配置字符集问题==
-- 1.检查全局配置
+-- 查看某个库的所有表格1：
+show tables from 数据库名;
+
+-- 已经选择了某个数据库，查看该数据库下的所有表格：
+show tables;
+
+-- 删除表
+drop table 表名;
 ```
-    show variables like 'character_%';
-    show variables like 'collation_%';
+
+### 1.3 解决字符集
+
+#### a ==解决全局配置字符集问题==
+
+1. 检查全局配置
+
+   ```mysql
+   show variables like 'character_%';
+   show variables like 'collation_%';
+   ```
+
+2. 修改mysql的数据目录下的my.ini配置文件
+
+   ```properties
+   [mysql]
+   default-character-set=utf8 #默认字符集
+   [mysqld] # 大概在76行左右，在其下添加
+   ...
+   character-set-server=utf8
+   collation-server=utf8_general_ci
+   ```
+
+3. 重启服务
+
+4. 重新检查全局配置  
+
+#### b ==解决表字符集问题==
+
 ```mysql
-
-- 2.修改mysql的数据目录下的my.ini配置文件
-
+alter table 表名charset utf8;  
 ```
-    [mysql]
-    default-character-set=utf8 #默认字符集
-    [mysqld] # 大概在76行左右，在其下添加
-    ...
-    character-set-server=utf8
-    collation-server=utf8_general_ci
-```properties
-- 3.重启服务
-- 4.重新检查全局配置  
+#### c ==解决数据库字符集问题==
 
-    b ==解决表字符集问题==
-```
-    alter table 表名charset utf8;  
 ```mysql
-    c ==解决数据库字符集问题==
+alter database 数据库名 charset utf8; 
+--或者
+create database 数据库名 charset Latin1;
 ```
-    alter database 数据库名 charset utf8; 
-    --或者
-    create database 数据库名 charset Latin1;
-```mysql
+### 1.4 解决其它问题
+1. **问题**： 在连接MySQL8时出现“Authentication plugin 'caching_sha2_password' cannot be loaded”错误。
+
+   **原因**：由于出现这个原因是MySQL8之前的版本中加密规则是mysql_native_password，而在MySQL8之后，加密规则是caching_sha2_password。
+
+   **解决办法**：
+   第一种：升级图形工具。
+   第二种：使用命令：
+
+   ```mysql
+   #使用mysql数据库
+   use mysql;
+   
+   #修改'root'@'localhost'用户的密码规则和密码
+   ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'abc123'
+   
+   #刷新权限
+   FLUSH PRIVILEGES;
+   ```
 
 
-### 1.3解决其它问题
-1.解决 在连接MySQL8时出现“Authentication plugin
-'caching_sha2_password' cannot be loaded”错误。
 
-原因：由于出现这个原因是MySQL8之前的版本中加密规则是mysql_native_password，而在MySQL8之后，加密规则
-是caching_sha2_password。
-解决办法：
-第一种：升级图形工具。
-第二种：使用命令：
-```
-    #使用mysql数据库
-    use mysql;
-    
-    #修改'root'@'localhost'用户的密码规则和密码
-    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'abc123'
-    
-    #刷新权限
-    FLUSH PRIVILEGES;
-```mysql
-## 2.目录结构
+## 2. 目录结构
 
-这是表，之后改
-   bin目录     所有MySQL的可执行文件。如：mysql.exe
-MySQLInstanceConfig.exe     数据库的配置向导，在安装时出现的内容
-data目录     系统数据库所在的目录
-my.ini文件     MySQL的主要配置文件
-c:\ProgramData\MySQL\MySQL Server 8.0\data\     用户创建的数据库所在的目录
-
+| bin目录                                     | 所有MySQL的可执行文件。如：mysql.exe |
+| ------------------------------------------- | ------------------------------------ |
+| MySQLInstanceConfig.exe                     | 数据库的配置向导，在安装时出现的内容 |
+| data目录                                    | 系统数据库所在的目录                 |
+| my.ini文件                                  | MySQL的主要配置文件                  |
+| c:\ProgramData\MySQL\MySQL Server 8.0\data\ | 用户创建的数据库所在的目录           |
 
 # 三、
-## 1.sql概述
-### sql背景知识
-### sql分类
+
+## 1. SQL概述
+
+### 1.1 SQL背景知识
+
+### 1.2 SQL分类
+
 DDL：数据定义语言。 CREATE \ ALTER \ DROP \ RENAME \ TRUNCATE
 DML：数据操作语言。 SELECT \ UPDATE \ DELETE \ INSERT
 DCL：数据控制语言。 COMMIT \ ROLLBACK \ SAVEPOINT \  GRANT \ REVOKE
