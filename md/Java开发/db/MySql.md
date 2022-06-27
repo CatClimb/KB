@@ -455,3 +455,12 @@ data目录     系统数据库所在的目录
 my.ini文件     MySQL的主要配置文件
 c:\ProgramData\MySQL\MySQL Server 8.0\data\     用户创建的数据库所在的目录
 
+
+# 三、
+## 1.sql概述
+### sql背景知识
+### sql分类
+DDL：数据定义语言。 CREATE \ ALTER \ DROP \ RENAME \ TRUNCATE
+DML：数据操作语言。 SELECT \ UPDATE \ DELETE \ INSERT
+DCL：数据控制语言。 COMMIT \ ROLLBACK \ SAVEPOINT \  GRANT \ REVOKE
+2.
