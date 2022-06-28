@@ -818,6 +818,61 @@ Empty set (0.00 sec)
     * 如果等号两边的值一个是整数，另一个是字符串，则MySQL会将字符串转化为数字进行比较。
     * 如果等号两边的值、字符串或表达式中有一个为NULL，则比较结果为NULL。
 ### 2.2 安全等于运算符
+与等于运算符唯一的区别就是 <=> 可以用来对NULL进行判断。当两个操作数均为NULL时，其返回值为1，而不为NULL;当一个操作数为NULL时，其返回值为0。
+```
+SELECT 1 <=> 2, 1 <=> '1', 1 <=> 'a', 0 <=> 'a'
+FROM DUAL;
 
-与等于运算符唯一的区别就是 <==> 可以用来对NULL进行判断。当两个操作数均为NULL时，其返回值为1，而不为NULL;当一个操作数为NULL时，其返回值为0。
+--Result：
++---------+-----------+-----------+-----------+
+| 1 <=> 2 | 1 <=> '1' | 1 <=> 'a' | 0 <=> 'a' |
++---------+-----------+-----------+-----------+
+|       0 |         1 |         0 |         1 |
++---------+-----------+-----------+-----------+
+SELECT 1 <=> NULL, NULL <=> NULL
+FROM DUAL;
 
+--Result:
++------------+---------------+
+| 1 <=> NULL | NULL <=> NULL |
++------------+---------------+
+|          0 |             1 |
++------------+---------------+
+
+#找绩点为空的用户
+SELECT last_name,salary,commission_pct
+FROM employees
+WHERE commission_pct <=> NULL;
+
+--Result：
++-------------+----------+----------------+
+| last_name   | salary   | commission_pct |
++-------------+----------+----------------+
+| King        | 24000.00 |           NULL |
+| Kochhar     | 17000.00 |           NULL |
+| De Haan     | 17000.00 |           NULL |
+| Hunold      |  9000.00 |           NULL |
+| Ernst       |  6000.00 |           NULL |
+| Austin      |  4800.00 |           NULL |
+| Pataballa   |  4800.00 |           NULL |
+| Lorentz     |  4200.00 |           NULL |
+
+
+
+SELECT last_name,commission_pct FROM employees WHERE !(commission_pct <=> NULL); 
+
+--Result：
+
++------------+----------------+
+| last_name  | commission_pct |
++------------+----------------+
+| Russell    |           0.40 |
+| Partners   |           0.30 |
+| Errazuriz  |           0.30 |
+| Cambrault  |           0.30 |
+| Zlotkey    |           0.20 |
+| Tucker     |           0.30 |
+| Bernstein  |           0.25 |
+| Hall       |           0.25 |
+
+```mysql
