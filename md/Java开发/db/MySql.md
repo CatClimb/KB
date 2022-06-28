@@ -558,6 +558,8 @@ source SQL脚本的路径
 SELECT 1;
 SELECT 9/2;
 
+-- DUAL是伪表
+SELECT 1+1 FROM DUAL;
 ```mysql
 
 ### 3.2 SELECT...FROM
