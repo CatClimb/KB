@@ -858,7 +858,7 @@ WHERE commission_pct <=> NULL;
 | Lorentz     |  4200.00 |           NULL |
 
 
-
+#找绩点不为空的用户
 SELECT last_name,commission_pct FROM employees WHERE !(commission_pct <=> NULL); 
 
 --Result：
