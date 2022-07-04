@@ -408,7 +408,7 @@ package com.example.mybatis_plus_test.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.mybatis_plus_test.pojo.User;
 
-public interface UserService extends IService<User> {
+public interface IUserService extends IService<User> {
 }
 
 ```
@@ -419,9 +419,9 @@ package com.example.mybatis_plus_test.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.mybatis_plus_test.mapper.UserMapper;
 import com.example.mybatis_plus_test.pojo.User;
-import com.example.mybatis_plus_test.service.UserService;
+import com.example.mybatis_plus_test.service.IUserService;
 
-public class UserServiceImpl extends ServiceImpl<UserMapper,User> implements UserService{
+public class UserServiceImpl extends ServiceImpl<UserMapper,User> implements IUserService{
 }
 
 ```
@@ -1090,9 +1090,19 @@ public Page<User> selectPageImpl(@Param(Constants.WRAPPER) Wrapper<User> wrapper
 
 > 一件商品，成本价是80元，售价是100元。老板先是通知小李，说你去把商品价格增加50元。小 李正在玩游戏，耽搁了一个小时。正好一个小时后，老板觉得商品价格增加到150元，价格太 高，可能会影响销量。又通知小王，你把商品价格降低30元。 此时，小李和小王同时操作商品后台系统。小李操作的时候，系统先取出商品价格100元；小王 也在操作，取出的商品价格也是100元。小李将价格加了50元，并将100+50=150元存入了数据 库；小王将商品减了30元，并将100-30=70元存入了数据库。是的，如果没有锁，小李的操作就 完全被小王的覆盖了。 现在商品价格是70元，比成本价低10元。几分钟后，这个商品很快出售了1千多件商品，老板亏1 万多。
 
-### b 乐观锁与悲观锁
+### b 乐观锁与悲观锁概念
 
-> 上面的故事，如果是乐观锁，小王保存价格前，会检查下价格是否被人修改过了。如果被修改过 了，则重新取出的被修改后的价格，150元，这样他会将120元存入数据库。 如果是悲观锁，小李取出数据后，小王只能等小李操作完之后，才能对价格进行操作，也会保证 最终的价格是120元。
+
+
+- 乐观锁：乐观锁在操作数据时非常乐观，认为别人不会同时修改数据。因此乐观锁不会上锁，只是在执行更新的时候判断一下在此期间别人是否修改了数据：如果别人修改了数据则放弃操作，否则执行操作。
+- 悲观锁：悲观锁在操作数据时比较悲观，认为别人会同时修改数据。因此操作数据时直接把数据锁住，直到操作完成后才会释放锁；上锁期间其他人不能修改数据。
+- 实现方式
+  - 悲观锁的实现方式是加锁，加锁既可以是对代码块加锁（如Java的synchronized关键字），也可以是对数据加锁（如MySQL中的排它锁）。
+  - 乐观锁的实现方式主要有两种：CAS机制和版本号机制，下面详细介绍。
+
+
+
+> 上面的故事，如果是乐观锁，小王保存价格前，会检查下价格是否被人修改过了。如果被修改过了，则重新取出的被修改后的价格，150元，这样他会将120元存入数据库。 如果是悲观锁，小李取出数据后，小王只能等小李操作完之后，才能对价格进行操作，也会保证 最终的价格是120元。
 
 
 
@@ -1398,5 +1408,173 @@ Closing non transactional SqlSession [org.apache.ibatis.session.defaults.Default
 
    3. 结果
 
-      ![image-20220704162151873](MyBatis-Plus.assets\image-20220704162151873.png)
+      ![image-20220704162151873](MyBatis-Plus.assets/image-20220704162151873.png)
+      
+      
 
+# 九、 多数据源
+
+* 适用于多种场景：纯粹多库、 读写分离、 一主多从、 混合模式等 
+
+* 目前我们就来模拟一个纯粹多库的一个场景，其他场景类似 
+
+  * 场景说明：
+
+    创建两个库：mybatis_plus（8.0中）、mybatis_plus_1（5.7中）。第一个库表为th_user，第二个库表为th_product，通过测试用例分别读取两个库中表的数据，如果获取成功，则模拟成功。（也可以看log中连接对象是否一样）
+
+    
+
+## 1、创建数据库及表
+
+```mysql
+#8.0 version
+CREATE DATABASE mybatis_plus;
+CREATE TABLE th_user (
+`id` bigint(20) NOT NULL COMMENT '主键ID',
+`name` varchar(30) DEFAULT NULL COMMENT '姓名',
+`age` int(11) DEFAULT NULL COMMENT '年龄',
+`email` varchar(50) DEFAULT NULL COMMENT '邮箱',
+PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+ALTER TABLE th_user ADD COLUMN sex int DEFAULT 0;
+
+INSERT INTO th_user (id, name, age, email) VALUES
+(1, 'Jone', 18, 'test1@baomidou.com'),
+
+# 5.7 version
+CREATE DATABASE mybatis_plus_1;
+CREATE TABLE th_product(
+id BIGINT(20) NOT NULL COMMENT '主键ID',
+NAME VARCHAR(30) NULL DEFAULT NULL COMMENT '商品名称',
+price INT(11) DEFAULT 0 COMMENT '价格',
+VERSION INT(11) DEFAULT 0 COMMENT '乐观锁版本号',
+PRIMARY KEY (id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO th_product (id, NAME, price) VALUES (1, '外星人笔记本', 100);
+```
+
+## 2、引入依赖
+
+```xml
+<dependency>
+<groupId>com.baomidou</groupId>
+<artifactId>dynamic-datasource-spring-boot-starter</artifactId>
+<version>3.5.0</version>
+</dependency>
+```
+
+## 3、配置多数据源
+
+```yml
+#数据源
+spring:
+#  datasource:
+#    type:  com.zaxxer.hikari.HikariDataSource
+#    url: jdbc:mysql://localhost:3306/prodTest?characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+#    username: wujianmin
+#    password: 123456
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+  # 配置数据源信息
+  datasource:
+    # 配置数据源信息
+    dynamic:
+      # 设置默认的数据源或者数据源组,默认值即为master
+      primary: master
+      # 严格匹配数据源,默认false.true未匹配到指定数据源时抛异常,false使用默认数据源
+      strict: false
+      datasource:
+        master:
+          type:  com.zaxxer.hikari.HikariDataSource
+          url: jdbc:mysql://localhost:3306/mybatis_plus?characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+          username: wujianmin
+          password: 123456
+          driver-class-name: com.mysql.cj.jdbc.Driver
+        db2:
+          username: root
+          password: 123456
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          #  最简单的解决方法是在连接后面添加 allowPublicKeyRetrieval=true
+#
+#  文档中(https://mysql-net.github.io/MySqlConnector/connection-options/)给出的解释是：
+#
+#  如果用户使用了 sha256_password 认证，密码在传输过程中必须使用 TLS 协议保护，但是如果 RSA 公钥不可用，可以使用服务器提供的公钥；可以在连接中通过 ServerRSAPublicKeyFile 指定服务器的 RSA 公钥，或者AllowPublicKeyRetrieval=True参数以允许客户端从服务器获取公钥；但是需要注意的是 AllowPublicKeyRetrieval=True可能会导致恶意的代理通过中间人攻击(MITM)获取到明文密码，所以默认是关闭的，必须显式开启
+#  ————————————————
+#  版权声明：本文为CSDN博主「呜呜呜啦啦啦」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+#  原文链接：https://blog.csdn.net/u013360850/article/details/80373604
+          url: jdbc:mysql://localhost:3307/mybatis_plus_1?characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      table-prefix: th_
+      id-type: auto
+  mapper-locations: classpath:/mapper/*
+  type-aliases-package: com.example.mybatis_plus_test.pojo
+  type-enums-package: com.example.mybatis_plus_test.enums
+```
+
+## 4、指定所操作的数据源
+
+```java
+@Service
+@DS("master")
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
+}
+
+@Service
+@DS("db2")
+public class ProductServiceImpl extends ServiceImpl<ProductMapper,Product> implements IProductService {
+}
+```
+
+## 5、测试
+
+```java
+  private IUserService iUserService;
+    @Autowired
+    private IProductService iProductService;
+    @Test
+    public void test(){
+        User byId = iUserService.getById(1L);
+        Product byId2 = iProductService.getById(1L);
+        User byId3 = iUserService.getById(1L);
+    }
+```
+
+## 6、测试结果：
+
+```java
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@57435801] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@400385823 wrapping com.mysql.cj.jdbc.ConnectionImpl@3bbf6abe] will not be managed by Spring
+==>  Preparing: SELECT id,name,age,sex,email,is_delete FROM th_user WHERE id=? AND is_delete=0
+==> Parameters: 1(Long)
+<==    Columns: id, name, age, sex, email, is_delete
+<==        Row: 1, Jone, 18, 0, test1@baomidou.com, 0
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@57435801]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@41853299] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@1624510452 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e5b7fba] will not be managed by Spring
+==>  Preparing: SELECT id,name,price,version FROM th_product WHERE id=?
+==> Parameters: 1(Long)
+<==    Columns: id, name, price, version
+<==        Row: 1, 外星人笔记本, 100, 0
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@41853299]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@4f0cab0a] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@266843824 wrapping com.mysql.cj.jdbc.ConnectionImpl@3bbf6abe] will not be managed by Spring
+==>  Preparing: SELECT id,name,age,sex,email,is_delete FROM th_user WHERE id=? AND is_delete=0
+==> Parameters: 1(Long)
+<==    Columns: id, name, age, sex, email, is_delete
+<==        Row: 1, Jone, 18, 0, test1@baomidou.com, 0
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@4f0cab0a]
+
+```
+
+连接属性 在 Java EE.md

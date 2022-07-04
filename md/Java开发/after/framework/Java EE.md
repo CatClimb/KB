@@ -1573,10 +1573,6 @@ ss eating
 
 > #### 主要类：JdbcTemplate
 
-
-
-
-
 ## 4.2 Spring JdbcTemplate类 ♥♥♥♥
 
 ### 4.2.1 插入、更新、删除
@@ -1723,13 +1719,9 @@ public class JdbcTemplateTest{
 
 <img src="pic\image-20210811115914876.png" alt="image-20210811115914876" style="zoom:150%;" />
 
-
-
 <center><b>图5.1 <tx:advice>元素及其子元素</b></center>
 
 ![image-20210811121246532](pic\image-20210811121246532.png)
-
-
 
 <center><b>图5.2 传播行为的种类</b></center>
 
@@ -1779,6 +1771,8 @@ public class JdbcTemplateTest{
 ## 5.1 编程式事务管理
 
 是通过<font color='orange'>编写代码实现的事务管理</font>，包括定义事务的开始、正常执行后的事务提交和异常时的事务回滚。
+
+
 
 
 
