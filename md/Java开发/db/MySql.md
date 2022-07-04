@@ -780,7 +780,7 @@ FROM DUAL;
 
 * 模数为什么，结果就为什么。如模是负数，那结果结果就是正数。
 
-## 2.比较运算符
+## 2. 比较运算符
 
 |   符号   |      说明      |
 | :------: | :------------: |
@@ -890,6 +890,8 @@ WHERE commission_pct <=> NULL;
 
 #找绩点不为空的用户
 SELECT last_name,commission_pct FROM employees WHERE !(commission_pct <=> NULL); 
+#或者
+SELECT last_name,commission_pct FROM employees WHERE NOT commission_pct <=> NULL;
 
 --Result：
 
@@ -906,3 +908,418 @@ SELECT last_name,commission_pct FROM employees WHERE !(commission_pct <=> NULL);
 | Hall       |           0.25 |
 
 ```
+
+### 2.3 不等于运算符
+
+
+
+```mysql
+ SELECT 1 <> 1,1!=2,'a'!='b',(3+4) <>(2+6), 'a'!=NULL,NULL<>NULL;
+ +--------+------+----------+---------------+-----------+------------+
+| 1 <> 1 | 1!=2 | 'a'!='b' | (3+4) <>(2+6) | 'a'!=NULL | NULL<>NULL |
++--------+------+----------+---------------+-----------+------------+
+|      0 |    1 |        1 |             1 |      NULL |       NULL |
++--------+------+----------+---------------+-----------+------------+
+```
+
+## 3. 非符号运算符
+
+| 运算符       | 名称             | 注意                                         | 示例 |
+| ------------ | ---------------- | -------------------------------------------- | ---- |
+| IS NULL      | 为空运算符       |                                              |      |
+| IS NOT NULL  | 不为空运算符     |                                              |      |
+| LEAST        | 最小值运算符     |                                              |      |
+| GREATEST     | 最大值运算符     |                                              |      |
+| BETWEEN AND  | 两值之间的运算符 | 第一个为下限，第二个为上限，反过来没有结果。 |      |
+| ISNULL       | 为空运算符       | 要（）                                       |      |
+| IN           | 属于运算符       | 要（）                                       |      |
+| NO IN        | 不属于运算符     | 要（）                                       |      |
+| LIKE         | 模糊匹配运算符   |                                              |      |
+| REGEXP\RLIKE | 正则表达式运算符 | 两个都一样                                   |      |
+
+### IS NULL / IS NOT NULL / ISNULL()
+
+```MYSQL
+SELECT last_name,salary,commission_pct FROM employees WHERE commission_pct IS NOT NULL;
+SELECT last_name,salary,commission_pct FROM employees WHERE commission_pct IS NULL;
+SELECT last_name,salary,commission_pct FROM employees WHERE ISNULL(commission_pct);
+```
+
+### LEAST() / GREATEST()
+
+```mysql
+SELECT LEAST('A','S','B'),GREATEST('A','S','B');
++--------------------+-----------------------+
+| LEAST('A','S','B') | GREATEST('A','S','B') |
++--------------------+-----------------------+
+| A                  | S                     |
++--------------------+-----------------------+
+
+
+SELECT first_name,last_name,LEAST(first_name,last_name) FROM employees ;
++-------------+-------------+-----------------------------+
+| FIRST_NAME  | LAST_NAME   | LEAST(first_name,last_name) |
++-------------+-------------+-----------------------------+
+| Steven      | King        | King                        |
+| Neena       | Kochhar     | Kochhar                     |
+| Lex         | De Haan     | De Haan                     |
+| Alexander   | Hunold      | Alexander                   |
+| Bruce       | Ernst       | Bruce                       |
+| David       | Austin      | Austin                      | 
+```
+
+### BETWEEN 下限 AND 上限
+
+```mysql
+SELECT employee_id,last_name,salary FROM employees WHERE salary BETWEEN 6000 AND 8000;
++-------------+-----------+---------+
+| employee_id | last_name | salary  |
++-------------+-----------+---------+
+|         104 | Ernst     | 6000.00 |
+|         111 | Sciarra   | 7700.00 |
+|         112 | Urman     | 7800.00 |
+|         113 | Popp      | 6900.00 |
+
+SELECT employee_id,last_name,salary FROM employees WHERE salary BETWEEN 8000 AND 6000;
+SELECT employee_id,last_name,salary FROM employees WHERE salary>=8000 AND salary<=6000;
+Empty set (0.00 sec)
+SELECT employee_id,last_name,salary FROM employees WHERE salary>=8000 OR salary<=6000;
++-------------+-------------+----------+
+| employee_id | last_name   | salary   |
++-------------+-------------+----------+
+|         100 | King        | 24000.00 |
+|         101 | Kochhar     | 17000.00 |
+|         102 | De Haan     | 17000.00 |
+|         103 | Hunold      |  9000.00 |
+|         104 | Ernst       |  6000.00 |
+|         105 | Austin      |  4800.00 |
+```
+
+### IN / NOT IN
+
+```mysql
+SELECT last_name,salary,department_id
+FROM employees
+WHERE salary NOT IN (6000,7000,8000);
++-------------+----------+---------------+
+| last_name   | salary   | department_id |
++-------------+----------+---------------+
+| King        | 24000.00 |            90 |
+| Kochhar     | 17000.00 |            90 |
+| De Haan     | 17000.00 |            90 |
+
+SELECT last_name,salary,department_id
+FROM employees
+WHERE salary IN (6000,7000,8000);
++-----------+---------+---------------+
+| last_name | salary  | department_id |
++-----------+---------+---------------+
+| Ernst     | 6000.00 |            60 |
+| Weiss     | 8000.00 |            50 |
+| Olsen     | 8000.00 |            80 |
+| Tuvault   | 7000.00 |            80 |
+| Smith     | 8000.00 |            80 |
+| Sewall    | 7000.00 |            80 |
+| Grant     | 7000.00 |          NULL |
+| Fay       | 6000.00 |            20 |
++-----------+---------+---------------+
+```
+
+### LIKE
+
+```mysql
+SELECT last_name FROM employees WHERE last_name LIKE 'a%';
++-----------+
+| last_name |
++-----------+
+| Austin    |
+| Atkinson  |
+| Ande      |
+| Abel      |
++-----------+
+
+# _ 代表不确定的一个字符
+SELECT last_name FROM employees WHERE last_name LIKE '_a%';
++-----------+
+| last_name |
++-----------+
+| Pataballa |
+| Faviet    |
+| Raphaely  |
+| Baida     |
+| Kaufling  |
+| Nayer     |
+| Landry    |
+
+# \ 代表转义字符
+SELECT last_name FROM employees WHERE last_name LIKE '\_a%';
++-----------+
+| last_name |
++-----------+
+| _Pataballa |
+| _Faviet    |
+| _Raphaely  |
+
+#  ESCAPE 指定某个符号为转义字符
+SELECT last_name FROM employees WHERE last_name LIKE '@_a%' ESCAPE '@';
++-----------+
+| last_name |
++-----------+
+| _Austin   |
+| _Atkinson |
+| _Ande     |
+| _Abel     |
++-----------+
+```
+
+### REGEXP | RLIKE
+
+```mysql
+SELECT 'shkstart' REGEXP '^s', 'shkstart' REGEXP 't$', 'shkstart' REGEXP 'hk';
++------------------------+------------------------+------------------------+
+| 'shkstart' REGEXP '^s' | 'shkstart' REGEXP 'T$' | 'shkstart' REGEXP 'hk' |
++------------------------+------------------------+------------------------+
+|                      1 |                      1 |                      1 |
++------------------------+------------------------+------------------------+
+
+#不区分大小写
+SELECT last_name FROM employees WHERE last_name RLIKE '^s';
+
+#可区分大小写 
+#5.7直接支持 
+#8报错
+#Character set 'utf8_general_ci' cannot be used in conjunction with 'binary' in call to regexp_like.
+SELECT last_name FROM employees WHERE last_name RLIKE BINARY '^s';
+```
+
+> 注意
+
+BINARY可以区分大小写。原理待处理 （但不走索引待处理）
+
+## 4. 逻辑运算符
+
+逻辑运算符主要用来判断表达式的真假，在MySQL中，逻辑运算符的返回结果为1、0或者NULL。
+
+| 运算符     | 作用     |
+| ---------- | -------- |
+| NOT 或 ！  | 逻辑非   |
+| AND 或 &&  | 逻辑与   |
+| OR 或 \|\| | 逻辑或   |
+| XOR        | 逻辑异或 |
+
+```mysql
+SELECT NOT 1, NOT 0, NOT(1+1), NOT !1, NOT NULL;
++-------+-------+----------+--------+----------+
+| NOT 1 | NOT 0 | NOT(1+1) | NOT !1 | NOT NULL |
++-------+-------+----------+--------+----------+
+|     0 |     1 |        0 |      1 |     NULL |
++-------+-------+----------+--------+----------+
+```
+
+## 5. 位运算符
+
+| 运算符 | 作用     |
+| ------ | -------- |
+| &      | 按位与   |
+| \|     | 按位或   |
+| ^      | 按位异或 |
+| ~      | 按位取反 |
+| >>     | 按位右移 |
+| <<     | 按位左移 |
+
+
+
+```mysql
+ SELECT 12 & 5, 12 | 5,12 ^ 5 FROM DUAL;
+ +--------+--------+--------+
+| 12 & 5 | 12 | 5 | 12 ^ 5 |
++--------+--------+--------+
+|      4 |     13 |      9 |
++--------+--------+--------+
+```
+
+## 6. 运算符优先级
+
+数字编号越大，优先级越高。
+
+![image-20220704140403422](MySql.assets\image-20220704140403422.png)
+
+# 五、 排序和分页
+
+## 1. 排序
+
+### 1.1 排序规则
+
+* 使用 ORDER BY 子句排序
+  *  **ASC（ascend）: 升序** ==（默认）==
+  * **DESC（descend）:降序** 
+* ORDER BY 子句在SELECT语句的结尾（在where之后，LIMIT之前，因为sql执行顺序问题）。
+
+### 1.2 单列排序
+
+```mysql
+#默认升序
+SELECT employee_id,last_name,salary FROM employees ORDER BY salary;
++-------------+-------------+----------+
+| employee_id | last_name   | salary   |
++-------------+-------------+----------+
+|         132 | Olson       |  2100.00 |
+|         128 | Markle      |  2200.00 |
+|         136 | Philtanker  |  2200.00 |
+#降序
+SELECT employee_id,last_name,salary FROM employees ORDER BY salary DESC;
+
+```
+
+### 1.2 多列排序
+
+* **当第一列出现相同值才会对第二列排序，依次类推**
+* 排序列的值为NULL，放在最前面
+
+```mysql
+SELECT last_name, department_id, salary
+FROM employees
+ORDER BY department_id, salary DESC;
++-------------+---------------+----------+
+| last_name   | department_id | salary   |
++-------------+---------------+----------+
+| Grant       |          NULL |  7000.00 |
+| Whalen      |            10 |  4400.00 |
+| Hartstein   |            20 | 13000.00 |
+| Fay         |            20 |  6000.00 |
+| Raphaely    |            30 | 11000.00 |
+| Khoo        |            30 |  3100.00 |
+
+-- 查询邮箱中包含 e 的员工信息，并先按邮箱的字节数降序，再按部门号升序。
+SELECT employee_id,last_name,email,department_id FROM employees 
+WHERE email REGEXP '[e]'
+ORDER BY LENGTH(email) DESC,department_id;
++-------------+------------+----------+---------------+
+| employee_id | last_name  | email    | department_id |
++-------------+------------+----------+---------------+
+|         201 | Hartstein  | MHARTSTE |            20 |
+|         114 | Raphaely   | DRAPHEAL |            30 |
+|         119 | Colmenares | KCOLMENA |            30 |
+|         186 | Dellinger  | JDELLING |            50 |
+|         191 | Perkins    | RPERKINS |            50 |
+```
+
+> 注意
+
+我们可以<font color='orange'>使用列的别名，进行排序</font>，**但列的别名不能在WHERE中使用。**（sql执行顺序问题）
+
+```mysql
+#使用列的别名，进行排序
+SELECT employee_id,salary,salary * 12 annual_sal FROM employees ORDER BY annual_sal;
++-------------+----------+------------+
+| employee_id | salary   | annual_sal |
++-------------+----------+------------+
+|         132 |  2100.00 |   25200.00 |
+|         128 |  2200.00 |   26400.00 |
+|         136 |  2200.00 |   26400.00 |
+|         127 |  2400.00 |   28800.00 |
+|         135 |  2400.00 |   28800.00 |
+
+#报错 Unknown column 'annual_sal' in 'where clause'
+SELECT employee_id,salary,salary * 12 annual_sal FROM employees WHERE annual_sal > 81600;
+```
+
+## 2. 分页
+
+### 2.1 背景
+
+* 背景1：查询返回的记录太多了，查看起来很不方便，怎么样能够实现分页查询呢？ 
+* 背景2：表里有 4 条数据，我们只想要显示第 2、3 条数据怎么办呢？
+
+### 2.2 实现规则
+
+* 分页原理 所谓分页显示，就是将数据库中的结果集，一段一段显示出来需要的条件。 
+
+* MySQL中使用 LIMIT 实现分页
+
+* 格式：
+
+  * ```mysql
+    LIMIT [位置偏移量,] 条目数（也称为 “每页条数”）
+    LIMIT 0,条目数  /*等效于*/ LIMIT 条目数
+    ```
+
+    
+
+举例：
+
+```mysql
+-- 前10条记录：
+SELECT employee_id,first_name FROM employees LIMIT 0,10;
+-- 或者
+SELECT employee_id,first_name FROM employees LIMIT 10;
+-- 第11至20条记录：
+SELECT employee_id,first_name FROM employees LIMIT 10,10;
+-- 第21至30条记录：
+SELECT employee_id,first_name FROM employees LIMIT 20,10;
+
+```
+
+> MySQL 8.0新特性
+>
+> * 简而言之 LIMIT 条目数 OFFSET 偏移量
+>
+>   ```mysql
+>   -第21至30条记录：
+>   SELECT employee_id,first_name FROM employees  LIMIT  10 OFFSET 20;
+>   +-------------+------------+
+>   | employee_id | first_name |
+>   +-------------+------------+
+>   |         120 | Matthew    |
+>   |         121 | Adam       |
+>   |         122 | Payam      |
+>   |         123 | Shanta     |
+>   |         124 | Kevin      |
+>   |         125 | Julia      |
+>   |         126 | Irene      |
+>   |         127 | James      |
+>   |         128 | Steven     |
+>   |         129 | Laura      |
+>   +-------------+------------+
+>   ```
+
+
+
+* <font color='green'>分页显式公式：（当前页数-1）*每页条数，每页条数</font>
+
+  * ```mysql
+    SELECT * FROM table
+    LIMIT(PageNo - 1)*PageSize,PageSize;
+    ```
+
+* 注意：LIMIT 子句必须放在整个SELECT语句的最后！
+
+* SQL执行顺序 WHERE -> ORDER BY -> LIMIT
+
+### 2.3 拓展
+
+在不同的 DBMS 中使用的关键字可能不同。在 MySQL、PostgreSQL、MariaDB 和 SQLite 中使用 LIMIT 关 键字，而且需要放到 SELECT 语句的最后面。
+
+* 如果是 SQL Server 和 Access，需要使用 TOP 关键字，比如：
+
+  * ```SQL
+    SELECT TOP 5 name, hp_max FROM heros ORDER BY hp_max DESC
+    ```
+
+* 如果是 DB2，使用 FETCH FIRST 5 ROWS ONLY 这样的关键字：
+
+  * ```
+    SELECT name, hp_max FROM heros ORDER BY hp_max DESC FETCH FIRST 5 ROWS ONLY
+    
+    ```
+
+* 如果是 Oracle，你需要基于 ROWNUM 来统计行数：
+
+  * ```MYSQL
+    SELECT rownum,last_name,salary FROM employees WHERE rownum < 5 ORDER BY salary DESC;
+    #该语句先取前5数据在排序，需要子查询来先排序后取前5数据
+    #纠正后
+    SELECT rownum,last_name,salary FROM (last_name,salary FROM employees ORDER BY salary DESC) WHERE rownum < 5;
+    ```
+
+  
