@@ -8,7 +8,7 @@
 
 MVC是一种软件架构的思想，将软件按照模型、视图、控制器来划分
 
-<font color='orange'>M</font>：Model，模型层，指工程中的JavaBean，作用是<font color='orange'>处理数据</font>
+<font color='orange'>M</font>：Model，模型层，指经过一系列处理（业务处理等）的结果集
 
 JavaBean分为两类：
 
@@ -17,10 +17,21 @@ JavaBean分为两类：
 
 <font color='orange'>V</font>：View，视图层，指工程中的html或jsp等页面，作用是与用户进行交互，<font color='orange'>展示数据</font>
 
-<font color='orange'>C</font>：Controller，控制层，指工程中的servlet，<font color='orange'>作用是接收请求和响应浏览器</font>
+<font color='orange'>C</font>：Controller，控制层，指工程中的servlet，控制请求，转发请求。
 
 MVC的工作流程：
 用户通过<font color='orange'>视图层</font>发送请求到服务器，在服务器中请求被Controller接收，Controller调用相应的Model层处理请求，处理完毕将结果返回到Controller，Controller再根据请求处理的结果找到<font color='orange'>相应的View视图</font>，<font color='orange'>渲染数据后</font>最终响应给浏览器
+
+
+
+1.    概念
+
+       架构：（生产工艺 结构 两者之间）
+
+       框架：（使用说明书 规范）
+
+       设计模式：（思想 蓝图）
+很模糊
 
 ### 2、什么是SpringMVC
 
@@ -28,7 +39,11 @@ SpringMVC是Spring的一个后续产品，是Spring的一个子项目
 
 SpringMVC 是 Spring 为表述层开发提供的一整套完备的解决方案。在表述层框架历经 Strust、WebWork、Strust2 等诸多产品的历代更迭之后，目前业界普遍选择了 SpringMVC 作为 Java EE 项目表述层开发的**首选方案**。
 
-注：三层架构分为<font color='red'>**表述层（或表示层**</font>）、<font color='red'>**业务逻辑层**</font>、<font color='red'>**数据访问层**</font>，表述层表示前台页面和后台servlet
+注：三层架构分为<font color='red'>**表述层（或表示层**</font>）、<font color='red'>**业务逻辑层**</font>、<font color='red'>**数据访问层**</font>，**SpringMVC框架是表示层的一种实现**
+
+1. **UI**表示层：用户交互的界面。
+2. **BLL**业务逻辑层：UI层和DAL层之间的桥梁，实现业务逻辑。
+3. **DAL**数据访问层：对数据的增、删、改、查。
 
 ### 3、SpringMVC的特点
 
@@ -1071,7 +1086,7 @@ public String getEmployeeList(Model model){
 
 ```html
 <!-- 作用：通过超链接控制表单的提交，将post请求转换为delete请求 -->
-<form id="delete_form" method="post">
+<form id="delete_form" method="post" action="/">
     <!-- HiddenHttpMethodFilter要求：必须传输_method请求参数，并且值为最终的请求方式 -->
     <input type="hidden" name="_method" value="delete"/>
 </form>

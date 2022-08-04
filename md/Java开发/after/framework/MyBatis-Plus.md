@@ -1577,4 +1577,12 @@ Closing non transactional SqlSession [org.apache.ibatis.session.defaults.Default
 
 ```
 
+
+
 连接属性 在 Java EE.md
+
+# 十、MybatisX插件
+
+没有什么好写的。看吧。
+
+[MybatisX快速开发插件 | MyBatis-Plus (baomidou.com)](https://baomidou.com/pages/ba5b24/)

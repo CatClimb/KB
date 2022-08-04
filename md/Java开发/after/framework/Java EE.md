@@ -839,7 +839,7 @@ public interface UserService{
 
 **<font color='orange'>@Bean</font>**
 
-通常注入方法参数，或注解。
+
 
 ### 2、注入属性
 
@@ -2416,7 +2416,7 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==**数据源类型**=
     * 1. ```xml
          <!--**mapUnderscoreToCamelCase**是否开启自动驼峰命名规则（camel case）映射，db字段名：last_name javabean属性名:lastName -->
          <!--只能解决命名-->
-       <setting name="mapUnderscoreToCamelCase" value="true"/>
+          <setting name="mapUnderscoreToCamelCase" value="true"/>
          ```
 
     * 2. 对查询结果集取别名
@@ -2425,7 +2425,7 @@ MyBatis框架提供了`UNPOOLED`、`POOLED`和`JNDI`三种==**数据源类型**=
          select name 名字 from user
          #or
          select name as 名字 from user
-       #效果一样
+          #效果一样
          ```
 
          
@@ -3653,7 +3653,7 @@ public interface IUserDao {
     * 1. SqlSession不同
       2. SqlSession相同。查询条件不同（当前一级缓存中还没有这个数据）
       3. SqlSession相同。两次查询之间执行了增删改操作（这次 增删改 对当前数据有影响）
-      4. SqlSession相同。手动清楚了一级缓存（缓存清空）sqlSession.clearCache();
+      4. SqlSession相同。手动清除了一级缓存（缓存清空）sqlSession.clearCache();
 
 * 二级缓存：（==全局缓存==），基于namespace级别的缓存，一个namespace对应一个二级缓存。
 
@@ -5369,13 +5369,27 @@ Mapper代理开发 (这里的方案很多，使用过就一一例举)
 
 启动测试
 
+# 十四、其它注解
+
+## Spring注解
+
+### @NonNull 
+
+标识该参数不能为空，但是也可以传入null，执行也不会报错，IDEA会给提示（有点点权力）
+
+![image-20220708105226046](Java EE.assets\image-20220708105226046.png)
+
+### @Nullable
+
+标识该参数可以为空，也可以不为空，IDEA会检测，但不会给出提示（一点实权都没有）
+
+![image-20220708105546765](Java EE.assets\image-20220708105546765.png)
 
 
 
+## 	Lombok注解
 
-​	
-
-
+[Stable (projectlombok.org)](https://projectlombok.org/features/all)
 
 
 

@@ -1,5 +1,19 @@
 # Servlet
 
+> ## web开发四大作用域
+
+Web开发中的四个域对象（范围由小到大）：
+
+page(jsp有效) request(一次请求) session(一次会话) application(当前web应用)
+
+* page域指的是pageContext.
+
+* request域指的是HttpServletRequest
+
+* session 域指的是HTTPSession
+
+* application 域指的是ServletContext
+
 ## 一、Servlet 介绍
 
 1. Servlet 是 JavaEE 规范 (接口) 之一
