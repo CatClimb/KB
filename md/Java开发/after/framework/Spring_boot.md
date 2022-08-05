@@ -1180,7 +1180,7 @@ spring:
 		public WelcomePageHandlerMapping welcomePageHandlerMapping(ApplicationContext applicationContext,
 				FormattingConversionService mvcConversionService, ResourceUrlProvider mvcResourceUrlProvider) {
     
-      
+//      HandlerMapping：处理器映射。保存了单个Handler能处理哪些请求。	
 			WelcomePageHandlerMapping welcomePageHandlerMapping = new WelcomePageHandlerMapping(
 					new TemplateAvailabilityProviders(applicationContext), applicationContext, getWelcomePage(),
 					this.mvcProperties.getStaticPathPattern());
@@ -1207,3 +1207,439 @@ spring:
 ```
 
 方法
+
+### 2.3 请求参数处理
+
+#### （1 请求映射
+
+##### a Rest风格使用与原理
+
+* Rest使用
+
+* Rest风格支持（使用HTTP请求方式动词来表示对资源的操作）
+
+  * 以前： /getUser 获取用户 /deleteUser 删除用户 /editUser 修改用户 /saveUser 保存用户
+  * 现在： /user GET-获取用户 DELETE-删除用户 PUT-修改用户 POST-保存用户
+  * 核心Filter；HiddenHttpMethodFilter
+    * 用法：表单method=post，隐藏域_method=put
+    * SpringBoot中手动开启
+
+* **其它Rest使用客户端工具**
+
+  - 如PostMan直接发送Put、delete等方式请求，无需Filter。
+  - Rest原理（表单提交要使用REST的时候，需要用Filter）
+
+* 过程：
+
+* - 请求是否正常，并且是POST
+
+- - - 获取到**_method**的值。
+    - 兼容以下请求；**PUT**.**DELETE**.**PATCH**
+    - **原生request（post），包装模式HttpMethodRequestWrapper重写了HttpServletRequest接口的getMethod方法（该方法不是默认方法），返回的是传入的值。**
+    - **过滤器链放行的时候用HttpMethodRequestWrapper的实例。以后的方法调用getMethod是调用他的**
+
+  - - 
+
+* 解释：
+
+  * 到 WebMvcAutoConfiguration中找到与hiddenHttpMethodFilter相关的
+
+  * ```java
+    @Bean
+    	@ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
+    	@ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
+    	public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
+    		return new OrderedHiddenHttpMethodFilter();
+    	}
+    
+    ////////
+    /*可知 
+     * 生效需要满足容器中没有HiddenHttpMethodFilter且 spring.mvc.hiddenmethod.filter.enabled必须配置，且为true
+     * 新建了OrderedHiddenHttpMethodFilter类
+     * 查看该类代码与HiddenHttpMehodFilter部分代码：
+      */
+      
+      public class OrderedHiddenHttpMethodFilter extends HiddenHttpMethodFilter implements OrderedFilter {
+        public static final int DEFAULT_ORDER = -10000;
+        private int order = -10000;
+    
+        public OrderedHiddenHttpMethodFilter() {
+        }
+    
+        public int getOrder() {
+            return this.order;
+        }
+    
+        public void setOrder(int order) {
+            this.order = order;
+        }
+    }
+    //HiddenHttpMethodFilter部分代码：
+    public class HiddenHttpMethodFilter extends OncePerRequestFilter {
+    
+    	private static final List<String> ALLOWED_METHODS =
+    			Collections.unmodifiableList(Arrays.asList(HttpMethod.PUT.name(),
+    					HttpMethod.DELETE.name(), HttpMethod.PATCH.name()));
+    
+    	/** Default method parameter: {@code _method}. */
+    	public static final String DEFAULT_METHOD_PARAM = "_method";
+    
+    	private String methodParam = DEFAULT_METHOD_PARAM;
+    //可知
+    //  继承关系，和_methods的常量
+    ```
+
+* 扩展
+
+  * 所以我们可以自定义HiddenHttpMethodFilter，来修改methodParam值达到修改**参数名**的目的
+
+  * 自定义如下：
+
+    * ```java
+      public class HelloWorldController { 
+      @RequestMapping(value = "/user",method = RequestMethod.GET)
+          public String getUser(){
+              return "GET-张三";
+          }
+      
+          @RequestMapping(value = "/user",method = RequestMethod.POST)
+          public String saveUser(){
+              return "POST-张三";
+          }
+      
+      
+          @RequestMapping(value = "/user",method = RequestMethod.PUT)
+          public String putUser(){
+              return "PUT-张三";
+          }
+      
+          @RequestMapping(value = "/user",method = RequestMethod.DELETE)
+          public String deleteUser(){
+              return "DELETE-张三";
+          }
+      
+          //自定义filter后 public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() { 方法不生效
+          @Bean
+          public HiddenHttpMethodFilter hiddenHttpMethodFilter(){
+              HiddenHttpMethodFilter methodFilter = new HiddenHttpMethodFilter();
+              methodFilter.setMethodParam("_m");
+              return methodFilter;
+          }
+      }
+      ```
+
+      首页代码：
+
+      ```html
+      <form method="get" action="/user"  >
+              <input name="_m" type="hidden" value="GET">
+              <input value="GET提交" type="submit">
+          </form>
+          <form method="post" action="/user"  >
+              <input name="_m" type="hidden" value="POST">
+              <input value="POST提交" type="submit">
+          </form>
+          <form method="post" action="/user"  >
+                 <input name="_m" type="hidden" value="PUT">
+                  <input value="PUT提交" type="submit">
+              </form>
+          <form method="post" action="/user"  >
+              <input name="_m" type="hidden" value="DELETE">
+              <input value="DELETE提交" type="submit">
+          </form>
+      ```
+
+##### b 请求映射原理
+
+![image-20220805111745487](Spring_boot.assets\image-20220805111745487.png)
+
+SpringMVC功能分析都从 org.springframework.web.servlet.DispatcherServlet-》doDispatch（）
+
+开始解析该方法：
+
+定位到是getHandler方法进行处理请求映射的
+
+```java
+				// Determine handler for the current request.
+        //// 找到当前请求使用哪个Handler（Controller的方法）处理
+        //返回的是执行链
+				mappedHandler = getHandler(processedRequest);
+```
+
+其方法内容如下：
+
+```java
+protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		if (this.handlerMappings != null) {
+			for (HandlerMapping mapping : this.handlerMappings) {
+				HandlerExecutionChain handler = mapping.getHandler(request);
+				if (handler != null) {
+					return handler;
+				}
+			}
+		}
+		return null;
+	}
+```
+
+打断点可知有5种类型的HandlerMapping
+
+![image-20220805113245064](F:\data\knowledge_data\知识\md\Java开发\after\framework\Spring_boot.assets\image-20220805113245064.png)
+
+**RequestMappingHandlerMapping**：保存了所有@RequestMapping 和handler的映射规则。
+
+![image-20220805114356048](Spring_boot.assets\image-20220805114356048.png)
+
+
+
+调试找到 AbstractHandlerMethodMapping<T>的方法：
+
+```java
+protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
+  //获取原生请求的路径
+   String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
+   request.setAttribute(LOOKUP_PATH, lookupPath);
+  //mappingRegistry保存了处理器映射方法
+   this.mappingRegistry.acquireReadLock();
+   try {
+     //查找处理器映射方法
+      HandlerMethod handlerMethod = lookupHandlerMethod(lookupPath, request);
+      return (handlerMethod != null ? handlerMethod.createWithResolvedBean() : null);
+   }
+   finally {
+      this.mappingRegistry.releaseReadLock();
+   }
+}
+```
+
+进入到lookupHandlerMethod(lookupPath, request)方法中：（也是 AbstractHandlerMethodMapping<T>的方法）
+
+```java
+protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletRequest request) throws Exception {
+		List<Match> matches = new ArrayList<>();
+  	//通过以路径为map的key，获取到自己写的Rest风格的4个控制器方法（控制器处理方法信息）（看图）
+		List<T> directPathMatches = this.mappingRegistry.getMappingsByUrl(lookupPath);
+		if (directPathMatches != null) {
+      //在这里开始从以请求方法、请求参数等参数来继续筛选结果，找到符合的控制器处理方法，基本上在这就能唯一确定一个控制器方法了。
+      //该方法把匹配的值放入matches中
+			addMatchingMappings(directPathMatches, matches, request);
+		}
+  下面代码略
+  。。。。。。。。
+  。。。。。。。。
+  。。。。。。。。 
+```
+
+所有的请求映射都在HandlerMapping中。
+
+> #### 总结：
+
+- 所有的请求映射都在HandlerMapping中。
+
+- SpringBoot自动配置欢迎页的 WelcomePageHandlerMapping 。访问 /能访问到index.html；
+
+- SpringBoot自动配置了默认 的 RequestMappingHandlerMapping
+
+- 请求进来，挨个尝试所有的HandlerMapping看是否有请求信息。
+
+  - 如果有就找到这个请求对应的handler
+
+  - 如果没有就是下一个 HandlerMapping
+
+- 我们需要一些自定义的映射处理，我们也可以自己给容器中放**HandlerMapping**。自定义 **HandlerMapping**
+
+  - 代码如下：
+
+  - ```java
+    class 控制器{
+      //由 DispatcherServlet从容器中拿到HandlerMapping类型的组件，封装到 handlerMappings集合中。
+    //该集合是用到才会去加载，延迟加载。
+      
+      //设置顺序
+      
+      //自定义handlerMapping如下
+     @Bean
+        public aa handlerMapping(){
+    
+            aa a = new aa( );
+          //设置顺序：必须继承AbstractHandlerMapping来继承order属性，没有设置的order的，会给一个最小优先权：值为23788923。
+          //排列结果由DispatcherServlet类的initHandlerMappings方法的AnnotationAwareOrderComparator.sort(this.handlerMappings);方法生成。
+            a.setOrder(1);
+            return a;
+        }
+    
+    }
+    class aa extends AbstractHandlerMapping {
+    
+        @Override
+        protected Object getHandlerInternal(HttpServletRequest request) throws Exception {
+            return null;
+        }
+    }
+    
+    
+    ```
+
+#### （2 普通参数与基本注解
+
+##### a 注解
+
+@PathVariable、@RequestHeader、@ModelAttribute、@RequestParam、@CookieValue、@RequestBody
+
+```java
+// http://localhost:8080/car/2/owner/zhangsan?age=15&inters=game
+    @GetMapping("/car/{id}/owner/{username}")
+    @ResponseBody
+    public Map<String,Object> getCar(
+            @PathVariable("id") Integer id,
+            @PathVariable("username") String name,
+            @PathVariable Map<String,String>  pv,//这里的lei'xin新版本可能扩展了，可以看注解的注释信息
+            @RequestHeader("User-Agent") String userAgent,
+            @RequestHeader Map<String,String> header,
+            @RequestParam("age") Integer age,
+            @RequestParam("inters") List<String> inters,
+            @RequestParam Map<String,String> params
+            //你得设置，cookie 我的idea不帮我设没办法
+//            @CookieValue("_ga") String _ga,
+//            @CookieValue("_ga") Cookie cookie
+            ){
+        Map<String,Object> map=new HashMap<>(  );
+        map.put("id",id);
+        map.put("name",name);
+        map.put("pathVariables 集合",pv);
+        map.put("userAgent",userAgent);
+        map.put("requestHeaders 集合",header);
+        map.put("age",age);
+        map.put("inters",inters);
+        map.put("requestParams 集合",params);
+//        map.put("_ga",_ga);
+//        System.out.println(cookie );
+        return map;
+    }
+ //   http://localhost:8080/save
+ @ResponseBody
+    @PostMapping("/save")
+    public Map postMethod(@RequestBody String content){
+        Map<String,Object> map=new HashMap<>();
+        map.put("content",content);
+        return map;
+    }
+ //   http://localhost:8080/goto
+    @GetMapping("/goto")
+    public String goToPage(HttpServletRequest request){
+        request.setAttribute("msg","成功了");
+        request.setAttribute("code","200");
+        return "forward:/success";
+    }
+   // http://localhost:8080/success
+    @GetMapping("/success")
+    @ResponseBody
+    public Map success(@RequestAttribute("msg") String msg,@RequestAttribute("code") Integer code){
+        HashMap<String, Object> map = new HashMap<>( );
+        map.put("msg",msg);
+        map.put("code",code);
+        return map;
+    }
+```
+
+@MatrixVariable
+
+```java
+/**
+     * 作用：运用在cookie被禁用的时候，通过矩阵变量传递jsessionId，这种方式叫做URL重写。
+     * 1.语法：/请求路径：/cars/sell;low=34;brand=byd,audi,yd
+     *
+     * 2.SpringBoot默认是禁用了矩阵变量的功能
+     * 3.矩阵变量必须有url路径变量才能被解析
+     * 4.矩阵变量开启由谁控制？找到WebMvcAutoConfigurationAdapter的configurePathMatch方法，代码如下：
+     */
+public static class WebMvcAutoConfigurationAdapter implements WebMvcConfigurer{
+@Override
+		@SuppressWarnings("deprecation")
+		public void configurePathMatch(PathMatchConfigurer configurer) {
+			configurer.setUseSuffixPatternMatch(this.mvcProperties.getPathmatch().isUseSuffixPattern());
+			configurer.setUseRegisteredSuffixPatternMatch(
+					this.mvcProperties.getPathmatch().isUseRegisteredSuffixPattern());
+			this.dispatcherServletPath.ifAvailable((dispatcherPath) -> {
+				String servletUrlMapping = dispatcherPath.getServletUrlMapping();
+				if (servletUrlMapping.equals("/") && singleDispatcherServlet()) {
+					UrlPathHelper urlPathHelper = new UrlPathHelper();
+					urlPathHelper.setAlwaysUseFullPath(true);
+					configurer.setUrlPathHelper(urlPathHelper);
+				}
+			});
+		}
+}
+/*
+    可知手动开启原理：对于整个路径的处理，都是使用UrlPathHelper进行解析。UrlPathHelper类的removeSemicolonContent（移除分号内容）为true表示移除分号内容。为false就能支持矩阵变量了
+	由于该方法是重写WebMvcConfigurer接口的且：
+	If you want to keep those Spring Boot MVC customizations and make more [MVC customizations](https://docs.spring.io/spring/docs/5.2.9.RELEASE/spring-framework-reference/web.html#mvc) (interceptors, formatters, view controllers, and other features), you can add your own `@Configuration` class of type `WebMvcConfigurer` but **without** `@EnableWebMvc`.
+	可以用@Configuration+WebMvcConfigurer的方式自定义规则
+	自定义如下：（两种实现方式）
+*/
+@Configuration(proxyBeanMethods = false)
+public class WebConfig {
+    @Bean
+    public WebMvcConfigurer webMvcConfigurer(){
+        WebMvcConfigurer webMvcConfigurer = new WebMvcConfigurer( ) {
+            @Override
+            public void configurePathMatch(PathMatchConfigurer configurer) {
+                UrlPathHelper urlPathHelper = new UrlPathHelper( );
+                urlPathHelper.setRemoveSemicolonContent(false);
+                configurer.setUrlPathHelper(urlPathHelper);
+            }
+        };
+        return webMvcConfigurer;
+
+    }
+  
+  //另一种方式
+  @Configuration(proxyBeanMethods = false)
+public class WebConfig implements WebMvcConfigurer {
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        UrlPathHelper urlPathHelper = new UrlPathHelper( );
+        urlPathHelper.setRemoveSemicolonContent(false);
+        configurer.setUrlPathHelper(urlPathHelper);
+    }
+}
+  //此时容器里有了两个WebMvcConfigurer，一个是默认的一个是自定义的。
+```
+
+接下来开始演示矩阵变量：
+
+```java
+  /**
+     * 1.语法： 请求路径：http://localhost:8080/cars/sell;low=34;brand=byd,audi,yd
+     * 2.矩阵变量必须有url路径变量才能被解析
+     */
+    @ResponseBody
+    @GetMapping("/cars/{path1}")
+    public Map carsSell(@MatrixVariable("low") Integer low,
+                        @MatrixVariable("brand") List<String> brand,
+                        @PathVariable("path1") String path){
+        Map<String,Object> map=new HashMap<>(  );
+        map.put("low",low);
+        map.put("brand",brand);
+        map.put("path",path);
+        return map;
+    }
+    // http://localhost:8080/boss/1;age=20/2;age=10
+    @ResponseBody
+    @GetMapping("/boss/{bossId}/{empId}")
+    public Map boss(@MatrixVariable(value = "age",pathVar = "bossId") Integer bossAge,
+                    @MatrixVariable(value = "age",pathVar = "empId") Integer empAge,
+                    @PathVariable("bossId") String bossId,
+                    @PathVariable("empId") String empId){
+        Map<String,Object> map = new HashMap<>();
+
+        map.put("bossAge",bossAge);
+        map.put("empAge",empAge);
+        map.put("bossId",bossId);
+        map.put("empId",empId);
+        return map;
+
+    }
+
+```
+
