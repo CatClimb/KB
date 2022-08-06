@@ -1020,42 +1020,50 @@ https://www.webjars.org/ jquery弄成依赖了
 
 #### （4 **静态资源配置原理 ⭐⭐**
 
+开始分析：
+
 - SpringBoot启动默认加载  xxxAutoConfiguration 类（自动配置类）
 
 - SpringMVC功能的自动配置类 WebMvcAutoConfiguration，生效
 
-  - ```java
-    @Configuration(proxyBeanMethods = false)
-    @ConditionalOnWebApplication(type = Type.SERVLET)
-    @ConditionalOnClass({ Servlet.class, DispatcherServlet.class, WebMvcConfigurer.class })
-    @ConditionalOnMissingBean(WebMvcConfigurationSupport.class)
-    @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE + 10)
-    @AutoConfigureAfter({ DispatcherServletAutoConfiguration.class, TaskExecutionAutoConfiguration.class,
-    		ValidationAutoConfiguration.class })
-    public class WebMvcAutoConfiguration {}
-    ```
 
-  - 他给容器配了什么，接下来分析他的静态内部类：
 
-    - ```java
-      	@Configuration(proxyBeanMethods = false)
-      	@Import(EnableWebMvcConfiguration.class)
-      	@EnableConfigurationProperties({ WebMvcProperties.class, ResourceProperties.class })
-      	@Order(0)
-      	public static class WebMvcAutoConfigurationAdapter implements WebMvcConfigurer {
-      ```
 
-    - 可以看到 WebMvcProperties ResourceProperties 配置绑定的类，进去看前缀：
+```java
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnWebApplication(type = Type.SERVLET)
+@ConditionalOnClass({ Servlet.class, DispatcherServlet.class, WebMvcConfigurer.class })
+@ConditionalOnMissingBean(WebMvcConfigurationSupport.class)
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE + 10)
+@AutoConfigureAfter({ DispatcherServletAutoConfiguration.class, TaskExecutionAutoConfiguration.class,
+		ValidationAutoConfiguration.class })
+public class WebMvcAutoConfiguration {}
+```
 
-    - ```java
-      @ConfigurationProperties(prefix = "spring.mvc")
-      public class WebMvcProperties {
-      
-      @ConfigurationProperties(prefix = "spring.resources", ignoreUnknownFields = false)
-      public class ResourceProperties {
-      ```
+- 他给容器配了什么，接下来分析他的静态内部类：
 
-##### a 配置类只有一个有参构造器
+
+
+
+```java
+	@Configuration(proxyBeanMethods = false)
+	@Import(EnableWebMvcConfiguration.class)
+	@EnableConfigurationProperties({ WebMvcProperties.class, ResourceProperties.class })
+	@Order(0)
+	public static class WebMvcAutoConfigurationAdapter implements WebMvcConfigurer {
+```
+
+- 可以看到 WebMvcProperties ResourceProperties 配置绑定的类，进去看前缀：
+
+```java
+@ConfigurationProperties(prefix = "spring.mvc")
+public class WebMvcProperties {
+
+@ConfigurationProperties(prefix = "spring.resources", ignoreUnknownFields = false)
+public class ResourceProperties {
+```
+
+* 配置类只有一个有参构造器
 
 ```java
 	//有参构造器所有参数的值都会从容器中确定
@@ -1081,7 +1089,7 @@ https://www.webjars.org/ jquery弄成依赖了
 		}
 ```
 
-##### b webjar、静态资源处理器的默认规则
+##### a webjar、静态资源处理器的默认规则
 
 找到 WebMvcAutoConfigurationAdapter类的 addResourceHandlers 方法
 
@@ -1127,8 +1135,6 @@ spring:
     add-mappings: true
 ```
 
-
-
 该类的
 
 ```java
@@ -1173,14 +1179,14 @@ spring:
 
 ##### c 欢迎页资源处理器规则
 
-找到 WebMvcAutoConfigurationAdapter类的
+找到 WebMvcAutoConfigurationAdapter类的welcomePageHandlerMapping方法
 
 ```java
 @Bean
 		public WelcomePageHandlerMapping welcomePageHandlerMapping(ApplicationContext applicationContext,
 				FormattingConversionService mvcConversionService, ResourceUrlProvider mvcResourceUrlProvider) {
     
-//      HandlerMapping：处理器映射。保存了单个Handler能处理哪些请求。	
+//      HandlerMapping：处理器映射。保存了每个Handler能处理哪些请求。	
 			WelcomePageHandlerMapping welcomePageHandlerMapping = new WelcomePageHandlerMapping(
 					new TemplateAvailabilityProviders(applicationContext), applicationContext, getWelcomePage(),
 					this.mvcProperties.getStaticPathPattern());
@@ -1206,7 +1212,7 @@ spring:
 		}
 ```
 
-方法
+
 
 ### 2.3 请求参数处理
 
@@ -1224,132 +1230,131 @@ spring:
     * 用法：表单method=post，隐藏域_method=put
     * SpringBoot中手动开启
 
-* **其它Rest使用客户端工具**
+* 原理总结：
 
-  - 如PostMan直接发送Put、delete等方式请求，无需Filter。
-  - Rest原理（表单提交要使用REST的时候，需要用Filter）
+  * 过程描述：	
 
-* 过程：
+    * 请求是否正常，并且是POST
 
-* - 请求是否正常，并且是POST
+    - 获取到**_method**的值。
+      - 兼容以下请求；**PUT**.**DELETE**.**PATCH**
+      - **原生request（post），包装模式HttpMethodRequestWrapper重写了HttpServletRequest接口的getMethod方法（该方法不是默认方法），返回的是传入的值。**
+      - **过滤器链放行的时候用HttpMethodRequestWrapper的实例。以后的方法调用getMethod是调用他的**
 
-- - - 获取到**_method**的值。
-    - 兼容以下请求；**PUT**.**DELETE**.**PATCH**
-    - **原生request（post），包装模式HttpMethodRequestWrapper重写了HttpServletRequest接口的getMethod方法（该方法不是默认方法），返回的是传入的值。**
-    - **过滤器链放行的时候用HttpMethodRequestWrapper的实例。以后的方法调用getMethod是调用他的**
 
-  - - 
+  - 扩展：
+    - 所以我们可以自定义HiddenHttpMethodFilter，来修改methodParam值达到修改**参数名**的目的
+    - **其它Rest使用客户端工具**
+      - 表单提交要使用REST的时候，需要用Filter（Rest原理）
+      - 如PostMan直接发送Put、delete等方式请求，无需Filter。
 
-* 解释：
 
-  * 到 WebMvcAutoConfiguration中找到与hiddenHttpMethodFilter相关的
+* 解释过程：
 
-  * ```java
-    @Bean
-    	@ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
-    	@ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
-    	public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
-    		return new OrderedHiddenHttpMethodFilter();
-    	}
+  到 WebMvcAutoConfiguration中找到与hiddenHttpMethodFilter相关的
+
+  ```java
+  @Bean
+  	@ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
+  	@ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
+  	public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
+  		return new OrderedHiddenHttpMethodFilter();
+  	}
+  
+  ////////
+  /*可知 
+   * 生效需要满足容器中没有HiddenHttpMethodFilter且 spring.mvc.hiddenmethod.filter.enabled必须配置，且为true
+   * 新建了OrderedHiddenHttpMethodFilter类
+   * 查看该类代码与HiddenHttpMehodFilter部分代码：
+    */
     
-    ////////
-    /*可知 
-     * 生效需要满足容器中没有HiddenHttpMethodFilter且 spring.mvc.hiddenmethod.filter.enabled必须配置，且为true
-     * 新建了OrderedHiddenHttpMethodFilter类
-     * 查看该类代码与HiddenHttpMehodFilter部分代码：
-      */
-      
-      public class OrderedHiddenHttpMethodFilter extends HiddenHttpMethodFilter implements OrderedFilter {
-        public static final int DEFAULT_ORDER = -10000;
-        private int order = -10000;
-    
-        public OrderedHiddenHttpMethodFilter() {
-        }
-    
-        public int getOrder() {
-            return this.order;
-        }
-    
-        public void setOrder(int order) {
-            this.order = order;
-        }
-    }
-    //HiddenHttpMethodFilter部分代码：
-    public class HiddenHttpMethodFilter extends OncePerRequestFilter {
-    
-    	private static final List<String> ALLOWED_METHODS =
-    			Collections.unmodifiableList(Arrays.asList(HttpMethod.PUT.name(),
-    					HttpMethod.DELETE.name(), HttpMethod.PATCH.name()));
-    
-    	/** Default method parameter: {@code _method}. */
-    	public static final String DEFAULT_METHOD_PARAM = "_method";
-    
-    	private String methodParam = DEFAULT_METHOD_PARAM;
-    //可知
-    //  继承关系，和_methods的常量
-    ```
-
-* 扩展
-
-  * 所以我们可以自定义HiddenHttpMethodFilter，来修改methodParam值达到修改**参数名**的目的
-
-  * 自定义如下：
-
-    * ```java
-      public class HelloWorldController { 
-      @RequestMapping(value = "/user",method = RequestMethod.GET)
-          public String getUser(){
-              return "GET-张三";
-          }
-      
-          @RequestMapping(value = "/user",method = RequestMethod.POST)
-          public String saveUser(){
-              return "POST-张三";
-          }
-      
-      
-          @RequestMapping(value = "/user",method = RequestMethod.PUT)
-          public String putUser(){
-              return "PUT-张三";
-          }
-      
-          @RequestMapping(value = "/user",method = RequestMethod.DELETE)
-          public String deleteUser(){
-              return "DELETE-张三";
-          }
-      
-          //自定义filter后 public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() { 方法不生效
-          @Bean
-          public HiddenHttpMethodFilter hiddenHttpMethodFilter(){
-              HiddenHttpMethodFilter methodFilter = new HiddenHttpMethodFilter();
-              methodFilter.setMethodParam("_m");
-              return methodFilter;
-          }
+    public class OrderedHiddenHttpMethodFilter extends HiddenHttpMethodFilter implements OrderedFilter {
+      public static final int DEFAULT_ORDER = -10000;
+      private int order = -10000;
+  
+      public OrderedHiddenHttpMethodFilter() {
       }
-      ```
+  
+      public int getOrder() {
+          return this.order;
+      }
+  
+      public void setOrder(int order) {
+          this.order = order;
+      }
+  }
+  //HiddenHttpMethodFilter部分代码：
+  public class HiddenHttpMethodFilter extends OncePerRequestFilter {
+  
+  	private static final List<String> ALLOWED_METHODS =
+  			Collections.unmodifiableList(Arrays.asList(HttpMethod.PUT.name(),
+  					HttpMethod.DELETE.name(), HttpMethod.PATCH.name()));
+  
+  	/** Default method parameter: {@code _method}. */
+  	public static final String DEFAULT_METHOD_PARAM = "_method";
+  
+  	private String methodParam = DEFAULT_METHOD_PARAM;
+  //可知
+  //  继承关系，和_methods的常量
+  ```
 
-      首页代码：
+  自定义如下：
 
-      ```html
-      <form method="get" action="/user"  >
-              <input name="_m" type="hidden" value="GET">
-              <input value="GET提交" type="submit">
-          </form>
-          <form method="post" action="/user"  >
-              <input name="_m" type="hidden" value="POST">
-              <input value="POST提交" type="submit">
-          </form>
-          <form method="post" action="/user"  >
-                 <input name="_m" type="hidden" value="PUT">
-                  <input value="PUT提交" type="submit">
-              </form>
-          <form method="post" action="/user"  >
-              <input name="_m" type="hidden" value="DELETE">
-              <input value="DELETE提交" type="submit">
-          </form>
-      ```
+  ```java
+  public class HelloWorldController { 
+  @RequestMapping(value = "/user",method = RequestMethod.GET)
+      public String getUser(){
+          return "GET-张三";
+      }
+  
+      @RequestMapping(value = "/user",method = RequestMethod.POST)
+      public String saveUser(){
+          return "POST-张三";
+      }
+  
+  
+      @RequestMapping(value = "/user",method = RequestMethod.PUT)
+      public String putUser(){
+          return "PUT-张三";
+      }
+  
+      @RequestMapping(value = "/user",method = RequestMethod.DELETE)
+      public String deleteUser(){
+          return "DELETE-张三";
+      }
+  
+      //自定义filter后 public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() { 方法不生效
+      @Bean
+      public HiddenHttpMethodFilter hiddenHttpMethodFilter(){
+          HiddenHttpMethodFilter methodFilter = new HiddenHttpMethodFilter();
+          methodFilter.setMethodParam("_m");
+          return methodFilter;
+      }
+  }
+  ```
 
-##### b 请求映射原理
+  首页代码：
+
+  ```html
+  <form method="get" action="/user"  >
+          <input name="_m" type="hidden" value="GET">
+          <input value="GET提交" type="submit">
+      </form>
+      <form method="post" action="/user"  >
+          <input name="_m" type="hidden" value="POST">
+          <input value="POST提交" type="submit">
+      </form>
+      <form method="post" action="/user"  >
+             <input name="_m" type="hidden" value="PUT">
+              <input value="PUT提交" type="submit">
+          </form>
+      <form method="post" action="/user"  >
+          <input name="_m" type="hidden" value="DELETE">
+          <input value="DELETE提交" type="submit">
+      </form>
+  ```
+
+##### b 请求映射原理 ⭐⭐
 
 ![image-20220805111745487](Spring_boot.assets\image-20220805111745487.png)
 
@@ -1480,11 +1485,11 @@ protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletReques
     
     ```
 
-#### （2 普通参数与基本注解
+#### （2 参数与注解
 
 ##### a 注解
 
-@PathVariable、@RequestHeader、@ModelAttribute、@RequestParam、@CookieValue、@RequestBody
+1. @PathVariable、@RequestHeader、@ModelAttribute、@RequestParam、@CookieValue、@RequestBody、
 
 ```java
 // http://localhost:8080/car/2/owner/zhangsan?age=15&inters=game
@@ -1493,7 +1498,7 @@ protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletReques
     public Map<String,Object> getCar(
             @PathVariable("id") Integer id,
             @PathVariable("username") String name,
-            @PathVariable Map<String,String>  pv,//这里的lei'xin新版本可能扩展了，可以看注解的注释信息
+            @PathVariable Map<String,String>  pv,//这里的类型新版本可能扩展了，可以看注解的注释信息
             @RequestHeader("User-Agent") String userAgent,
             @RequestHeader Map<String,String> header,
             @RequestParam("age") Integer age,
@@ -1542,7 +1547,7 @@ protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletReques
     }
 ```
 
-@MatrixVariable
+2. @MatrixVariable
 
 ```java
 /**
@@ -1641,5 +1646,606 @@ public class WebConfig implements WebMvcConfigurer {
 
     }
 
+```
+
+##### b Servlet API
+
+WebRequest、ServletRequest、MultipartRequest、HttpSession、javax.servlet.http.Pushbuilder、Principal、InputStream、Reader、HttpMethod、Locale、TimeZone、ZoneId
+
+以上为**ServletRequestMethodArgumentResolver** （参数解析器）的支持的参数，源码如下：
+
+```java
+@Override
+	public boolean supportsParameter(MethodParameter parameter) {
+		Class<?> paramType = parameter.getParameterType();
+		return (WebRequest.class.isAssignableFrom(paramType) ||
+				ServletRequest.class.isAssignableFrom(paramType) ||
+				MultipartRequest.class.isAssignableFrom(paramType) ||
+				HttpSession.class.isAssignableFrom(paramType) ||
+				(pushBuilder != null && pushBuilder.isAssignableFrom(paramType)) ||
+				Principal.class.isAssignableFrom(paramType) ||
+				InputStream.class.isAssignableFrom(paramType) ||
+				Reader.class.isAssignableFrom(paramType) ||
+				HttpMethod.class == paramType ||
+				Locale.class == paramType ||
+				TimeZone.class == paramType ||
+				ZoneId.class == paramType);
+	}
+```
+
+##### c 复杂参数
+
+**Map**、**Model（map、model里面的数据会被放在request的请求域  request.setAttribute）、**Errors/BindingResult、**RedirectAttributes（ 重定向携带数据）**、**ServletResponse（response）**、SessionStatus、UriComponentsBuilder、ServletUriComponentsBuilder4432863
+
+> **Map**、**Model（map、model里面的数据会被放在request的请求域  request.setAttribute）** 解释：
+
+测试代码：
+
+```java
+ @GetMapping("/params")
+    public String testParam(Map map, Model model,
+                            HttpServletRequest request,
+                            HttpServletResponse response){
+        map.put("map","我是map");
+        model.addAttribute("model","我是model");
+        request.setAttribute("request","我是request");
+        Cookie cookie = new Cookie("c1","v1" );
+        cookie.setDomain("localhost");
+        response.addCookie(cookie);
+        return "forward:/success";
+    }
+   // http://localhost:8080/success
+    @GetMapping("/success")
+    @ResponseBody
+    public Map success(
+            @RequestAttribute(value = "msg",required = false) String msg,
+            @RequestAttribute(value = "code",required = false) Integer code,
+            HttpServletRequest request
+    ){
+        Object msg1=msg;
+        HashMap<String, Object> hm = new HashMap<>( );
+        Object map = request.getAttribute("map");
+        Object model = request.getAttribute("model");
+        Object requestKeyAndValue=request.getAttribute("request");
+        hm.put("msg",msg);
+        hm.put("msg1",msg1);
+        hm.put("request",requestKeyAndValue);
+        hm.put("map",map);
+        hm.put("model",model);
+        hm.put("request",requestKeyAndValue);
+        return hm;
+    }
+```
+
+开始调试：
+
+找到Map和Model的解析器：（HandlerMethodArgumentResolver接口下的）MapMethodProcessor和 ModelMethodProcessor 
+
+其解析方法相同，都是如下方法：
+
+```java
+@Override
+	@Nullable
+	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
+
+		Assert.state(mavContainer != null, "ModelAndViewContainer is required for model exposure");
+    //
+		return mavContainer.getModel();
+	}
+```
+
+查看 mavContainer.getModel();方法
+
+可知返回的是 **BindingAwareModelMap** （它是Model 也是Map）
+
+![image-20220806122216534](Spring_boot.assets\image-20220806122216534.png)
+
+也就是说解析map和model是同一个对象，都是ModelAndViewContainer中引用的对象。
+
+![image-20220806122622439](Spring_boot.assets\image-20220806122622439.png)
+
+接着执行完方法并返回上一级方法，在这级方法中调用HandlerMethodReturnValueHandlerComposite.handleReturnValue
+
+```java
+this.returnValueHandlers.handleReturnValue(
+      returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
+```
+
+该方法内容如下：
+
+```java
+@Override
+public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
+      ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+		//遍历支持处理返回值的返回值处理器
+   HandlerMethodReturnValueHandler handler = selectHandler(returnValue, returnType);
+   if (handler == null) {
+      throw new IllegalArgumentException("Unknown return value type: " + returnType.getParameterType().getName());
+   }
+   handler.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
+}
+```
+
+找到 **ViewNameMethodReturnValueHandler** 返回值处理器（HandlerMethodReturnValueHandler 接口的）
+
+![image-20220806123131256](F:\data\knowledge_data\知识\md\Java开发\after\framework\Spring_boot.assets\image-20220806123131256.png)
+
+继续解析：
+
+```java
+//调用该返回值处理器的方法
+handler.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
+
+//该返回值处理器的方法：
+	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
+			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+
+		if (returnValue instanceof CharSequence) {
+			String viewName = returnValue.toString();
+      //为ModelAndViewContainer中设置视图名：“forward:/success” 视图也称为地址
+			mavContainer.setViewName(viewName);
+			if (isRedirectViewName(viewName)) {
+				mavContainer.setRedirectModelScenario(true);
+			}
+		}
+		else if (returnValue != null) {
+			// should not happen
+			throw new UnsupportedOperationException("Unexpected return type: " +
+					returnType.getParameterType().getName() + " in method: " + returnType.getMethod());
+		}
+	}
+```
+
+放在请求域的原理 在 [处理派发结果](#####5、处理派发结果)。
+
+##### b 自定义对象参数
+
+可以自动类型转换与格式化，可以级联封装。
+
+测试代码
+
+```java
+/**
+<form method="post" action="saveuser">
+    姓名： <input name="name" value="张三"/> <br/>
+    年龄： <input name="age" value="18"/> <br/>
+    生日： <input name="birth" value="1990"/> <br/>
+    宠物姓名：<input name="pet.name" value="猫猫"/><br/>
+    宠物年龄：<input name="pet.age" value="3"/>
+    <input type="submit" value="保存">
+</form>
+ */
+@Data
+public class Person {
+    
+    private String userName;
+    private Integer age;
+    private Date birth;
+    private Pet pet;
+    
+}
+
+@Data
+public class Pet {
+
+    private String name;
+    private String age;
+
+}
+控制器：
+  @ResponseBody
+    @PostMapping("/saveuser")
+    public User saveUser(User user ,HttpServletRequest request){
+        System.out.println(user.toString() );
+        return user;
+    } 
+```
+
+#### （3 参数处理原理 ⭐⭐
+
+> #### 总结
+
+* HandlerMapping中找到能处理请求的Handler（Controller.method()）
+* 为当前Handler找一个适配器HandlerAdapter;如：RequestMappingHandlerAdapter
+* 适配器在从所有解析器中选择合适的解析器解析所有参数，之后把解析后的值带上调用目标方法。
+
+
+
+##### 1、HandlerAdapter
+
+遍历适配器，找到合适的适配器：
+
+```java
+// Determine handler adapter for the current request.
+//mappedHandler.getHandler()为 目标方法
+				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
+//返回目标适配器
+```
+
+所有适配器：
+
+![image-20220806101729396](Spring_boot.assets\image-20220806101729396.png)
+
+0 - 支持方法上标注@RequestMapping 
+
+1 - 支持函数式编程的
+
+调用目标方法的入口方法：
+
+```java
+// Actually invoke the handler.
+//DispatcherServlet -- doDispatch
+mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
+```
+
+进入到RequestMappingHandlerAdapter类的invokeHandlerMethod中：
+
+```java
+ServletInvocableHandlerMethod invocableMethod = createInvocableHandlerMethod(handlerMethod);
+if (this.argumentResolvers != null) {
+   invocableMethod.setHandlerMethodArgumentResolvers(this.argumentResolvers);
+}
+if (this.returnValueHandlers != null) {
+   invocableMethod.setHandlerMethodReturnValueHandlers(this.returnValueHandlers);
+}
+//可知 InvocableHandlerMethod封装了目标方法类、所有参数解析器、返回值解析器
+```
+
+##### 2、参数解析器 HandlerMethodArgumentResolver
+
+确定将要执行的目标方法的每一个参数的值是什么;
+
+SpringMVC目标方法能写多少种参数类型。取决于参数解析器。
+
+![image-20220806110848181](Spring_boot.assets\image-20220806110848181.png)
+
+![image-20220806111133653](Spring_boot.assets\image-20220806111133653.png)
+
+##### 3、执行目标方法
+
+进入到InvocableHandlerMethod的invokeForRequest方法中：
+
+```java
+@Nullable
+public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
+      Object... providedArgs) throws Exception {
+	//返回所有参数的数据类型以及数据本身，如下图的8条数据：
+  //方法参数解析流程在里面：
+  //通过为每一位参数匹配一个参数解析器并解析。（参数类MethodParameter封装了两个关键信息 注解 和 参数类型）
+   Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
+   if (logger.isTraceEnabled()) {
+      logger.trace("Arguments: " + Arrays.toString(args));
+   }
+  //真正调用方法的在这，使用反射技术调用： Method.invoke(getBean(), args);
+   return doInvoke(args);
+}
+```
+
+![image-20220806105536059](Spring_boot.assets\image-20220806105536059.png)
+
+##### 4、返回值处理器
+
+接着执行完方法并返回上一级方法，在这级方法中调用HandlerMethodReturnValueHandlerComposite.handleReturnValue
+
+```java
+this.returnValueHandlers.handleReturnValue(
+      returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
+```
+
+该方法内容如下：
+
+```java
+@Override
+public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
+      ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+		//遍历支返回值处理器，判断是否支持这种类型返回值
+   HandlerMethodReturnValueHandler handler = selectHandler(returnValue, returnType);
+   if (handler == null) {
+      throw new IllegalArgumentException("Unknown return value type: " + returnType.getParameterType().getName());
+   }
+   handler.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
+}
+```
+
+找到 **相关的** 返回值处理器（HandlerMethodReturnValueHandler 接口的）
+
+![image-20220806123131256](F:\data\knowledge_data\知识\md\Java开发\after\framework\Spring_boot.assets\image-20220806123131256.png)
+
+
+
+##### 5、处理派发结果
+
+**processDispatchResult**(processedRequest, response, mappedHandler, mv, dispatchException);
+
+renderMergedOutputModel(mergedModel, getRequestToExpose(request), response); 方法
+
+```java
+InternalResourceView：
+@Override
+	protected void renderMergedOutputModel(
+			Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		// Expose the model object as request attributes.
+		exposeModelAsRequestAttributes(model, request);
+
+		// Expose helpers as request attributes, if any.
+		exposeHelpers(request);
+
+		// Determine the path for the request dispatcher.
+		String dispatcherPath = prepareForRendering(request, response);
+
+		// Obtain a RequestDispatcher for the target resource (typically a JSP).
+		RequestDispatcher rd = getRequestDispatcher(request, dispatcherPath);
+		if (rd == null) {
+			throw new ServletException("Could not get RequestDispatcher for [" + getUrl() +
+					"]: Check that the corresponding file exists within your web application archive!");
+		}
+
+		// If already included or response already committed, perform include, else forward.
+		if (useInclude(request, response)) {
+			response.setContentType(getContentType());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Including [" + getUrl() + "]");
+			}
+			rd.include(request, response);
+		}
+
+		else {
+			// Note: The forwarded resource is supposed to determine the content type itself.
+			if (logger.isDebugEnabled()) {
+				logger.debug("Forwarding to [" + getUrl() + "]");
+			}
+			rd.forward(request, response);
+		}
+	}
+```
+
+其内的
+
+```java
+暴露模型作为请求域属性
+// Expose the model object as request attributes.
+		exposeModelAsRequestAttributes(model, request);
+```
+
+
+
+##### 细节（如何确定目标方法每一个参数的值？）
+
+```java
+============InvocableHandlerMethod==========================
+protected Object[] getMethodArgumentValues(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
+			Object... providedArgs) throws Exception {
+
+		MethodParameter[] parameters = getMethodParameters();
+		if (ObjectUtils.isEmpty(parameters)) {
+			return EMPTY_ARGS;
+		}
+
+		Object[] args = new Object[parameters.length];
+		for (int i = 0; i < parameters.length; i++) {
+			MethodParameter parameter = parameters[i];
+			parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
+			args[i] = findProvidedArgument(parameter, providedArgs);
+			if (args[i] != null) {
+				continue;
+			}
+			if (!this.resolvers.supportsParameter(parameter)) {
+				throw new IllegalStateException(formatArgumentError(parameter, "No suitable resolver"));
+			}
+			try {
+				args[i] = this.resolvers.resolveArgument(parameter, mavContainer, request, this.dataBinderFactory);
+			}
+			catch (Exception ex) {
+				// Leave stack trace for later, exception may actually be resolved and handled...
+				if (logger.isDebugEnabled()) {
+					String exMsg = ex.getMessage();
+					if (exMsg != null && !exMsg.contains(parameter.getExecutable().toGenericString())) {
+						logger.debug(formatArgumentError(parameter, exMsg));
+					}
+				}
+				throw ex;
+			}
+		}
+		return args;
+	}
+```
+
+###### 1.挨个判断所有参数解析器那个支持解析这个参数
+
+```java
+	@Nullable
+	private HandlerMethodArgumentResolver getArgumentResolver(MethodParameter parameter) {
+		HandlerMethodArgumentResolver result = this.argumentResolverCache.get(parameter);
+		if (result == null) {
+			for (HandlerMethodArgumentResolver resolver : this.argumentResolvers) {
+				if (resolver.supportsParameter(parameter)) {
+					result = resolver;
+					this.argumentResolverCache.put(parameter, result);
+					break;
+				}
+			}
+		}
+		return result;
+	}
+```
+
+###### 2.解析这个参数的值
+
+调用各自 HandlerMethodArgumentResolver 的 resolveArgument 方法即可
+
+#### （4 POJO数据绑定过程
+
+- **ServletModelAttributeMethodProcessor** 解析器 （HandlerMethodArgumentResolver，HandlerMethodReturnValueHandler接口），由它来解析（或者说数据绑定）
+
+  该解析器会判断不是简单类型，则支持。
+
+  简单类型判断：（在BeanUtil类中）
+
+  ```java
+  public static boolean isSimpleValueType(Class<?> type) {
+  		return (Void.class != type && void.class != type &&
+  				(ClassUtils.isPrimitiveOrWrapper(type) ||
+  				Enum.class.isAssignableFrom(type) ||
+  				CharSequence.class.isAssignableFrom(type) ||
+  				Number.class.isAssignableFrom(type) ||
+  				Date.class.isAssignableFrom(type) ||
+  				Temporal.class.isAssignableFrom(type) ||
+  				URI.class == type ||
+  				URL.class == type ||
+  				Locale.class == type ||
+  				Class.class == type));
+  	}
+  ```
+
+  调用该解析器解析方法：
+
+  ```java
+  @Override
+  	@Nullable
+  	public final Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+  			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
+  
+  		Assert.state(mavContainer != null, "ModelAttributeMethodProcessor requires ModelAndViewContainer");
+  		Assert.state(binderFactory != null, "ModelAttributeMethodProcessor requires WebDataBinderFactory");
+  
+  		String name = ModelFactory.getNameForParameter(parameter);
+  		ModelAttribute ann = parameter.getParameterAnnotation(ModelAttribute.class);
+  		if (ann != null) {
+  			mavContainer.setBinding(name, ann.binding());
+  		}
+  
+  		Object attribute = null;
+  		BindingResult bindingResult = null;
+  
+  		if (mavContainer.containsAttribute(name)) {
+  			attribute = mavContainer.getModel().get(name);
+  		}
+  		else {
+  			// Create attribute instance
+  			try {
+           //构造目标参数（User类 为空）
+  				attribute = createAttribute(name, parameter, binderFactory, webRequest);
+  			}
+  			catch (BindException ex) {
+  				if (isBindExceptionRequired(parameter)) {
+  					// No BindingResult parameter -> fail with BindException
+  					throw ex;
+  				}
+  				// Otherwise, expose null/empty value and associated BindingResult
+  				if (parameter.getParameterType() == Optional.class) {
+  					attribute = Optional.empty();
+  				}
+  				bindingResult = ex.getBindingResult();
+  			}
+  		}
+  
+  		if (bindingResult == null) {
+  			// Bean property binding and validation;
+  			// skipped in case of binding failure on construction.
+        //创建web数据绑定工厂  该conversionService中提供了 124个转换器
+  			WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);
+  			if (binder.getTarget() != null) {
+  				if (!mavContainer.isBindingDisabled(name)) {
+            //真正进行绑定的入口方法
+  					bindRequestParameters(binder, webRequest);
+  				}
+  				validateIfApplicable(binder, parameter);
+  				if (binder.getBindingResult().hasErrors() && isBindExceptionRequired(binder, parameter)) {
+  					throw new BindException(binder.getBindingResult());
+  				}
+  			}
+  			// Value type adaptation, also covering java.util.Optional
+  			if (!parameter.getParameterType().isInstance(attribute)) {
+         
+  				attribute = binder.convertIfNecessary(binder.getTarget(), parameter.getParameterType(), parameter);
+  			}
+  			bindingResult = binder.getBindingResult();
+  		}
+  
+  		// Add resolved attribute and BindingResult at the end of the model
+  		Map<String, Object> bindingResultModel = bindingResult.getModel();
+  		mavContainer.removeAttributes(bindingResultModel);
+  		mavContainer.addAllAttributes(bindingResultModel);
+  
+  		return attribute;
+  	}
+  
+  ```
+
+  124个类型转换器：
+
+  ![image-20220806162756473](Spring_boot.assets\image-20220806162756473.png)
+
+
+
+* WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);
+* WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面
+
+* WebDataBinder 利用它里面的 Converters 将请求数据转成指定的数据类型。再次封装到JavaBean中
+* GenericConversionService：在设置每一个值的时候，找它里面的所有converter那个可以将这个数据类型（request带来参数的字符串）转换到指定的类型（JavaBean -- Integer）
+
+```java
+@Nullable
+public GenericConverter find(TypeDescriptor sourceType, TypeDescriptor targetType) {
+   // Search the full type hierarchy
+  查找支持的类型转换器
+   List<Class<?>> sourceCandidates = getClassHierarchy(sourceType.getType());
+   List<Class<?>> targetCandidates = getClassHierarchy(targetType.getType());
+   for (Class<?> sourceCandidate : sourceCandidates) {
+      for (Class<?> targetCandidate : targetCandidates) {
+         ConvertiblePair convertiblePair = new ConvertiblePair(sourceCandidate, targetCandidate);
+         GenericConverter converter = getRegisteredConverter(sourceType, targetType, convertiblePair);
+         if (converter != null) {
+            return converter;
+         }
+      }
+   }
+   return null;
+}
+```
+
+转换器接口：
+
+@FunctionalInterface**public interface** Converter<S, T>
+
+###### 自定义转换器示例
+
+实现WebMvcConfigurer接口中addFormatters方法：
+
+```java
+/*
+<form method="post" action="saveuser">
+    姓名： <input name="name" value="张三"/> <br/>
+    年龄： <input name="age" value="18"/> <br/>
+    生日： <input name="birth" value="1990"/> <br/>
+    啊啊啊 <input name="pet" value="猫哥,4">
+    <input type="submit" value="保存">
+</form>	
+*/
+/**
+	 * Add {@link Converter Converters} and {@link Formatter Formatters} in addition to the ones
+	 * registered by default.
+	 */
+@Configuration(proxyBeanMethods = )
+	public class WebConfig implements WebMvcConfigurer {
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(new Converter<String, Pet>( ) {
+            @Override
+            public Pet convert(String source) {
+                String[] split = source.split(",");
+              if(!StringUtils.is)
+                Pet pet = new Pet( );
+                pet.setName(split[0]);
+                pet.setAge(Integer.valueOf(split[1]));
+                return pet;
+            }
+        });
+
+    }
+
+}
 ```
 
