@@ -1926,37 +1926,9 @@ public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewC
 
 ![image-20220806105536059](Spring_boot.assets\image-20220806105536059.png)
 
-##### 4、返回值处理器 ⭐⭐ 3
+##### 4、返回值处理器 
 
-接着执行完方法并返回上一级方法，在这级方法中调用HandlerMethodReturnValueHandlerComposite.handleReturnValue
-
-```java
-this.returnValueHandlers.handleReturnValue(
-      returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
-```
-
-该方法内容如下：
-
-```java
-@Override
-public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
-      ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
-		//遍历支返回值处理器，判断是否支持这种类型返回值
-   HandlerMethodReturnValueHandler handler = selectHandler(returnValue, returnType);
-   if (handler == null) {
-      throw new IllegalArgumentException("Unknown return value type: " + returnType.getParameterType().getName());
-   }
-   handler.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
-}
-```
-
-找到 **相关的** 返回值处理器（HandlerMethodReturnValueHandler 接口的）
-
-![image-20220806123131256](Spring_boot.assets\image-20220806123131256.png)
-
-![image-20220806210551955](Spring_boot.assets\image-20220806210551955.png)
-
-[（3 HTTPMessageConverter原理 ⭐⭐ 3.1](#####（3 HTTPMessageConverter原理 ⭐⭐ 3.1)
+[（3 返回值处理器原理 ⭐⭐ 3.1](#####（3 返回值处理器原理 ⭐⭐ 3)
 
 ##### 5、处理派发结果
 
@@ -2255,6 +2227,8 @@ public GenericConverter find(TypeDescriptor sourceType, TypeDescriptor targetTyp
 
 ### 2.4 数据响应与内容协商
 
+![image-20220807154257960](Spring_boot.assets\image-20220807154257960.png)
+
 #### 1、响应JSON
 
 ##### （1 jackson.jar+@ResponseBody
@@ -2300,23 +2274,56 @@ WebAsyncTask
 @ResponseBody 注解 ---> RequestResponseBodyMethodProcessor；
 ```
 
-##### （3 HTTPMessageConverter原理 ⭐⭐ 3.1
+##### （3 返回值处理器原理 ⭐⭐ 3
 
 > #### 总结
 
-* 1、返回值处理器判断是否支持这种类型返回值supportsReturnType
-* 2、返回值处理器调用 handleReturnValue进行处理
-* 3、ReuqestResponseBodyMethodProcessor可以处理返回值标了@ResponseBody注解的。
-  * 1.利用MessageConverters进行处理将数据写为json
-    * 1、内容协商（浏览器默认会以请求头的方式告诉服务器他能接受什么样的内容类型 ）
-    * 2、服务器最终根据会根据自己自身的能力，决定服务器能生产出什么样内容类型的数据。
-      * 解释：
-        1. 获取request的接受类型
-        2. 获取服务器生产能力：getSupportedMediaTypes();
-        3. 根据以上数据嵌套for循环，遍历并适配合适的类型。
-    * 3、SpringMVC会挨个遍历所有容器底层的HttpMessageConverter，看谁能处理？
-      * 1、得到MappingJackson2HttpMessageConverter可以将对象写为json
-      * 2、利用MappingJackson2HttpMessageConverter将对象转为json再写出去。
+* 1、返回值处理器判断是否支持这种类型返回值 supportsReturnType
+* 2、返回值处理器调用 handleReturnValue 进行处理
+* 3、RequestResponseBodyMethodProcessor 可以处理返回值标了@ResponseBody 注解的。
+* 4、其底层利用 MessageConverters 进行处理。（主要内容：内容协商、类型转换）
+  * 1、**内容协商**
+    * （1 浏览器默认会以请求头的方式告诉服务器他能接受什么样的内容类型
+    * （2 服务器最终根据自己自身的能力，决定服务器能生产出什么样内容类型的数据
+    * （3 之后进行最佳匹配
+
+  * 2、**类型转换**
+  * SpringMVC会挨个遍历所有容器底层的 HttpMessageConverter ，看谁能处理？
+    *  （1 得到MappingJackson2HttpMessageConverter可以将对象写为json
+    *  （2 利用MappingJackson2HttpMessageConverter将对象转为json再写出去。
+
+
+
+
+接着执行完方法并返回上一级方法，在这级方法中调用HandlerMethodReturnValueHandlerComposite.handleReturnValue
+
+```java
+this.returnValueHandlers.handleReturnValue(
+      returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
+```
+
+该方法内容如下：
+
+```java
+@Override
+public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
+      ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+		//遍历支返回值处理器，判断是否支持这种类型返回值
+   HandlerMethodReturnValueHandler handler = selectHandler(returnValue, returnType);
+   if (handler == null) {
+      throw new IllegalArgumentException("Unknown return value type: " + returnType.getParameterType().getName());
+   }
+   handler.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
+}
+```
+
+找到 **相关的** 返回值处理器（HandlerMethodReturnValueHandler 接口的）
+
+![image-20220806123131256](Spring_boot.assets\image-20220806123131256.png)
+
+![image-20220806210551955](Spring_boot.assets\image-20220806210551955.png)
+
+
 
 
 
@@ -2339,6 +2346,8 @@ WebAsyncTask
 	writeWithMessageConverters(returnValue, returnType, inputMessage, outputMessage);
 }
 ```
+
+##### （4 HttpMessageConverter原理  ⭐
 
 ###### 1. MessageConvert规范
 
@@ -2374,5 +2383,286 @@ WebAsyncTask
 
 ![image-20220807113741317](Spring_boot.assets\image-20220807113741317.png)
 
+[（4 内容协商原理 3.1 ⭐⭐](#####4 内容协商原理 3.1 ⭐⭐)
+
 #### 2、内容协商
 
+根据客户端接收能力不同，返回不同媒体类型的数据。
+
+##### （1 引入依赖
+
+目的，协商后转application/xml类型
+
+```xml
+ <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+</dependency>
+```
+
+##### （2 postman分别测试返回json和xml
+
+只需要改变请求头中Accept字段。Http协议中规定的，告诉服务器本客户端可以接收的数据类型。
+
+![image-20220807153203834](Spring_boot.assets\image-20220807153203834.png)
+
+##### (3 开启浏览器参数方式内容协商功能
+
+```yml
+spring:
+  mvc:
+    contentnegotiation:
+    #请求参数
+      favor-parameter: true 
+      #  * Whether the path extension in the URL path should be used to determine the
+      #  * requested media type. If enabled a request "/users.pdf" will be interpreted as
+      #  * a request for "application/pdf" regardless of the 'Accept' header.
+      #  */
+      # favor-path-extension: true 
+
+```
+
+测试请求：
+
+http://localhost:8080/test/person?format=json
+
+[http://localhost:8080/test/person?format=](http://localhost:8080/test/person?format=json)xml
+
+追踪：其作用于 ContentNegotiationConfigurer的buildContentNegotiationManager()方法的ContentNegotiationManagerFactoryBean 的build（）中：
+
+```java
+public ContentNegotiationManager build() {
+		List<ContentNegotiationStrategy> strategies = new ArrayList<>();
+
+		if (this.strategies != null) {
+			strategies.addAll(this.strategies);
+		}
+		else {
+			if (this.favorPathExtension) {
+				PathExtensionContentNegotiationStrategy strategy;
+				if (this.servletContext != null && !useRegisteredExtensionsOnly()) {
+					strategy = new ServletPathExtensionContentNegotiationStrategy(this.servletContext, this.mediaTypes);
+				}
+				else {
+					strategy = new PathExtensionContentNegotiationStrategy(this.mediaTypes);
+				}
+				strategy.setIgnoreUnknownExtensions(this.ignoreUnknownPathExtensions);
+				if (this.useRegisteredExtensionsOnly != null) {
+					strategy.setUseRegisteredExtensionsOnly(this.useRegisteredExtensionsOnly);
+				}
+				strategies.add(strategy);
+			}
+			if (this.favorParameter) {
+				ParameterContentNegotiationStrategy strategy = new ParameterContentNegotiationStrategy(this.mediaTypes);
+				strategy.setParameterName(this.parameterName);
+				if (this.useRegisteredExtensionsOnly != null) {
+					strategy.setUseRegisteredExtensionsOnly(this.useRegisteredExtensionsOnly);
+				}
+				else {
+					strategy.setUseRegisteredExtensionsOnly(true);  // backwards compatibility
+				}
+				strategies.add(strategy);
+			}
+			if (!this.ignoreAcceptHeader) {
+				strategies.add(new HeaderContentNegotiationStrategy());
+			}
+			if (this.defaultNegotiationStrategy != null) {
+				strategies.add(this.defaultNegotiationStrategy);
+			}
+		}
+		
+		this.contentNegotiationManager = new ContentNegotiationManager(strategies);
+
+		// Ensure media type mappings are available via ContentNegotiationManager#getMediaTypeMappings()
+		// independent of path extension or parameter strategies.
+
+		if (!CollectionUtils.isEmpty(this.mediaTypes) && !this.favorPathExtension && !this.favorParameter) {
+			this.contentNegotiationManager.addFileExtensionResolvers(
+					new MappingMediaTypeFileExtensionResolver(this.mediaTypes));
+		}
+
+		return this.contentNegotiationManager;
+	}
+
+```
+
+其默认的this.mediaTypes通过WebMvcConfigurationSupport类的
+
+```java
+protected Map<String, MediaType> getDefaultMediaTypes() {
+		Map<String, MediaType> map = new HashMap<>(4);
+		if (romePresent) {
+			map.put("atom", MediaType.APPLICATION_ATOM_XML);
+			map.put("rss", MediaType.APPLICATION_RSS_XML);
+		}
+		if (jaxb2Present || jackson2XmlPresent) {
+			map.put("xml", MediaType.APPLICATION_XML);
+		}
+		if (jackson2Present || gsonPresent || jsonbPresent) {
+			map.put("json", MediaType.APPLICATION_JSON);
+		}
+		if (jackson2SmilePresent) {
+			map.put("smile", MediaType.valueOf("application/x-jackson-smile"));
+		}
+		if (jackson2CborPresent) {
+			map.put("cbor", MediaType.APPLICATION_CBOR);
+		}
+		return map;
+	}
+
+```
+
+判断值存在该类的静态块中：
+
+![image-20220807222611200](Spring_boot.assets\image-20220807222611200.png)
+
+this.contentNegotiationManager = new ContentNegotiationManager(strategies);如下：
+
+```java
+public ContentNegotiationManager(Collection<ContentNegotiationStrategy> strategies) {
+   Assert.notEmpty(strategies, "At least one ContentNegotiationStrategy is expected");
+   this.strategies.addAll(strategies);
+   for (ContentNegotiationStrategy strategy : this.strategies) {
+      if (strategy instanceof MediaTypeFileExtensionResolver) {
+         this.resolvers.add((MediaTypeFileExtensionResolver) strategy);
+      }
+   }
+}
+```
+
+创建结果如下：
+
+![image-20220807224201608](Spring_boot.assets\image-20220807224201608.png)
+
+##### （4 内容协商原理 3.1 ⭐⭐
+
+* 1、判断当前响应头中是否已经有确定的媒体类型。（是的话，直接跳到7）
+
+* 2、获取客户端（PostMan、浏览器）支持接收的内容类型（获取客户端Accept请求头字段）【application/xml】
+
+  * contentNegotiationManager 内容协商管理器 默认使用基于请求头的策略
+  * ![image-20220807230910923](Spring_boot.assets\image-20220807230910923.png)
+  * HeaderContentNegotiationStrategy  确定客户端可以接收的内容类型
+  * ![image-20220807231021995](Spring_boot.assets\image-20220807231021995.png)
+
+* 3、遍历循环所有当前系统的 **MessageConverter**，看谁支持操作这个对象（Person 源）
+
+* 4、找到支持操作Person的converter，把converter支持的媒体类型统计出来。
+
+* 5、客户端需要【application/xml】。服务端能力【10种、json、xml】
+
+* ![image-20220807231341894](Spring_boot.assets\image-20220807231341894.png)
+
+  6、进行内容协商的最佳匹配媒体类型
+
+  - 7、用 支持 将对象转为 最佳匹配媒体类型 的converter。调用它进行转化 。
+
+![image-20220807231520028](Spring_boot.assets\image-20220807231520028.png)
+
+导入了jackson处理xml的包，xml的converter就会自动进来：
+
+```java
+WebMvcConfigurationSupport类：
+jackson2XmlPresent = ClassUtils.isPresent("com.fasterxml.jackson.dataformat.xml.XmlMapper", classLoader);
+
+if (jackson2XmlPresent) {
+			Jackson2ObjectMapperBuilder builder = Jackson2ObjectMapperBuilder.xml();
+			if (this.applicationContext != null) {
+				builder.applicationContext(this.applicationContext);
+			}
+			messageConverters.add(new MappingJackson2XmlHttpMessageConverter(builder.build()));
+		}
+```
+
+##### （5、自定义MessageConverter
+
+> 实现多协议数据兼容。json、xml、cat-climb
+
+SpringMVC自定义基本与WebMvcConfigurer相关。
+
+```java
+@Configuration(proxyBeanMethods = false)
+public class WebConfig implements WebMvcConfigurer {
+  
+      @Override
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.add(new GGHttpMessageConverter());
+    }
+@Override
+    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+        MediaType mediaType = MediaType.parseMediaType("application/cat-climb;charset=UTF-8");
+        Charset charset = mediaType.getCharset( );
+
+        Map<String,MediaType> map=new HashMap<>( );
+        map.put("xml",MediaType.APPLICATION_XML); //因为报废所以添加
+        map.put("json",MediaType.APPLICATION_JSON);//因为报废所以添加
+        map.put("cat",mediaType);
+        ParameterContentNegotiationStrategy Parameterstrategy = new ParameterContentNegotiationStrategy(map);
+        //由于自定义后，默认的内容协商直接报废所以需要添加HeaderStrategy (默认转换器没报废，设置的配置报废了)
+        HeaderContentNegotiationStrategy HeaderStrategy= new HeaderContentNegotiationStrategy();//因为报废所以添加
+        Parameterstrategy.setParameterName("power");
+        configurer.strategies(Arrays.asList(Parameterstrategy,HeaderStrategy));
+
+    }
+}
+
+class GGHttpMessageConverter implements  HttpMessageConverter<User>{
+
+
+    @Override
+    public boolean canRead(Class<?> clazz, MediaType mediaType) {
+        //这是与@RequestBody相关的
+        return false;
+    }
+
+    @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        return clazz==User.class&&
+                mediaType!=null?getSupportedMediaTypes().contains(mediaType):true;
+    }
+
+    @Override
+    public List<MediaType> getSupportedMediaTypes() {
+        MediaType mediaType = MediaType.parseMediaType("application/cat-climb;charset=UTF-8");
+//        MediaType mediaType = new MediaType("application","cat-climb",StandardCharsets.UTF_8);
+
+        return Arrays.asList(
+                mediaType,
+        );
+    }
+
+    @Override
+    public User read(Class<? extends User> clazz, HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
+        return null;
+    }
+
+    @Override
+    public void write(User user, MediaType contentType, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
+        String data;
+        if (user.getPet()!=null){
+            data=user.getName()+";"+user.getAge()+";"+user.getPet().getName()+";"+user.getPet().getAge();
+        }else {
+            data=user.getName()+";"+user.getAge()+";"+user.getPet();
+        }
+        //application/xx 客户端不支持或不认识的话，解析类型为 application/octet-stream （转为下载流文件） 但实际的content-type显示为text/xx
+        //text/xx 客户端不支持或不认识的话，解析类型为 text/plain （纯文本） 但实际的content-type显示为text/xx
+
+        MediaType mediaType = MediaType.parseMediaType("text/plain;charset=UTF-8");
+        outputMessage.getHeaders().setContentType(mediaType);
+        OutputStream body = outputMessage.getBody( );
+        body.write(data.getBytes());
+    }
+
+
+}
+```
+
+![image-20220807234116138](Spring_boot.assets\image-20220807234116138.png)
+
+![image-20220807233414527](Spring_boot.assets\image-20220807233414527.png)
+
+
+
+**有可能我们添加的自定义的功能会覆盖默认很多功能，导致一些默认的功能失效。**
+
+**大家考虑，上述功能除了我们完全自定义外？SpringBoot有没有为我们提供基于配置文件的快速修改媒体类型功能？怎么配置呢？【提示：参照SpringBoot官方文档web开发内容协商章节】**
