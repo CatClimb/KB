@@ -1354,7 +1354,7 @@ spring:
       </form>
   ```
 
-##### b 请求映射原理 ⭐⭐
+##### b 请求映射原理 ⭐⭐ 1
 
 ![image-20220805111745487](Spring_boot.assets\image-20220805111745487.png)
 
@@ -1484,6 +1484,8 @@ protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletReques
     
     
     ```
+
+[（3 参数处理原理 ⭐⭐ 2](#####（3 参数处理原理 ⭐⭐ 2)
 
 #### （2 参数与注解
 
@@ -1842,7 +1844,7 @@ public class Pet {
     } 
 ```
 
-#### （3 参数处理原理 ⭐⭐
+#### （3 参数处理原理 ⭐⭐ 2
 
 > #### 总结
 
@@ -1924,7 +1926,7 @@ public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewC
 
 ![image-20220806105536059](Spring_boot.assets\image-20220806105536059.png)
 
-##### 4、返回值处理器
+##### 4、返回值处理器 ⭐⭐ 3
 
 接着执行完方法并返回上一级方法，在这级方法中调用HandlerMethodReturnValueHandlerComposite.handleReturnValue
 
@@ -1950,9 +1952,11 @@ public void handleReturnValue(@Nullable Object returnValue, MethodParameter retu
 
 找到 **相关的** 返回值处理器（HandlerMethodReturnValueHandler 接口的）
 
-![image-20220806123131256](F:\data\knowledge_data\知识\md\Java开发\after\framework\Spring_boot.assets\image-20220806123131256.png)
+![image-20220806123131256](Spring_boot.assets\image-20220806123131256.png)
 
+![image-20220806210551955](Spring_boot.assets\image-20220806210551955.png)
 
+[（3 HTTPMessageConverter原理 ⭐⭐ 3.1](#####（3 HTTPMessageConverter原理 ⭐⭐ 3.1)
 
 ##### 5、处理派发结果
 
@@ -2248,4 +2252,127 @@ public GenericConverter find(TypeDescriptor sourceType, TypeDescriptor targetTyp
 
 }
 ```
+
+### 2.4 数据响应与内容协商
+
+#### 1、响应JSON
+
+##### （1 jackson.jar+@ResponseBody
+
+其场景依赖：
+
+```xml
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+web场景自动引入了json场景
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-json</artifactId>
+      <version>2.3.4.RELEASE</version>
+      <scope>compile</scope>
+    </dependency>
+
+```
+
+![image-20220806203758950](Spring_boot.assets\image-20220806203758950.png)
+
+给控制器方法标有@ResponseBody的，并返回相关类型的，最后会给前端自动返回json数据；
+
+##### （2 SpringMVC到底支持哪些返回值
+
+```java
+ModelAndView
+Model
+View
+ResponseEntity 
+ResponseBodyEmitter
+StreamingResponseBody
+HttpEntity
+HttpHeaders
+Callable
+DeferredResult
+ListenableFuture
+CompletionStage
+WebAsyncTask
+有 @ModelAttribute 且为对象类型的
+@ResponseBody 注解 ---> RequestResponseBodyMethodProcessor；
+```
+
+##### （3 HTTPMessageConverter原理 ⭐⭐ 3.1
+
+> #### 总结
+
+* 1、返回值处理器判断是否支持这种类型返回值supportsReturnType
+* 2、返回值处理器调用 handleReturnValue进行处理
+* 3、ReuqestResponseBodyMethodProcessor可以处理返回值标了@ResponseBody注解的。
+  * 1.利用MessageConverters进行处理将数据写为json
+    * 1、内容协商（浏览器默认会以请求头的方式告诉服务器他能接受什么样的内容类型 ）
+    * 2、服务器最终根据会根据自己自身的能力，决定服务器能生产出什么样内容类型的数据。
+      * 解释：
+        1. 获取request的接受类型
+        2. 获取服务器生产能力：getSupportedMediaTypes();
+        3. 根据以上数据嵌套for循环，遍历并适配合适的类型。
+    * 3、SpringMVC会挨个遍历所有容器底层的HttpMessageConverter，看谁能处理？
+      * 1、得到MappingJackson2HttpMessageConverter可以将对象写为json
+      * 2、利用MappingJackson2HttpMessageConverter将对象转为json再写出去。
+
+
+
+![image-20220807101149310](Spring_boot.assets\image-20220807101149310.png)
+
+
+
+```java
+	RequestResponseBodyMethodProcessor类的
+@Override
+	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
+			ModelAndViewContainer mavContainer, NativeWebRequest webRequest)
+			throws IOException, HttpMediaTypeNotAcceptableException, HttpMessageNotWritableException {
+	mavContainer.setRequestHandled(true);
+	ServletServerHttpRequest inputMessage = createInputMessage(webRequest);
+	ServletServerHttpResponse outputMessage = createOutputMessage(webRequest);
+
+	// Try even with null return value. ResponseBodyAdvice could get involved.
+    // 使用消息转换器进行写出操作 RequestResponseBodyMethodProcessor  
+	writeWithMessageConverters(returnValue, returnType, inputMessage, outputMessage);
+}
+```
+
+###### 1. MessageConvert规范
+
+![image-20220807101548072](Spring_boot.assets\image-20220807101548072.png)
+
+###### 2. 默认的MessageConverter
+
+![image-20220807104221704](Spring_boot.assets\image-20220807104221704.png)
+
+> 0 - 只支持Byte类型的
+>
+> 1 - String
+>
+> 2 - String
+>
+> 3 - Resource
+>
+> 4 - ResourceRegion
+>
+> 5 - DOMSource.**class**\SAXSource.**class**\ StAXSource.**class**\StreamSource.**class**\Source.**class**
+>
+> **6 -** MultiValueMap
+>
+> 7 - **canWriter直接返回true** 
+>
+> **8 - canWriter直接返回true**
+>
+> **9 - 支持注解方式xml处理的。**
+
+
+
+最终 MappingJackson2HttpMessageConverter  把对象转为JSON（利用底层的jackson的objectMapper转换的）
+
+![image-20220807113741317](Spring_boot.assets\image-20220807113741317.png)
+
+#### 2、内容协商
 
