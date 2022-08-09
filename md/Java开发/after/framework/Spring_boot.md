@@ -2051,7 +2051,7 @@ protected Object[] getMethodArgumentValues(NativeWebRequest request, @Nullable M
 
 调用各自 HandlerMethodArgumentResolver 的 resolveArgument 方法即可
 
-#### （4 POJO数据绑定过程
+#### （4 POJO数据绑定过程 ⭐
 
 - **ServletModelAttributeMethodProcessor** 解析器 （HandlerMethodArgumentResolver，HandlerMethodReturnValueHandler接口），由它来解析（或者说数据绑定）
 
@@ -2295,7 +2295,7 @@ WebAsyncTask
 
 
 
-接着执行完方法并返回上一级方法，在这级方法中调用HandlerMethodReturnValueHandlerComposite.handleReturnValue
+接着执行完方法并返回上一级方法，在这级方法中调用favor-parameterHandlerMethodReturnValueHandlerComposite.handleReturnValue
 
 ```java
 this.returnValueHandlers.handleReturnValue(
@@ -2406,7 +2406,7 @@ public void handleReturnValue(@Nullable Object returnValue, MethodParameter retu
 
 ![image-20220807153203834](Spring_boot.assets\image-20220807153203834.png)
 
-##### (3 开启浏览器参数方式内容协商功能
+##### （3 开启浏览器参数方式内容协商功能
 
 ```yml
 spring:
@@ -2574,9 +2574,19 @@ if (jackson2XmlPresent) {
 		}
 ```
 
-##### （5、自定义MessageConverter
+[（1 视图解析原理 ⭐⭐ 4](#####（1 视图解析原理 ⭐⭐ 4)
 
-> 实现多协议数据兼容。json、xml、cat-climb
+##### （5 自定义MessageConverter
+
+> **实现多协议数据兼容。json、xml、x-guigu**
+
+**0、**@ResponseBody 响应数据出去 调用 **RequestResponseBodyMethodProcessor** 处理
+
+1、Processor 处理方法返回值。通过 **MessageConverter** 处理
+
+2、所有 **MessageConverter** 合起来可以支持各种媒体类型数据的操作（读、写）
+
+3、内容协商找到最终的 **messageConverter**；
 
 SpringMVC自定义基本与WebMvcConfigurer相关。
 
@@ -2594,12 +2604,11 @@ public class WebConfig implements WebMvcConfigurer {
         Charset charset = mediaType.getCharset( );
 
         Map<String,MediaType> map=new HashMap<>( );
-        map.put("xml",MediaType.APPLICATION_XML); //因为报废所以添加
-        map.put("json",MediaType.APPLICATION_JSON);//因为报废所以添加
+       
         map.put("cat",mediaType);
         ParameterContentNegotiationStrategy Parameterstrategy = new ParameterContentNegotiationStrategy(map);
-        //由于自定义后，默认的内容协商直接报废所以需要添加HeaderStrategy (默认转换器没报废，设置的配置报废了)
-        HeaderContentNegotiationStrategy HeaderStrategy= new HeaderContentNegotiationStrategy();//因为报废所以添加
+       
+        HeaderContentNegotiationStrategy HeaderStrategy= new HeaderContentNegotiationStrategy();// //由于自定义后，默认的内容协商直接报废所以需要添加HeaderStrategy (默认策略有头策略，在配置中设置了的jackson请求参数策略报废了)
         Parameterstrategy.setParameterName("power");
         configurer.strategies(Arrays.asList(Parameterstrategy,HeaderStrategy));
 
@@ -2666,3 +2675,511 @@ class GGHttpMessageConverter implements  HttpMessageConverter<User>{
 **有可能我们添加的自定义的功能会覆盖默认很多功能，导致一些默认的功能失效。**
 
 **大家考虑，上述功能除了我们完全自定义外？SpringBoot有没有为我们提供基于配置文件的快速修改媒体类型功能？怎么配置呢？【提示：参照SpringBoot官方文档web开发内容协商章节】**
+
+### 2.5 视图解析与模板引擎
+
+视图解析：**SpringBoot默认不支持 JSP（jar包不支持），需要引入第三方模板引擎技术实现页面渲染。**
+
+#### 1、视图解析
+
+![image-20220808091410648](Spring_boot.assets\image-20220808091410648.png)
+
+##### （1 视图解析原理 ⭐⭐ 4
+
+* 1、目标方法处理的过程中，所有数据都会被放在ModelAndlViewContainer里面。包括数据和视图地址
+
+* 2、方法的参数是一个自定义类型对象（从请求参数中确定的），把他重新放在ModelAndViewContainer
+* 3、任何目标方法执行完成以后都会返回ModelAndView（数据和视图地址），但我知道的@ResponseBody没有ModelAndView
+* 4、processDispatchResult 处理派发结果（页面该如何响应）
+  * 1、render(mv,request,response);进行页面渲染逻辑。
+    * 1、根据控制器方法的String返回值得到View对象【View对象 定义了页面的渲染逻辑】
+      * （1 所有的视图解析器尝试是否能根据当前返回值得到View对象。（遍历）
+      * （2 得到 redirect:/main.html --> ThymeleafViewResolver --> new RedirectView()
+      * （3 COntentNegotiationViewResolver 里面包含了下面所有的视图解析器，内部还是利用下面所有视图解析器得到视图对象。
+      * （4 view.render(mv.getModelInternal(),request,response);视图对象调用自定义的render进行页面渲染工作
+
+
+
+* 视图解析：
+
+  * 返回值以forward:开始 ：new InternalResourceView(forwardUrl); -->转发 gequest.getRequestDispatcher(path).forward(request,response);
+
+  * 返回值以redirect:开始：new RedirectView() --> render就是重定向 response.sendRedirect(encodedURL); 
+
+  * 返回值是普通字符串：new ThymeleafView()
+
+    
+
+
+
+自定义视图解析器+自定义视图；
+
+
+
+![image-20220809092249942](Spring_boot.assets\image-20220809092249942.png)
+
+![image-20220809092305869](Spring_boot.assets\image-20220809092305869.png)
+
+![image-20220809092329159](Spring_boot.assets\image-20220809092329159.png)
+
+#### 2、模板引擎-Thymeleaf
+
+[Tutorial: Using Thymeleaf](https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html)
+
+##### （1 thymeleaf简介
+
+Thymeleaf is a modern server-side Java template engine for both web and standalone environments, capable of processing HTML, XML, JavaScript, CSS and even plain text.
+
+现代化、服务端Java模板引擎
+
+##### （2 基本语法
+
+###### 1、表达式
+
+| 表达式名字 | 语法   | 用途                               |
+| ---------- | ------ | ---------------------------------- |
+| 变量取值   | ${...} | 获取请求域、session域、对象等值    |
+| 选择变量   | *{...} | 获取上下文对象值                   |
+| 消息       | #{...} | 获取国际化等值                     |
+| 链接       | @{...} | 生成链接 自动加上context-path      |
+| 片段表达式 | ~{...} | jsp:include 作用，引入公共页面片段 |
+
+###### 2、字面量
+
+文本值: **'one text'** **,** **'Another one!'** **,…**数字: **0** **,** **34** **,** **3.0** **,** **12.3** **,…**布尔值: **true** **,** **false**
+
+空值: **null**
+
+变量： one，two，.... 变量不能有空格
+
+###### 3、文本操作
+
+字符串拼接: **+**
+
+变量替换: **|The name is ${name}|** 
+
+###### 4、数学运算
+
+运算符: + , - , * , / , %
+
+###### 5、布尔运算
+
+运算符:  **and** **,** **or**
+
+一元运算: **!** **,** **not** 
+
+###### 6、比较运算
+
+比较: **>** **,** **<** **,** **>=** **,** **<=** **(** **gt** **,** **lt** **,** **ge** **,** **le** **)**等式: **==** **,** **!=** **(** **eq** **,** **ne** **)** 
+
+###### 7、条件运算
+
+If-then: **(if) ? (then)**
+
+If-then-else: **(if) ? (then) : (else)**
+
+Default: (value) **?: (defaultvalue)** 
+
+###### 8、特殊操作
+
+无操作： _
+
+##### （3 设置属性值-th:attr
+
+设置单个值
+
+```html
+<form action="subscribe.html" th:attr="action=@{/subscribe}">
+  <fieldset>
+    <input type="text" name="email" />
+    <input type="submit" value="Subscribe!" th:attr="value=#{subscribe.submit}"/>
+  </fieldset>
+</form>
+```
+
+设置多个值
+
+```html
+<img src="../../images/gtvglogo.png"  th:attr="src=@{/images/gtvglogo.png},title=#{logo},alt=#{logo}" />
+```
+
+以上两个的代替写法 th:xxxx
+
+```html
+<input type="submit" value="Subscribe!" th:value="#{subscribe.submit}"/>
+<form action="subscribe.html" th:action="@{/subscribe}">
+```
+
+##### （4 迭代
+
+```html
+<tr th:each="prod : ${prods}">
+  <td th:text="${prod.name}">Onions></td>
+	<td th:text="${prod.price}">2.41</td>
+  <td th:text="${prod/inStock}? #{true} : #{false}">yes</td>
+</tr>
+
+<tr th:each="prod,iterStat : ${prods}" th:class="${iterStat.odd}? 'odd'">
+  <td th:text="${prod.name}">Onions</td>
+  <td th:text="${prod.price}">2.41</td>
+  <td th:text="${prod.inStock}? #{true} : #{false}">yes</td>
+</tr>
+```
+
+##### （5 条件运算
+
+```html
+
+<a href="comments.html"
+th:href="@{/product/comments(prodId=${prod.id})}"
+th:if="${not #lists.isEmpty(prod.comments)}">view</a>
+```
+
+[#lists](https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html#expression-utility-objects)
+
+```html
+<div th:switch="${user.role}">
+  <p th:case="'admin'">User is an administrator</p>
+  <p th:case="#{roles.manager}">User is a manager</p>
+  <p th:case="*">User is some other thing</p>
+</div>
+```
+
+##### （6 属性优先级
+
+[Attribute Precedence](https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html#attribute-precedence)
+
+![image-20220808095354382](Spring_boot.assets\image-20220808095354382.png)
+
+#### 3、thymeleaf使用
+
+##### （1 引入Starter
+
+```xml
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+```
+
+##### （2 自动配置好了thymeleaf
+
+```java
+@Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(ThymeleafProperties.class)
+@ConditionalOnClass({ TemplateMode.class, SpringTemplateEngine.class })
+@AutoConfigureAfter({ WebMvcAutoConfiguration.class, WebFluxAutoConfiguration.class })
+public class ThymeleafAutoConfiguration { }
+```
+
+自动配好的策略
+
+- 1、所有thymeleaf的配置值都在 ThymeleafProperties
+- 2、配置好了 **SpringTemplateEngine** 
+- **3、配好了** **ThymeleafViewResolver** 
+- 4、我们只需要直接开发页面
+
+配置好的前后缀：
+
+```java
+	public static final String DEFAULT_PREFIX = "classpath:/templates/";
+
+	public static final String DEFAULT_SUFFIX = ".html";  //xxx.html
+```
+
+##### （3 页面开发
+
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1 th:text="${msg}">没有</h1>
+    <h2>
+        <a th:href="${link}">哈哈</a>
+        <a th:href="@{/link}">试试</a>
+    </h2>
+</body>
+</html>
+```
+
+加入
+
+```
+server:
+  servlet:
+    context-path: /aa
+```
+
+后：
+
+**@{/link}**被解析为 **/aa/link** '/'必须得写，不然直接解析为 **link**
+
+##### （4 构建后台管理系统
+
+###### 1、项目创建
+
+thymeleaf、web-starter、devtools、lombok
+
+###### 2、静态资源处理
+
+自动配置好，我们只需要把所有静态资源放到 static 文件夹下。（注意：template中的模板文件需要走服务器才能访问）
+
+###### 3、路径构建
+
+th:action="@{/login}"
+
+###### 4、模板抽取
+
+th:insert/replace/include
+
+###### 5、页面跳转
+
+登录表单：
+
+![image-20220808171413056](Spring_boot.assets\image-20220808171413056.png)
+
+
+
+```java
+   @GetMapping({"/login","/"})
+    public String toLogin(Model model){
+        return "login";
+    }
+    @PostMapping("/login")
+    public String login(User user, HttpSession session,Model model){
+        if(StringUtils.hasLength(user.getUserName())&&user.getPassword().equals("123456")){
+
+            //把登陆成功的用户保存起来
+            session.setAttribute("loginUser",user);
+            //登录成功重定向到main.html;  重定向防止表单重复提交
+            return "redirect:/main.html";
+        }else{
+            model.addAttribute("msg","用户名或密码错误");
+            //回到登录页面
+            return "login";
+        }
+    }
+    @GetMapping("/main.html")
+    public String mainPage(HttpSession session ,Model model){
+        if (!StringUtils.isEmpty(session.getAttribute("loginUser"))){
+            return "main";
+        }else{
+            model.addAttribute("msg","请登录");
+
+            return "login";
+        }
+    }
+```
+
+###### 6、数据渲染
+
+```java
+ @GetMapping("/dynamic_table")
+    public String toDynamicTable(Model model){
+        //表格内容的遍历
+        List<User> users = Arrays.asList(new User("zhangsan", "123456"),
+                new User("lisi", "123444"),
+                new User("haha", "aaaaa"),
+                new User("hehe ", "aaddd"));
+        model.addAttribute("users",users);
+        return "table/dynamic_table";
+    }
+```
+
+```html
+  <tr class="gradeX" th:each="user,stat : ${users}">
+                                        <th>#</th>
+                                        <th>[[${user.userName}]]</th>
+                                        <th>[[${user.password}]]</th>
+                                    </tr>
+```
+
+### 2.6 拦截器
+
+#### 1、HandlerInterceptor接口
+
+```java
+/**
+ * 登录检查
+ * 1、配置好拦截器要拦截哪些请求
+ * 2、把这些配置放在容器中
+ */
+@Slf4j
+public class LoginInterceptor implements HandlerInterceptor {
+
+    /**
+     * 目标方法执行之前
+     * @param request
+     * @param response
+     * @param handler
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+
+        String requestURI = request.getRequestURI();
+        log.info("preHandle拦截的请求路径是{}",requestURI);
+
+        //登录检查逻辑
+        HttpSession session = request.getSession();
+
+        Object loginUser = session.getAttribute("loginUser");
+
+        if(loginUser != null){
+            //放行
+            return true;
+        }
+
+        //拦截住。未登录。跳转到登录页
+        request.setAttribute("msg","请先登录");
+      //重定向请求域失效，取不出msg
+//        re.sendRedirect("/");
+        request.getRequestDispatcher("/").forward(request,response);
+        return false;
+    }
+
+    /**
+     * 目标方法执行完成以后
+     * @param request
+     * @param response
+     * @param handler
+     * @param modelAndView
+     * @throws Exception
+     */
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        log.info("postHandle执行{}",modelAndView);
+    }
+
+    /**
+     * 页面渲染以后
+     * @param request
+     * @param response
+     * @param handler
+     * @param ex
+     * @throws Exception
+     */
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        log.info("afterCompletion执行异常{}",ex);
+    }
+}
+```
+
+#### 2、配置拦截器
+
+```java
+/**
+ * 1、编写一个拦截器实现HandlerInterceptor接口
+ * 2、拦截器注册到容器中（实现WebMvcConfigurer的addInterceptors）
+ * 3、指定拦截规则【如果是拦截所有，静态资源也会被拦截】
+ */
+@Configuration
+public class AdminWebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new LoginInterceptor())
+                .addPathPatterns("/**")  //所有请求都被拦截包括静态资源
+                .excludePathPatterns("/","/login","/css/**","/fonts/**","/images/**","/js/**"); //放行的请求
+    }
+}
+```
+
+#### 3、拦截器原理 ⭐
+
+* 1、根据当前请求，找到**HandlerExexutionchain**【包含处理请求的handler以及handler的所有拦截器】
+
+* 2、先来<font color='orange'>顺序执行</font>所有拦截器的prehandler方法
+* （1 如果当前拦截器prehandler返回为true。则执行下一个拦截器的preHandle
+* （2 如果当前拦截器返回为false。直接 倒序执行所有**已经执行了preHandle**的拦截器的after
+
+* 3、如果任何一个拦截器返回false。直接跳出不执行目标方法
+
+* 4、所有拦截器都返回True。执行目标方法
+* 5、倒序执行所有拦截器的postHandle方法
+* 6、前面的步骤有任何异常都会直接倒序触发 afterCompletion
+* 7、页面成功渲染完成以后，也会倒序触发afterCompletion
+
+![image-20220809131714109](Spring_boot.assets\image-20220809131714109.png)
+
+
+
+![image-20220809131753473](Spring_boot.assets\image-20220809131753473.png)
+
+### 2.7、文件上传
+
+#### （1 页面表单
+
+```html
+<form method="post" action="/upload" enctype="multipart/form-data">
+    <input type="file" name="file"><br>
+    <input type="submit" value="提交">
+</form>
+```
+
+#### （2 文件上传代码
+
+
+
+```java
+    /**
+     * MultipartFile 自动封装上传过来的文件
+     * @param email
+     * @param username
+     * @param headerImg
+     * @param photos
+     * @return
+     */
+//上传空，email，username会变成文件在 MultipartFile中，length会大于>0，但isEmpty还是true
+    @PostMapping("/upload")
+//形参可以没有注解
+    public String upload(@RequestParam("email") String email,
+                         @RequestParam("username") String username,
+                         @RequestPart("headerImg") MultipartFile headerImg,
+                         @RequestPart("photos") MultipartFile[] photos) throws IOException {
+
+        log.info("上传的信息：email={}，username={}，headerImg={}，photos={}",
+                email,username,headerImg.getSize(),photos.length);
+
+        if(!headerImg.isEmpty()){
+            //保存到文件服务器，OSS服务器
+            String originalFilename = headerImg.getOriginalFilename();
+            headerImg.transferTo(new File("H:\\cache\\"+originalFilename));
+        }
+
+        if(photos.length > 0){
+            for (MultipartFile photo : photos) {
+                if(!photo.isEmpty()){
+                    String originalFilename = photo.getOriginalFilename();
+                    photo.transferTo(new File("H:\\cache\\"+originalFilename));
+                }
+            }
+        }
+
+        return "main";
+    }
+
+```
+
+#### （3 文件上传的自动配置原理 ⭐
+
+==文件上传自动配置类-MultipartAutoConfiguration-MultipartProperties==
+
+* 自动配置好了 StandardServletMultipartResolver【文件上传解析器】，bean名为multipartResolver
+* 原理步骤
+  * 1、请求进来使用文件上传解析器判断（isMultipart）并封装（resovlerMultipart，返回MultipartHttpServletRequest）文件上传请求
+  * 2、参数解析器来解析请求中的文件内容封装MultipartFile（其实在checkMultipart()方法中就已经解析了，只不过他拿到了，说是解析的）
+  * 将request中文件信息封装为一个Map；MultValueMap<String,MultipartFile>
+* 工具类使用：
+  * FileCopyUtils（File o,File d）。实现文件流的拷贝
+
+![image-20220809202909102](Spring_boot.assets\image-20220809202909102.png)
+
+![image-20220809202942148](Spring_boot.assets\image-20220809202942148.png)
+

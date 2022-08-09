@@ -1168,9 +1168,9 @@ response.setHeader(“Content-Disposition”, “attachment; fileName=中文名.
 
 1. 当浏览器是<font color='orange'>IE浏览器或谷歌浏览器</font>：
 
-需要使用<font color='orange'>URLEncoder类</font>先对中文名进行UTF-8编码，因为IE浏览器和谷歌浏览器收到含有 编码的字符串后会以UTF-8字符集进行解码显示
+需要使用<font color='orange'>URLEncoder类</font>之前，先对中文名进行UTF-8解码。因为IE浏览器和谷歌浏览器收到含有编码的字符串后会以UTF-8字符集进行解码显示
 
-1. 当浏览器是火狐浏览器：<font color='orange'>使用BASE64编解码</font>
+1. 当浏览器是火狐浏览器：<font color='orange'>使用BASE64编解码</font>	
 
 BASE64编解码
 
