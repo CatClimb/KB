@@ -1955,7 +1955,7 @@ FilterChain 就是过滤器链（多个过滤器如何一起工作）
 
 ![image-20220122182409497](JavaWeb.assets/image-20220122182409497.png)
 
-当Filter2的<font color='orange'>chain.doFilter()</font>和<font color='orange'>后置代码2</font>注释后，执行顺序为前置代码1、chain.doFilter()、前置代码2、后置代码1 
+
 
 ## 6、Filter的拦截路径
 

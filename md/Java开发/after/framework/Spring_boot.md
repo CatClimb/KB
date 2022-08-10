@@ -2998,6 +2998,18 @@ th:insert/replace/include
                                     </tr>
 ```
 
+###### 7、参考路径
+
+```html
+<base href="http://localhost:8080/">
+  可以避免该html文件中绝对路径以访问路径为参照
+例如：访问：http://localhost:8080/sd/sdjidgjh
+文件资源路径：css/aji
+html文件中的路径为：http://localhost:8080/sd/css/aji 不能访问
+```
+
+
+
 ### 2.6 拦截器
 
 #### 1、HandlerInterceptor接口
@@ -3269,87 +3281,218 @@ processDispatchResult(processedRequest, response, mappedHandler, **mv**, **dispa
   2. 你的异常没有任何人能处理。tomcat底层response.sendError。error请求就会转给controller
   3. basicErrorController要去的页面地址是ErrorViewResolver
 
-* ###### 1. 自定义全局异常处理代码1
+###### 1 自定义全局异常处理代码1
 
-* 
+```java
+/**
+ * 处理整个web应用的异常
+ */
+@ControllerAdvice
+public class GlobalExceptionHandler {
+    /**
+     * 返回值观看源码得：视图地址或ModelAndView
+     */
+    @ExceptionHandler({ArithmeticException.class})
+    public String handlerArithExceptionHandler(){
+        return "main";
+    }
+}
+```
+
+###### 2 自定义异常处理代码2
+
+![image-20220810165013619](Spring_boot.assets\image-20220810165013619.png)
+
+![image-20220810165025200](Spring_boot.assets\image-20220810165025200.png)
+
+
+
+```java
+if(users.size()>2){
+    throw  new UserManyException(  );
+}
+```
+
+```java
+/**
+ * 能抛出得异常: RuntimeException
+ */
+@ResponseStatus(code=HttpStatus.FORBIDDEN,reason = "用户太多")
+public class UserManyException extends RuntimeException  {
+    public UserManyException() {
+
+    }
+    public UserManyException(String message) {
+        super(message);
+    }
+}
+```
+
+
+
+###### 3 自定义底层异常处理代码3
+
+```java
+/**
+ * 因为要遍历HandlerExceptionResolver，可能其他的处理。所以给它优先级，让它优先处理
+ */
+public class CustomerHandlerExceptionResolver implements HandlerExceptionResolver {
+    @Override
+    public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        try {
+            response.sendError(511,"这异常真妙！");
+        } catch (IOException e) {
+            e.printStackTrace( );
+        }
+        //返回他是为了结束遍历
+        return new ModelAndView(  ); 
+    }
+}
+```
+
+###### 4 自定义异常处理代码4
+
+略
+
+
+
+### 2.9、Web原生组件注入（Servlet、Filter、Listener）
+
+#### 1、使用Servlet API
+
+@ServletComponentScan(basePackages="com.example.admin")指定原生Servlet组件都放在那里
+
+@WebServlet(urlPatterns="/my"): 效果：直接效应，没有经过Spring的拦截器。
+
+@WebFilter（urlPatterns={"/css/*","images"}）
+
+@WebListener
+
+
+
+扩展：DispatchServlet 如何注册进来
+
+* (DispatcherServletAutoConfiguration)容器中自动配置了 DispatcherServlet, 属性绑定到 WebMvcProperties；对应的配置文件配置项时 ==spring.mvc==
+
+* 通过 
 
 * ```java
-  /**
-   * 处理整个web应用的异常
-   */
-  @ControllerAdvice
-  public class GlobalExceptionHandler {
-      /**
-       * 返回值观看源码得：视图地址或ModelAndView
-       */
-      @ExceptionHandler({ArithmeticException.class})
-      public String handlerArithExceptionHandler(){
-          return "main";
-      }
-  }
+  DispatcherServletRegistrationBean registration = new DispatcherServletRegistrationBean(dispatcherServlet, webMvcProperties.getServlet().getPath());
   ```
 
-* 
-
-* ###### 2. 自定义异常处理代码2
-
-* ![image-20220810165013619](Spring_boot.assets\image-20220810165013619.png)
-
-* ![image-20220810165025200](Spring_boot.assets\image-20220810165025200.png)
-
-* ```java
-  if(users.size()>2){
-      throw  new UserManyException(  );
-  }
-  ```
-
-* ```java
-  /**
-   * 能抛出得异常: RuntimeException
-   */
-  @ResponseStatus(code=HttpStatus.FORBIDDEN,reason = "用户太多")
-  public class UserManyException extends RuntimeException  {
-      public UserManyException() {
   
-      }
-      public UserManyException(String message) {
-          super(message);
-      }
-  }
-  ```
 
-* 
+* 把DispatcherServlet配置进来（DispatcherServletRegistrationBean 的父类ServletRegistrationBean ）
 
-* ###### 3. 自定义底层异常处理代码3
+* 其默认的映射路径是 ==/==
 
-* ```java
-  /**
-   * 因为要遍历HandlerExceptionResolver，可能其他的处理。所以给它优先级，让它优先处理
-   */
-  public class CustomerHandlerExceptionResolver implements HandlerExceptionResolver {
-      @Override
-      public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-          try {
-              response.sendError(511,"这异常真妙！");
-          } catch (IOException e) {
-              e.printStackTrace( );
-          }
-          //返回他是为了结束遍历
-          return new ModelAndView(  ); 
-      }
-  }
-  
-  ```
 
-* ###### 4. 自定义异常处理代码4
 
-* 略
 
-* 
 
-* 
 
-* 
 
-* 
+![image-20220810211914196](Spring_boot.assets\image-20220810211914196.png)
 
+Tomcat-Servlet；
+
+多个Servlet都能处理到同一层路径，精确优选原则
+
+A： /my/
+
+B： /my/1
+
+当访问同层路径：/my/1，精确匹配的是B。当访问同层路径：/my/2，不精确匹配的是A。
+
+#### （1 WebServlet
+
+
+
+```java
+@Slf4j
+@WebServlet(urlPatterns = {"/my"})
+public class MyServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.getWriter().print("6666");
+    }
+}
+```
+
+#### （2 WebFilter
+
+```java
+@Slf4j
+@WebFilter(urlPatterns = {"/css/*","/images/*","/js/*"})
+public class MyFilter implements Filter {
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        log.info("项目初始化完成Filter");
+    }
+
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+            log.info("MyFilter工作");
+        filterChain.doFilter(servletRequest,servletResponse );
+    }
+    @Override
+    public void destroy() {
+        log.info("Filter销毁");
+    }
+}
+```
+
+#### （3 WebListener
+
+```java
+@Slf4j
+@WebListener
+public class MyListener implements ServletContextListener {
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+      log.info("初始化完成Listener");
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+        log.info("销毁Listener");
+    }
+}
+```
+
+#### （4 扫描
+
+```java
+@ServletComponentScan(basePackages = {"com.example.springboot2admin"})
+```
+
+### 2、使用RegistrationBean
+
+ServletRegistrationBean`, `FilterRegistrationBean`, and `ServletListenerRegistrationBean
+
+```java
+@Configuration(proxyBeanMethods = true) //保证依赖的组件始终是单例
+public class MyRegistConfig {
+    @Bean
+    public ServletRegistrationBean<MyServlet> servletRegistrationBean(){
+        MyServlet myServlet = new MyServlet( );////proxyBeanMethods起作用
+        return new ServletRegistrationBean<>(myServlet,"/my","/my1sd");
+    }
+    @Bean
+    public FilterRegistrationBean<MyFilter> filterRegistrationBean(){
+        MyFilter myFilter = new MyFilter( );
+        FilterRegistrationBean<MyFilter> filterFilterRegistrationBean = new FilterRegistrationBean<>( );
+        filterFilterRegistrationBean.setFilter(myFilter);
+        filterFilterRegistrationBean.setUrlPatterns(Arrays.asList("/css/*","/fonts/**" ));
+        return filterFilterRegistrationBean;
+//        return new FilterRegistrationBean<>(myFilter,servletRegistrationBean());//proxyBeanMethods起作用
+    }
+    @Bean
+    public ServletListenerRegistrationBean<MyListener> servletListenerRegistrationBean(){
+        MyListener myListener = new MyListener( );
+        return new ServletListenerRegistrationBean<>(myListener);
+    }
+}
+```
+
+不用写webFilter webServlet WebListener和扫描
