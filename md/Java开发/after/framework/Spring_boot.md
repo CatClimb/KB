@@ -3183,3 +3183,173 @@ public class AdminWebConfig implements WebMvcConfigurer {
 
 ![image-20220809202942148](Spring_boot.assets\image-20220809202942148.png)
 
+### 2.8、异常处理
+
+#### 1、 错误处理
+
+##### （1 默认规则
+
+* 默认情况夏，Spring Boot提供 ==/error==处理所有错误的映射
+
+* 对于机器客户端，它将生成==JSON==响应，其中包含错误，HTTP状态和异常消息的详细信息。对与浏览器客户端，响应一个“==whitePage==”错误视图，以HTML格式呈现相同的数据。
+
+  ![image-20220810101716802](Spring_boot.assets\image-20220810101716802.png)
+
+##### （2 异常处理自动配置原理
+
+* EroorMvcAutoConfiguration 自动配置异常处理规则
+  * 容器中的组件：类型：DefaultErrorAttributes -> id:  errorAttributes
+    * **public class** **DefaultErrorAttributes** **implements** **ErrorAttributes**,**HandlerExceptionResolver**
+    * DefaultErrorAttributes: 定义错误页面中可以包含哪些数据。
+    * ![image-20220810102241228](Spring_boot.assets\image-20220810102241228.png)
+  * 容器中的组件：类型 BasicErrorController --> id: basicErrorController（json+白页适配响应）
+    * 处理默认 /error 路径的请求，页面响应 new ModelAndView("error",model);
+    * 容器中有组件View --> id是error（响应默认错误页）类型：**ErrorMvcAutoConfiguration.StaticView**
+    * 容器中放组件BeanNameViewResovler（视图解析器）；按照返回的视图名作为组件的id去容器中找View对象
+  * 容器中的组件：类型：DefualtErrorViewResolver -> id: conventionErrorViewResolver
+    * 如果发生错误，会以HTTP的状态码作为视图页地址（viewName），找到真正的页面
+    * error/404、5xx、3xx.html
+* 如果想要返回页面；就会找error视图【**StaticView**】。(默认是一个白页)
+* ![image-20220810104435551](Spring_boot.assets\image-20220810104435551.png)
+
+#####  （3 异常处理步骤流程
+
+* 1、 执行目标方法（mv = ha.handle(processedRequest, response, mappedHandler.getHandler());），目标方法运行期间有任何异常都会被catch、而且标志当前请求结束；并且用 ==dispatchException==。
+
+* 2、进入视图解析流程（页面渲染）
+
+processDispatchResult(processedRequest, response, mappedHandler, **mv**, **dispatchException**);
+
+* 3、mv=**processHandlerException（）**（抛出处理方法器异常）处理handler发生的异常，处理完成返回ModelAndView；【这里流程它抛出了异常】
+
+  * （1 遍历所有的handlerExceptionResolvers【**处理器异常解析器**】，看谁能处理当前异常，==都不能抛出异常==。 
+
+  * ![image-20220810110428868](Spring_boot.assets\image-20220810110428868.png)
+
+  * （2 系统默认的 异常解析器
+
+  * ![image-20220810110816922](Spring_boot.assets\image-20220810110816922.png)
+
+    * 1、DefaultErrorAttributer先来处理异常。把异常信息保存到request域，并且返回null；
+
+    * 2、默认没有任何人能处理异常，所以异常会被抛出
+
+      * （1 如果没有任何人能处理最终底层就会发送==/error==请求【转发】。会被底层的BasicErrorController处理
+      * （2 解析错误视图：遍历所有的ErrorViewResolver看谁能解析
+      * ![image-20220810115437623](Spring_boot.assets\image-20220810115437623.png)
+
+      * （3 **默认的** **DefaultErrorViewResolver ,作用是把响应状态码作为错误页的地址，error/500.html** 
+      * （4 模板引擎最终响应这个页面 error/500.html（或者error/5xx.html）
+
+##### （4 定制错误处理逻辑
+
+* 自定义错误页
+
+  * error/404.html error/5xx/html;有精确的错误状态码页面就匹配精确，没有就找4xx.html；如果都没有就触发百页。
+
+* @ControllerAdvice+@ExceptionHandler处理全局异常；底层是 ==ExceptionHandlerExceptionResolver==支持的。
+
+* @ResponseStatus+自定义异常；底层是ResponseStatusExceptionResolver，把responseStatus注解的信息用底层调用response.sendError(statusCode,resolvedReason); 【tomcat发送的/error】
+
+* Spring底层的异常：如类型转换异常。由DefaultHandlerExceptionResolver处理框架底层的异常。
+
+  * response.sendError(HttpServletResponse.**SC_BAD_REQUEST**, ex.getMessage()); 
+  * 当spring底层也不能处理时，交由tomcat提供的空白页。
+  * ![image-20220810161237992](Spring_boot.assets\image-20220810161237992.png)
+
+* 自定义实现HandlerExceptionResolver处理异常；可以作为默认的全局异常处理规则。
+
+* ![image-20220810161825933](Spring_boot.assets\image-20220810161825933.png)
+
+* **ErrorViewResolver**  实现自定义处理异常；【不常用】
+
+  > 一些总结
+
+  1. response.sendError。error请求就会转给controller
+  2. 你的异常没有任何人能处理。tomcat底层response.sendError。error请求就会转给controller
+  3. basicErrorController要去的页面地址是ErrorViewResolver
+
+* ###### 1. 自定义全局异常处理代码1
+
+* 
+
+* ```java
+  /**
+   * 处理整个web应用的异常
+   */
+  @ControllerAdvice
+  public class GlobalExceptionHandler {
+      /**
+       * 返回值观看源码得：视图地址或ModelAndView
+       */
+      @ExceptionHandler({ArithmeticException.class})
+      public String handlerArithExceptionHandler(){
+          return "main";
+      }
+  }
+  ```
+
+* 
+
+* ###### 2. 自定义异常处理代码2
+
+* ![image-20220810165013619](Spring_boot.assets\image-20220810165013619.png)
+
+* ![image-20220810165025200](Spring_boot.assets\image-20220810165025200.png)
+
+* ```java
+  if(users.size()>2){
+      throw  new UserManyException(  );
+  }
+  ```
+
+* ```java
+  /**
+   * 能抛出得异常: RuntimeException
+   */
+  @ResponseStatus(code=HttpStatus.FORBIDDEN,reason = "用户太多")
+  public class UserManyException extends RuntimeException  {
+      public UserManyException() {
+  
+      }
+      public UserManyException(String message) {
+          super(message);
+      }
+  }
+  ```
+
+* 
+
+* ###### 3. 自定义底层异常处理代码3
+
+* ```java
+  /**
+   * 因为要遍历HandlerExceptionResolver，可能其他的处理。所以给它优先级，让它优先处理
+   */
+  public class CustomerHandlerExceptionResolver implements HandlerExceptionResolver {
+      @Override
+      public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+          try {
+              response.sendError(511,"这异常真妙！");
+          } catch (IOException e) {
+              e.printStackTrace( );
+          }
+          //返回他是为了结束遍历
+          return new ModelAndView(  ); 
+      }
+  }
+  
+  ```
+
+* ###### 4. 自定义异常处理代码4
+
+* 略
+
+* 
+
+* 
+
+* 
+
+* 
+
