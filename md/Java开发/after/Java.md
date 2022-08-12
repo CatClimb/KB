@@ -2499,6 +2499,7 @@ java -ea:<className>...	打开指定包及其子包的断言检查
 1. 保证控制流的正确性
 
    ```java
+   case: .
    default: assert false:"Hey,that is not a valid month!";break;
    ```
 
