@@ -5375,11 +5375,15 @@ Mapper代理开发 (这里的方案很多，使用过就一一例举)
 
 ### @NonNull 
 
+该注解封装有@Nonnull（import javax.annotation.Nonnull;）
+
 标识该参数不能为空，但是也可以传入null，执行也不会报错，IDEA会给提示（有点点权力）
 
 ![image-20220708105226046](Java EE.assets\image-20220708105226046.png)
 
 ### @Nullable
+
+该注解封装有@Nonnull（import javax.annotation.Nonnull;）
 
 标识该参数可以为空，也可以不为空，IDEA会检测，但不会给出提示（一点实权都没有）
 
