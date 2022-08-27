@@ -4578,7 +4578,7 @@ static Stream<String> method() {
   		enable-by-default: true #暴露所有端点信息
   	web:
   		exposure:
-  			inclue: '*' #以web方式暴露
+  			include: '*' #以web方式暴露
   ```
 
 * 测试
@@ -4607,7 +4607,8 @@ https://github.com/codecentric/spring-boot-admin
 <dependency>
     <groupId>de.codecentric</groupId>
     <artifactId>spring-boot-admin-starter-server</artifactId>
-    <version>2.5.1</version>
+    <version>2.5.1</version> 
+  <!--版本与springboot相等就可以了-->
 </dependency>
 <dependency>
     <groupId>org.springframework.boot</groupId>
@@ -4634,6 +4635,17 @@ spring.boot.admin.client.url=http://localhost:8888
 spring.boot.admin.client.instance.prefer-ip: true
 #指定暴露端点
 management.endpoints.web.exposure.include=*  
+```
+
+服务器：
+
+```java
+@EnableAdminServer
+public class SpringBootAdminApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(SpringBootAdminApplication.class, args);
+    }
+}
 ```
 
 
