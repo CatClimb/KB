@@ -1183,6 +1183,7 @@ function Observer(obj){
                 return obj[k];
             },
             set(val){
+              	console.log("用人修改了，我发现了，我要更新界面！")
                 obj[k]=val;
             }
         })
@@ -1350,7 +1351,7 @@ function Observer(obj){
 
 过滤器：
 
-定义：对要显示的数据继续宁特定格式化后再显示（适用于一些简单的处理）
+定义：对要显示的数据进行特定格式化后再显示（适用于一些简单的处理）
 
 注册过滤器：
 
@@ -5091,4 +5092,285 @@ export default {
   </style>
   ```
 
+
+### 3、reactive函数
+
+* 作用：定义一个对象类型的响应式数据（基本类型不要用它，要用`ref`函数）
+
+* 语法`const 代理对象= reactive（源对象）`接收一个对象（或数组），返回一个代理对象（proxy对象）
+
+* reactive定义的响应式数据是“深层次的”
+
+* 内部基于ES6的Proxy实现，通过代理对象操作源对象内部数据进行操作。
+
+* ```vue
+  <template>
+      <h1>我的信息</h1>
+      <h2>name: {{ person.name }}</h2>
+      <h2>age: {{ person.age }}</h2>
+      <h2>job</h2>
+      <h3>job type: {{ person.job.type }}</h3>
+      <h3>job salary: {{ person.job.salary }}</h3>
+      <h2>hobby: {{ person.hobby }}</h2>
+      <button @click="changeInfo">改变个人信息</button>
+  </template>
   
+  <script>
+  import { reactive } from 'vue';
+  
+  export default {
+      setup() {
+          const person = reactive({
+              name:'Jalyn',
+              age:16,
+              job:{
+                  type:'前端开发工程师',
+                  salary:'30k'
+              },
+              hobby:['喝酒','抽烟','烫头']
+          });
+          function changeInfo(){
+              person.name='Kaela';
+              person.age=17;
+              person.job.type='无业游民';
+              person.hobby[2]='开飞机';
+          }
+          return {
+              person,changeInfo
+          }
+      }
+  }
+  </script>
+  
+  <style>
+  </style>
+  ```
+
+  
+
+### 4、Vue3.0 中的响应式原理
+
+#### Vue2.x的响应式
+
+* 实现原理：
+
+  * 对象类型：通过`Object.defineProperty()`对对象的已有属性值的读取、修改进行拦截（数据劫持）。
+
+  * 数组类型：通过重写更新数组的一系列方法来实现拦截。（对数组的变更方法进行了包裹）。
+
+    * ```js
+      Object.defineProperty(data,'count',{
+        get(){},
+        set(){}
+      })
+      ```
+
+* 存在问题：
+
+  * 新增属性、删除属性，界面不会更新（没有劫持）
+  * 直接通过下标修改数组，界面不会自动更新。
+
+演示与解决方案（基于vue2的）	
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../js/vue.js"></script>
+    <style type="text/css">
+
+    </style>
+</head>
+
+<body>
+    <!-- 准备好一个容器如下： -->
+    <div id="root">
+        <h1>我的信息</h1>
+        <h2 v-show="person.name">name: {{ person.name }}</h2>
+        <h2>age: {{ person.age }}</h2>
+        <h2 v-show="person.sex">sex: {{ person.sex }}</h2>
+        <button @click="addSex">添加一个sex属性</button>
+        <button @click="removeName">删除一个name属性</button>
+    </div>
+    <script>
+        'use strict';
+        Vue.config.productionTip = false;
+
+        const vm = new Vue({
+            el: '#root',
+            data() {
+                return {
+                    person: {
+                        name: 'Rosina',
+                        age: 11
+                    }
+                }
+            },
+            methods: {
+                addSex() {
+                    // console.log(this.person.sex);
+                    // this.person.sex = '男'
+                    // console.log(this.person.sex);
+                    //解决方案：
+                    // Vue.set(this.person,'sex','男');
+                    this.$set(this.person,'sex','男');
+
+                },
+                removeName() {
+                    // console.log(this.person.name);
+                    // delete this.person.name;
+                    // console.log(this.person.name);
+                    //解决方案：
+                     Vue.delete(this.person,'name','Rosina');
+                    // this.$delete(this.person,'name');
+
+                },
+
+            }
+        });
+    </script>
+
+</body>
+
+</html>
+```
+
+
+
+#### Vue3.0的响应式
+
+* 实现原理：
+
+  * 通过Proxy（代理）：拦截对象中任意属性的变化，包括：属性值的读写、属性的添加、属性的删除等。
+  * 通过Reflect（反射）：对被代理对象的属性进行操作。
+  * MDN文档中描述的Proxy与Reflect：
+    * Proxy：http：//
+
+  ```vue
+  <template>
+      <h1>我的信息</h1>
+      <h2>name: {{ person.name }}</h2>
+      <h2>age: {{ person.age }}</h2>
+      <h2>job</h2>
+      <h3>job type: {{ person.job.type }}</h3>
+      <h3>job salary: {{ person.job.salary }}</h3>
+      <h2>hobby: {{ person.hobby }}</h2>
+      <button @click="changeInfo">改变个人信息</button>
+  </template>
+  
+  <script>
+  import { reactive } from 'vue';
+  
+  export default {
+      setup() {
+          const person = reactive({
+              name:'Jalyn',
+              age:16,
+              job:{
+                  type:'前端开发工程师',
+                  salary:'30k'
+              },
+              hobby:['喝酒','抽烟','烫头']
+          });
+          function changeInfo(){
+              person.name='Kaela';
+              person.age=17;
+              person.job.type='无业游民';
+              person.hobby[2]='开飞机';
+          }
+          return {
+              person,changeInfo
+          }
+      }
+  }
+  </script>
+  
+  <style>
+  </style>
+  ```
+
+#### vue2、3 响应式原理代码模拟
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../js/vue.js"></script>
+    <style type="text/css">
+
+    </style>
+</head>
+
+<body>
+  
+    <div id="root">
+       
+    </div>
+    <script>
+        
+        //源数据
+        let person={
+            name:'张三',
+            age:18
+        }
+        //#region 
+        //模拟Vue2中实现响应式
+        // let p= {}
+        // Object.defineProperty(p,'name',{
+        // //有人读取name时调用
+        // get(){
+        //         console.log('有人读取name时调用')
+        //         return person.name
+        //     },
+        //     //有人修改name时调用
+        //     set(value){
+        //         console.log("有人修改了name属性，我发现了，我要去更新界面！")
+        //         person.name=value
+        //     }
+        // })
+        //#endregion
+        
+        //模拟VUe3中实现响应式
+        //响应式的根基是数据劫持（本质是监测数据修改并更新页面）
+        //该句实现了代理，但没实现响应式
+        // const p =new Proxy(person,{});
+        //#region 
+        const p =new Proxy(person,{
+            //有人读取p的某个属性时调用
+            get(target,propName){
+                console.log(`有人读取了p身上的${propName}属性`)
+                //只是js，我不懂 待处理
+                return target[propName]
+            },
+            //有人修改p的某个属性、或给p追加某个属性时调用
+            set(target,propName,value){
+                console.log(`有人修改了p身上的${propName}属性，我要去更新页面！`)
+                target[propName]=value
+            },
+            //有人删除p的某个属性时调用
+            deleteProperty(target,propName){
+                console.log(`有人删除了p身上的${propName}属性，我要去更新页面！`)
+                //delete xxx 返回boolean类型
+                return delete target[propName]
+            }
+
+        })
+        //#endregion 
+
+    </script>
+
+</body>
+
+</html>
+```
+
