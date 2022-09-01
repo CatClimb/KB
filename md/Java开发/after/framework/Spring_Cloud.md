@@ -761,7 +761,7 @@ client集群要多个一起设置
 
 ## 4、服务器停更说明
 
-
+[Home · Netflix/eureka Wiki (github.com)](https://github.com/Netflix/eureka/wiki)
 
 # 三、其他版本 服务治理
 
