@@ -767,5 +767,144 @@ client集群要多个一起设置
 
 ## 1、Zookeeper
 
+[官网下载](https://github.com/apache/zookeeper/releases/tag/release-3.5.10)
 
+新建模块 cloud-provider-payment8004
+
+导入pom.xml,三个核心包：
+
+```xml
+<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-zookeeper-discovery -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
+            <version>2.2.5.RELEASE</version>
+        </dependency>
+```
+
+配置yml文件：（连接虚拟机的ip）
+
+```yml
+server:
+  port: 8004
+
+spring:
+  application:
+    name: cloud-provider-payment
+  cloud:
+    zookeeper:
+      connect-string: 192.168.220.1:2181 #连接虚拟机的zookeeper ip和端口号
+ 
+
+```
+
+主程序类：
+
+```java
+@SpringBootApplication
+@EnableDiscoveryClient
+public class PaymentMain8004 {
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentMain8004.class,args);
+    }
+}
+
+```
+
+controller类：
+
+```java
+@RestController
+public class PaymentController {
+    @Value("${server.port}")
+    private String serverPort;
+
+    @GetMapping(value = "/payment/zk")
+    public String paymentzk(){
+        return "springcloud with zookeeper:"+serverPort+"\t"+ UUID.randomUUID().toString();
+    }
+}
+```
+
+zookeeper搭建：
+
+必须下带有`bin`名的压缩包包，解压到 `/usr/local` 下
+
+在解压包下执行：
+
+```terminal
+mkdir zkdata
+sudo echo 1 > ./zkdata/myid
+mkdir zkdatalogs
+```
+
+重命名配置：
+
+conf下的zoo_xxxx.cfg 命名为zoo.cfg
+
+修改配置：
+
+```properties
+dataDir=/usr/local/zookeeper/zkdata
+dataLogsDir=/usr/local/zookeeper/zkdatalogs
+server.1=master1:2888:3888 #待处理
+```
+
+在zookeeper包的bin目录下执行：
+
+```terminal
+xxx #关闭防火墙 各个linux系统指令不一样
+
+./zkServer.sh start #在 启动服务器
+
+./zkCli.sh #启动客户端
+```
+
+启动好客户端之后：
+
+```terminal
+ls / #查看根节点 zookeeper
+get /zookeeper
+#此时还没有services节点
+```
+
+启动 cloud-provider-payment8004
+
+访问控制器方法：
+
+`http://localhost:8004/payment/zk`
+
+zookeeper注册上了：
+
+![image-20220902173052671](Spring_Cloud.assets\image-20220902173052671.png)
+
+```terminal
+[zk: localhost:2181(CONNECTED) 11] ls /
+[services, zookeeper]
+[zk: localhost:2181(CONNECTED) 12] ls /services /
+services    zookeeper   
+[zk: localhost:2181(CONNECTED) 12] ls /services/cloud-provider-payment/41d739e4-2452-4137-bfb2-c0cf75d5e802
+[]
+[zk: localhost:2181(CONNECTED) 13] ls /services
+[cloud-provider-payment]
+[zk: localhost:2181(CONNECTED) 14] get /services/cloud-provider-payment/41d739e4-2452-4137-bfb2-c0cf75d5e802
+{"name":"cloud-provider-payment","id":"41d739e4-2452-4137-bfb2-c0cf75d5e802","address":"localhost","port":8004,"sslPort":null,"payload":{"@class":"org.springframework.cloud.zookeeper.discovery.ZookeeperInstance","id":"application-1","name":"cloud-provider-payment","metadata":{}},"registrationTimeUTC":1662110433938,"serviceType":"DYNAMIC","uriSpec":{"parts":[{"value":"scheme","variable":true},{"value":"://","variable":false},{"value":"address","variable":true},{"value":":","variable":false},{"value":"port","variable":true}]}}
+
+
+```
+
+该服务节点是`临时节点`，比eureka还绝情
+
+消费者入驻同理
 
