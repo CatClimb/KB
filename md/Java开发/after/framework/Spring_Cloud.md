@@ -142,6 +142,7 @@ public RestTemplate restTemplate;
 <!-- 1、只是声明依赖，并不实际引入，子项目按需声明使用的依赖 -->
 <!-- 2、子项目可以继承父项目的 version 和 scope -->
 <!-- 3、子项目若指定了 version 和 scope，以子项目为准 -->
+<!--4、以上几点不准确，更改理解为 被 dependencyManagement 包含的依赖，其pom和子pom依赖都能继承它的版本-->
 <dependencyManagement>
     <dependencies>
         <!--spring boot 2.2.2-->
@@ -2410,3 +2411,351 @@ public ServletRegistrationBean getServlet(){
 ```
 
 ![image-20220910230054788](Spring_Cloud.assets\image-20220910230054788.png)
+
+# 六、网关
+
+## 1、 Zuul
+
+https://github.com/Netflix/zuul/wiki
+
+## 2、gateway
+
+属于 springcloud
+
+https://cloud.spring.io/spring-cloud-static/spring-cloud-gateway/2.2.1.RELEASE/reference/html/
+
+> 是什么
+
+​	该项目提供了一个构建在Spring生态系统之上的API网关，包括:Spring 5、Spring Boot 2和project Reactor。Spring Cloud Gateway旨在提供一种简单而有效的方法来路由到api，并向它们提供横切关注点，例如:安全性、监视/度量和弹性。
+
+> 一句话
+
+Spring Cloud Gateway 使用的Webflux中的reactor-netty响应式编程组件，底层使用了Netty通讯框架
+
+> 能干嘛
+
+* 反向代理
+* 鉴权
+* 流量控制
+* 熔断
+* 日志监控
+
+> 微服务网关位置
+
+![image-20220913205700048](Spring_Cloud.assets\image-20220913205700048.png)
+
+> 为什么选择gateway？
+
+* 1.neflix不太靠谱，zuul2.0一直跳票,迟迟不发布
+
+* 2.SpringCloud Gateway具有如下特性
+  * 动态路由（匹配任何请求属性）
+  * 可以对路由指定Predicate（断言）和Filter（过滤器）
+  * 集成Hystrix的断路器功能
+  * 集成Spring Cloud 服务发现功能
+  * 易于编写的Predicate（断言）和Filter（过滤器）
+  * 请求限流功能
+  * 支持路径重写
+* 3.SpringCloud Gateway与Zuul的区别
+  * 1、 Zuul 1.x 是阻塞I/O，不支持长连接（如WebSocket），Zuul的设计模式和Nginx较像，每次I/O操作都是从工作线程中选择一个执行，请求线程被阻塞到工作线程完成，但是差别是Nginx 用C++实现，Zuul用Java实现，而JVM本身会有第一次加载较慢的情况，使得Zuul的性能相对较差
+  * 2、 Zuul 2.x 理念更先进，像基于Netty非阻塞和支持长连接，但SpringCloud目前还没有整合。Zuul 2.x的性能较Zuul 1.x 有较大提升。在性能方面，根据官方提供的基准测试，Spring Cloud Gateway 的RPS（每秒请求数） 是Zuul的1.6倍。
+  * 3、Spring Cloud Gateway 建立 在 Spring Framework 5、PRoject Reactor 和Spring Boot 2 之上，使用非阻塞API
+  * 4、 Spring Cloud Gateway 还支持 WebSocket，并且与Spring紧密集成拥有更好的开发体验
+
+### 1、 组成：路由 断言 过滤
+
+* Route：
+  * 路由是构建网关的基本模块，它由ID，目标URL，一系列的断言和过滤器组成，如果断言为true则匹配该路由
+* Predicate
+  * 参考的是java8的java.util.function.Predicate开发人员可以匹配HTTP请求中的所有内容，如果请求与断言相匹配则进行路由
+* Filter
+  * 指的是Spring框架中GatewayFilter的实力，使用锅炉其，可以在请求被路由前或者之后对请求进行修改。
+
+### 2、工作流程
+
+执行过滤链、断言、路由转发
+
+### 3、步骤
+
+1. 新建 cloud-gateway-gateway9527
+
+2. pom
+
+   1.  
+
+      ```xml
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project xmlns="http://maven.apache.org/POM/4.0.0"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+          <parent>
+              <artifactId>cloud2020</artifactId>
+              <groupId>com.atguigu.springcloud</groupId>
+              <version>1.0-SNAPSHOT</version>
+          </parent>
+          <modelVersion>4.0.0</modelVersion>
+      
+          <artifactId>cloud-gateway-gateway9527</artifactId>
+      
+      
+          <dependencies>
+              <!--新增gateway-->
+              <dependency>
+                  <groupId>org.springframework.cloud</groupId>
+                  <artifactId>spring-cloud-starter-gateway</artifactId>
+              </dependency>
+              <dependency>
+                  <groupId>com.atguigu.springcloud</groupId>
+                  <artifactId>cloud-api-commons</artifactId>
+                  <version>1.0-SNAPSHOT</version>
+              </dependency>
+              
+              <dependency>
+                  <groupId>org.springframework.cloud</groupId>
+                  <artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
+              </dependency>
+              <dependency>
+                  <groupId>org.springframework.cloud</groupId>
+                  <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+              </dependency>
+      
+              <dependency>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-devtools</artifactId>
+                  <scope>runtime</scope>
+                  <optional>true</optional>
+              </dependency>
+      
+              <dependency>
+                  <groupId>org.projectlombok</groupId>
+                  <artifactId>lombok</artifactId>
+                  <optional>true</optional>
+              </dependency>
+              <dependency>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-starter-test</artifactId>
+                  <scope>test</scope>
+              </dependency>
+      
+      
+      
+          </dependencies>
+      
+      
+      </project>
+       
+      
+      ```
+
+3. yml
+
+   1. ```yml
+      server:
+        port: 9527
+      spring:
+        application:
+          name: cloud-gateway
+        cloud:
+          gateway:
+            routes:
+              - id: payment_routh #路由的ID，没有固定规则但要求唯一，建议配合服务名
+                uri: http://localhost:8001   #匹配后提供服务的路由地址
+                predicates:
+                  - Path=/payment/get/**   #断言,路径相匹配的进行路由
+      
+              - id: payment_routh2
+                uri: http://localhost:8001
+                predicates:
+                  - Path=/payment/lb/**   #断言,路径相匹配的进行路由
+      
+      
+      eureka:
+        instance:
+          hostname: cloud-gateway-service
+        client:
+          service-url:
+            register-with-eureka: true
+            fetch-registry: true
+            defaultZone: http://eureka7001.com:7001/eureka
+       
+       
+      
+      ```
+
+       
+
+4.  主启动类
+
+   1. ```java
+      package com.atguigu.springcloud;
+      
+      
+      import org.springframework.boot.SpringApplication;
+      import org.springframework.boot.autoconfigure.SpringBootApplication;
+      import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+      
+      @SpringBootApplication
+      @EnableEurekaClient
+      public class GateWayMain9527 {
+          public static void main(String[] args) {
+                  SpringApplication.run( GateWayMain9527.class,args);
+              }
+      }
+       
+      ```
+
+      
+
+5.  测试
+
+### 4、路由与代码方式配置
+
+在gateway中配置<font color='red'>id</font> 通常为服务名
+
+在gateway中配置**uri**配置有三种方式，包括
+
+* 第一种：<font color='orange'>ws</font>(websocket)方式: `uri: ws://localhost:9000`
+* 第二种：<font color='orange'>http</font>方式:  `uri: http://localhost:8130/`
+* 第三种：<font color='orange'>lb</font>(注册中心中服务名字)方式: `uri: lb://brilliance-consumer`
+
+代码配置如下：
+
+```java
+
+package com.atguigu.springcloud.config;
+
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class GateWayConfig {
+
+    @Bean
+    public RouteLocator customRouteLocator(RouteLocatorBuilder routeLocatorBuilder) {
+        RouteLocatorBuilder.Builder routes = routeLocatorBuilder.routes();
+        routes.route("path_rote_atguigu", r -> r.path("/guonei").uri("http://news.baidu.com/guonei")).build();
+        return routes.build();
+    }
+}
+```
+
+### 5、断言
+
+类似条件是否满足，断言可能很多去官网看吧
+
+```yml
+server:
+  port: 9527
+spring:
+  application:
+    name: cloud-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true  #开启从注册中心动态创建路由的功能，利用微服务名进行路由
+      routes:
+        - id: payment_routh #路由的ID，没有固定规则但要求唯一，建议配合服务名
+          #uri: http://localhost:8001   #匹配后提供服务的路由地址
+          uri: lb://cloud-payment-service
+          predicates:
+            - Path=/payment/get/**   #断言,路径相匹配的进行路由
+ 
+        - id: payment_routh2
+          #uri: http://localhost:8001   #匹配后提供服务的路由地址
+          uri: lb://cloud-payment-service
+          predicates:
+            - Path=/payment/lb/**   #断言,路径相匹配的进行路由
+            #- After=2020-03-08T10:59:34.102+08:00[Asia/Shanghai]
+            #- Cookie=username,zhangshuai #并且Cookie是username=zhangshuai才能访问
+            #- Header=X-Request-Id, \d+ #请求头中要有X-Request-Id属性并且值为整数的正则表达式
+            #- Host=**.atguigu.com
+            #- Method=GET
+            #- Query=username, \d+ #要有参数名称并且是正整数才能路由
+ 
+ 
+eureka:
+  instance:
+    hostname: cloud-gateway-service
+  client:
+    service-url:
+      register-with-eureka: true
+      fetch-registry: true
+      defaultZone: http://eureka7001.com:7001/eureka
+ 
+ 
+
+```
+
+### 6、Filter与代码方式配置
+
+
+
+和Java EE的 Filter 一样。
+
+周期：Only Two：pre and post
+
+种类：GatewayFilter and GlobalFilter
+
+作用：
+
+*  全局日志记录
+*  同一网关鉴权
+*  。。。
+
+还有很多拦截器不一 一列举 
+
+```yml
+ filters:
+ 			  - AddRequestParameter=X-Request-Id,1023 #过滤器工厂会在匹配的请求头加上一堆请求头，名称为X-Request-Id值为1023
+ 
+```
+
+代码方式配置 
+
+```java
+package com.atguigu.springcloud.filter;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.util.Date;
+
+@Component
+@Slf4j
+//全局过滤
+public class MyLogGateWayFilter implements GlobalFilter,Ordered {
+		//这算是pre方法，post方法好像是run方法 具体看官网
+  	
+  	@Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        log.info("*********come in MyLogGateWayFilter: "+new Date());
+        String uname = exchange.getRequest().getQueryParams().getFirst("username");
+        if(StringUtils.isEmpty(username)){
+            log.info("*****用户名为Null 非法用户,(┬＿┬)");
+            exchange.getResponse().setStatusCode(HttpStatus.NOT_ACCEPTABLE);//给人家一个回应
+            return exchange.getResponse().setComplete();
+        }
+        return chain.filter(exchange);
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+}
+ 
+ 
+```
+
+实现种类、方法很多，具体看官网

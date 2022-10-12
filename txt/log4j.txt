@@ -1,0 +1,153 @@
+日志学习
+
+Log4j 
+
+组成或者说核心类
+
+Loggers
+	日志记录器
+Appender
+	输出端
+		ConsoleAppender
+		FileAppender
+		DailyRollingFileAppender
+		RollingFileAppender
+		JDBCAppender
+
+Layout
+	日志格式化器
+		HTMLLayout
+		SimpleLayout
+		PatternLyout
+		
+入门案例
+
+public class Log4jTest{
+	@Test
+	public void testQQuick()throws Exception{
+		//开启log4j内置日志记录
+		LogLog.setInternalDebugging(true);
+		//初始化配置信息
+		BasicConfigurator.configure();
+		//获取日志记录器对象
+		Logger logger = Logger.getLogger(Log4jTest.class);
+		//日志记录输出
+		loggerinf("hello log4j");
+		//日志级别
+		logger.fatal("fatal"); //严重错误，一般会造成系统崩溃并终止运行
+		logger.error("error");//警告信息，可能会发生问题
+		logger.info("info");//运行信息，数据连接、网络连接、IO操作等等
+		logger.debug("debug");//调试信息，一般在开发中使用，记录程序变量参数传递信息等等。
+		logger.trace("trace");//追踪信息，记录程序所有的流程信息。
+		
+	}
+}
+
+执行结果
+
+// log4j: Trying to find [log4j.xml] using context classloader sun.misc.Launcher$AppClassLoader@18b4aac2.
+// log4j: Trying to find [log4j.xml] using sun.misc.Launcher$AppClassLoader@18b4aac2 class loader.
+// log4j: Trying to find [log4j.xml] using ClassLoader.getSystemResource().
+// log4j: Trying to find [log4j.properties] using context classloader sun.misc.Launcher$AppClassLoader@18b4aac2.
+// log4j: Trying to find [log4j.properties] using sun.misc.Launcher$AppClassLoader@18b4aac2 class loader.
+// log4j: Trying to find [log4j.properties] using ClassLoader.getSystemResource().
+// log4j: Could not find resource: [null].
+// 0 [main] INFO Log4jTest  - hello log4j
+// 1 [main] FATAL Log4jTest  - fatal
+// 1 [main] ERROR Log4jTest  - error
+// 1 [main] INFO Log4jTest  - info
+// 1 [main] DEBUG Log4jTest  - debug
+
+// Process finished with exit code 0
+
+配置文件：默认类路径下文件名为 log4j.properties： 详情源码 PropertyConfigurator类
+
+输出端为 控制台
+	log4j.rootLogger=trace,console
+	log4j.appender.console=org.apache.log4j.ConsoleAppender
+	log4j.appender.console.layout=org.apache.log4j.SimpleLayout
+	log4j.appender.console.layout.conversionPattern=[%p]%r  %c %t %F %L %d{yyyy年MM月dd日 HH:mm:ss.SSS} %m%n
+
+	
+Layout 使用
+	log4j.rootLogger=trace,console
+	log4j.appender.console=org.apache.log4j.ConsoleAppender
+	log4j.appender.console.layout=org.apache.log4j.PatternLayout
+	log4j.appender.console.layout.conversionPattern=[%p]%r  %c %t %F %L %d{yyyy年MM月dd日 HH:mm:ss.SSS} %m%n
+	# %p用法 在PatternLayout类的注释中
+
+输出端为 文件 时
+
+	log4j.rootLogger =trace,file
+	log4j.appender.file=org.apache.log4j.FileAppender
+	log4j.appender.file.layout=org.apache.log4j.PatternLayout
+	log4j.appender.file.layout.conversionPattern=[%p]%r  %c %t %F %L %d{yyyy年MM月dd日 HH:mm:ss.SSS} %m%n
+	log4j.appender.file.file=/logs/log4j.log 
+	log4j.appender.file.encoding=UTF-8
+	
+
+按大小拆分文件 RollingFileAppender
+	log4j.rootLogger =trace,rollingFile
+	log4j.appender.rollingFile=org.apache.log4j.RollingFileAppender
+	log4j.appender.rollingFile.layout=org.apache.log4j.PatternLayout
+	log4j.appender.rollingFile.layout.conversionPattern=[%p]%r  %c %t %F %L %d{yyyy-MM-dd- HH:mm:ss.SSS} %m%n
+	log4j.appender.rollingFile.file=/logs/log4j.log
+	log4j.appender.rollingFile.encoding=UTF-8
+	log4j.appender.rollingFile.maxFileSize=1MB
+	#文件数量
+	log4j.appender.rollingFile.maxBackupIndex=10
+	#[%-10p]%r  %l %d{yyyy-MM-dd HH:ss.SSS} %m%n
+	
+	结果 少了生成10个一下，多了也是十个，并且多余的部分按时间覆盖
+	
+按时间拆分文件 DailyRollingFileAppender
+	
+	略。。。
+	log4j.appender.dailyFile.dataPattern='.'yyyy-MM-dd-HH-mm-ss
+	#结果的日志文件扩展命log4.log.2022-01-01-00-00-00
+	
+输出端为数据库时：
+	数据库准备：
+	
+drop table log;
+CREATE  TABLE log(
+	log_id SERIAL PRIMARY KEY ,
+	project_name varchar(255)  ,
+	create_date varchar(255)   ,
+	level varchar(255)         ,
+	category varchar(255)      ,
+	file_name varchar(255)     ,
+	thread_name varchar(255)   ,
+	line varchar(255),
+	all_category varchar(255)  ,
+	message varchar(4000)      
+
+);
+
+
+COMMENT ON COLUMN log.project_name  IS '项目名';
+COMMENT ON COLUMN log.create_date IS '创建时间';
+COMMENT ON COLUMN log.level IS  '优先级';
+COMMENT ON COLUMN log.category  IS '所在类的全名';
+COMMENT ON COLUMN log.file_name  IS '输出日志消息产生时所在的文件名称';
+COMMENT ON COLUMN log.thread_name  IS '日志时间的线程名';
+COMMENT ON COLUMN log.line IS '行号';
+COMMENT ON COLUMN log.all_category  IS '日志事件的发生位置';
+COMMENT ON COLUMN log.message  IS '输出代码中指定的消息';
+
+	配置文件：
+		log4j.rootLogger=trace,console,logDB
+		log4j.appender.logDB=org.apache.log4j.jdbc.JDBCAppender
+		log4j.appender.logDB.layout=org.apache.log4j.PatternLayout
+		log4j.appender.logDB.Driver=org.postgresql.Driver
+		log4j.appender.logDB.URL=jdbc:postgresql://localhost:5432/postgres
+		log4j.appender.logDB.User=postgres
+		log4j.appender.logDB.Password=123456
+		log4j.appender.logDB.Sql=\
+		  INSERT INTO log(\
+		  project_name,create_date,level,category,file_name,\
+		  thread_name,line,all_category,message\
+		  ) values(\
+			'itcast','%d{yyyy-MM-dd HH:mm:ss}','%p','%c','%F','%t','%L','%l','%m'\
+		  )
+		  

@@ -1,0 +1,224 @@
+操作数据库对象
+
+操作数据表对象
+
+CREATE DATABASE database_name;
+CREATE DATABASE database_name WITH OWNER=postgress ENCODING='utf-8';
+ALTER DATABASE database_name RENAME TO database_name2;
+DROP DATABASE database_name ;
+
+CREATE  TABLE table_name (
+ id INT,
+name VARCHAR(20));
+
+
+ALTER TABLE table_name RENAME TO table_name2;
+ALTER TABLE table_name RENAME id TO bh;
+ALTER TABLE table_name ALTER COLUMN name TYPE VARCHAR(39);
+ALTER TABLE table_name ADD COLUMN age INI;
+ALTER TABLE table_name DROP CLOLUMN age;
+
+表与列注释
+
+COMMENT ON COLUMN table_name.id IS '序号';
+
+
+
+数据类型
+SMALL
+INT(INTEGER)
+REAL  6位浮点
+NUMERIC(m,n)
+TIME 时间 22:22:22
+DATE 日期 2015-07-01
+TIMESTAMP  2015-07-01 22:22:22
+
+主键自增类型
+	SERIAL
+
+CREATE TABLE temp(
+	x SMALLINT,
+	y INT,
+	z REAL,
+	n NUMBERIC(5,2)
+);
+
+INSERT INT temp VALUES(2,3,2.55,6.88);
+
+
+函数介绍与使用
+简单函数 
+如数学函数
+RTRIM/LTRIM/TRIM (n)
+REPLACE
+LENGTH
+SUBSTRING()
+EXTRACT(type FROM column_name) type 有： year/month/day 获取日期指定值
+CURRENT_DATE
+CURRENT_TIME
+NOW() 这个是日期+时间
+
+
+操作聚集或说自定义函数
+
+创建
+CREATE FUNCTION
+	add(integer,integer) // 函数头
+RETURNS integer		//函数返回值
+	AS 'select $1+$2';   //函数体
+LANGUAGE SQL 	//指定函数实现语言 比如 php c 
+RETURNS NULL ON NULL INPUT; //定义参数为null 的处理情况
+
+
+
+CREATE OR REPLACE FUNCTION concat_test(integer,varchar,date)
+RETURNS varchar
+AS 'SELECT $1||$||2$||3;'
+LANGUAGE SQL;
+RETURNS NULL ON NULL INPUT;
+
+SELECT sno,name,concat_test(sno,name,CURRENT_DATE) FROM stu;
+
+
+
+DROP FUNCTION concat_test(integer,varchar,date);   --该函数可以像java 类似重载
+
+索引概述
+作用：提高查询效率
+分类：
+b树索引：适用于 顺序存储的数据
+hash索引：适用于相等比较
+gist 索引架构 可自定义索引
+gin 处理多值的键 反向索引
+
+索引
+优点：
+1 提升查询效率
+2 加快表与表之间的连接
+
+缺点：
+1 维护耗时，由于某列数据的更新，而导致索引发生更新
+2 占用磁盘空间
+创建和删除索引：
+CREATE INDEX stu_name_index  on stu(name); 
+DROP index stu_name_index;
+
+视图
+含义：视图是从一张或多张表中导出的数据内容，视图不存储数据，只存储视图的定义。
+ 且视图封装复杂查询实现细节，好处就是同一接口，无需了解细节
+
+作用：
+	简单	安全 逻辑数据独立性
+	直接调用接口 封装没有细节 无需知道底层细节改变
+
+视图操作
+CREATE VIEW stu_view 
+AS 
+SELECT * FROM stu;
+
+SELECT * FROM stu_view;
+
+DROP VIEW stu_view;
+
+
+DML
+
+
+INSERT INTO STU VALUES
+(1,'AAA'),
+(2,'AAA'),
+(3,'AAA'),
+(4,'AAA'),
+(5,'AAA');
+
+UPDATE STU SET NAME ='里斯' WHERE ID=1;
+
+"" 和 '' 跟 mysql 好像不同 小心了
+DELETE FROM STU WHERE ID='1';
+
+				DELETE			TRUNCATE 
+执行速度			慢				快（大概：将整个表drop掉，然后在创建表）
+可指定条件		可以				不可以
+语句分类			DML				DDL
+可以回滚事务		可以				不可以	
+删除操作记录日志	记录				不记录
+
+
+实体完整性和参照完整性约束：（主键与外键）
+主键：
+	定义表内：
+		第一种方式：字段后 PRIMARY KEY 
+		第二种方式：所有字段后 CONSTRAINT pk_case1 PRIMARY KEY(id)
+
+主键自增：
+	
+	定义表外：
+		ALTER TABLE STU ADD CONSTRAINT pk_case1 PRIMARY KEY(id)
+外键：
+	定义表内：
+		第一种方式：字段后 FOREIGN KEY 
+		第二种方式：所有字段后 CONSTRAINT pk_case1 FOREIGN KEY(id)
+	定义表外：
+		ALTER TABLE STU ADD CONSTRAINT pk_case1 FOREIGN KEY (id)
+
+第一种叫列级约束，第二种叫表级约束
+
+用户完整性约束：
+	not null
+	unique
+	default 数据
+	check 约束条件
+	
+	
+LIMIT使用
+
+SELECT * FROM stu LIMIT 5; 显示前5条数据
+SELECT * FROM stu LIMIT 5 offset 5; 从第6条开始（包括第六条）显示5条数据。
+--SELE
+
+--SELECT * FROM stu LIMIT 1,5; 错误 pgSQL不支持
+
+
+连接
+
+SELECT s.id,s.name,z.province_id,z.province_name FROM stu s 
+ LEFT OUTER JOIN zones z 
+ON s.id=z.province_id;
+
+SELECT s.id,s.name,z.province_id,z.province_name FROM stu s 
+ RIGHT OUTER JOIN zones z 
+ON s.id=z.province_id;
+
+SELECT s.id,s.name,z.province_id,z.province_name FROM stu s 
+ FULL OUTER JOIN zones z 
+ON s.id=z.province_id;
+
+SELECT s.id,s.name,z.province_id,z.province_name FROM stu s 
+  INNER JOIN zones z 
+ON s.id=z.province_id;
+
+
+注意：OUTER 和INNER 可以忽略
+
+
+子查询
+使用关键字：
+	EXISTS
+	IN
+	标量子查询
+	
+
+前提条件：
+	列要相同，不同可用null代替
+	
+
+有重复数据 快
+select * from stu where id='1'
+union all
+select * from stu where id='1';
+
+
+没有重复数据 慢
+select * from stu where id='1'
+union
+select * from stu where id='1';
