@@ -489,13 +489,13 @@ create database 数据库名 charset Latin1;
 
 ### 1.2 SQL分类
 * **DDL（Data Definition Languages、数据定义语言）**，这些语句定义了不同的数据库、表、视图、索
-引等数据库对象，还可以用来创建、删除、修改数据库和数据表的结构。
+  引等数据库对象，还可以用来创建、删除、修改数据库和数据表的结构。
     * CREATE \ ALTER \ DROP \ RENAME \ TRUNCATE
 * **DML（Data Manipulation Language、数据操作语言）**，用于添加、删除、更新和查询数据库记
-录，并检查数据完整性。
+  录，并检查数据完整性。
     * SELECT \ UPDATE \ DELETE \ INSERT
 * DCL**（Data Control Language、数据控制语言）**，用于定义数据库、表、字段、用户的访问权限和
-安全级别。
+  安全级别。
     * COMMIT \ ROLLBACK \ SAVEPOINT \  GRANT \ REVOKE
 
 
@@ -968,7 +968,7 @@ SELECT first_name,last_name,LEAST(first_name,last_name) FROM employees ;
 | David       | Austin      | Austin                      | 
 ```
 
-### BETWEEN 下限 AND 上限
+### BETWEEN 下限 AND 上限（包括上下限）
 
 ```mysql
 SELECT employee_id,last_name,salary FROM employees WHERE salary BETWEEN 6000 AND 8000;
@@ -1323,3 +1323,1018 @@ SELECT employee_id,first_name FROM employees LIMIT 20,10;
     ```
 
   
+
+# 六、多表查询
+
+多表查询，也称为**关联查询**，指两个或更多个表一起完成查询操作。
+
+前提条件：这些一起查询的表之间是有关系的（一对一，一对多），他们之间一定是有关联字段，**这个关联字段可能建立了外键，也可能没有建立外键。**
+
+## 1、 笛卡尔积（交叉连接）
+
+* 解释：
+
+  * 笛卡尔积也称为==交叉连接==，英文是 ==CROSS JOIN==。**在多表查询中这是一种错误的实现方式**（能执行），这叫做**笛卡尔积的错误。**
+
+  * 错误原因：
+
+    * 因为每个员工都与每个部门匹配了一遍。（就笛卡尔积原理），所以需要添加连接条件
+
+      
+
+* 作用：
+  * 可以把任意表进行连接，即使这两张表不相关。
+
+* 错误方式
+
+  * 笛卡尔积出现情况如下：
+
+    ```sql
+    SELECT last_name,department_name FROM employees,departments;
+    SELECT last_name,department_name FROM employees CROSS JOIN departments;
+    SELECT last_name,department_name FROM employees INNER JOIN departments;
+    ```
+
+* 笛卡尔积的错误产生条件
+
+  * 省略多个表的连接条件（或关联条件）
+  * 连接条件（或关联条件）无效
+  * 所有表中的所有行互相连接
+
+* 正确方式
+
+  * 在 WHERE 加入有效的连接条件
+
+    * 例如：
+
+      * ```sql
+        SELECT employee_id,department_name
+        FROM employees,departments
+        WHERE employees.department_id=departments.department_id;
+        #记录为106条 连接条件
+        ```
+
+* 使用建议
+  * 从sql优化的角度，建议多表查询时，每个字段前都指明其所在的表
+  * 给表起了别名的话，则必须使用表的别名，而不能在使用表的原名
+
+
+
+运用：
+
+```sql
+# 查询员工的employee_id,last_name,department_name,city
+SELECT employee_id,last_name,department_name,city
+FROM employees e,departments d,locations l
+WHERE e.department_id==d.department_id
+AND d.location_id=l.location_id
+```
+
+演绎式思维：  提出问题-》解决问题
+
+归纳式：总--分
+
+## 2、分类
+
+角度1： 等值连接 vs 非等值连接
+
+角度2： 自连接 vs 非自连接
+
+角度3： 内连接 vs 外连接
+
+### 1、非等值连接
+
+多表连接中的连接条件，不是等号连接就是非等值连接。
+
+表描述：
+
+​	员工表、薪资等级表（之间没有外键关联）
+
+查询员工的last_name，薪资，薪资等级
+
+
+
+```sql
+SELECT e.last_name,e.salary,g.grade_level
+    -> FROM employees e,job_grades g
+    -> WHERE e.salary BETWEEN g.lowest_sal AND g.highest_sal;
+    
+ 
+    +-------------+----------+-------------+
+| last_name   | salary   | grade_level |
++-------------+----------+-------------+
+| King        | 24000.00 | E           |
+| Kochhar     | 17000.00 | E           |
+| De Haan     | 17000.00 | E           |
+| Hunold      |  9000.00 | C           |
+| Ernst       |  6000.00 | C           |
+| _Austin     |  4800.00 | B           |
+| Pataballa   |  4800.00 | B           |
+```
+
+### 2、自连接
+
+自己表和自己表连接
+
+```sql
+ #查询员工的名字与其管理者的名字
+SELECT e1.first_name,e2.first_name FROM employees e1,employees e2
+WHERE e1.manager_id=e2.employee_id;
+  
++-------------+-----------+
+| 员工名      | 管理者名  |
++-------------+-----------+
+| Neena       | Steven    |
+| Lex         | Steven    |
+| Alexander   | Lex       |
+| Bruce       | Alexander |
+| David       | Alexander
+```
+
+### 3、内连接和左、右（外）连接
+
+* 内连接：
+
+  * 也就是满足等值连接或非等值连接的行。
+
+    * ```sql
+      SELECT employee_id,department_name
+      FROM employees,departments
+      WHERE employees.department_id=departments.department_id;
+      #记录为106条 连接条件
+      #SQL92语法实现内连接：见上，略
+      #SQL99语法。。。。。：
+      SELECT employee_id,department_name,city
+      FROM employees JOIN [INNER] departments ON employees.department_id=departments.department_id JOIN locations ON dpartment.location_id=locations.location_id;
+      ```
+
+      
+
+* 外连接(全外连接)：
+
+  * 不满足等值连接或非等值连接的行
+
+  * 分类：
+
+    * 左外连接
+
+      * 除了满足等值连接或非等值连接的行外，还返回左表中不满足连接条件的行（**FORM 的 表的 顺序确定 左右**）
+
+      * ```sql
+        #SQL92语法实现外连接：MYSQL不支持抱歉，但Orcle支持 内容如下
+        SELECT employee_id,department_name
+        FROM employees,departments
+        WHERE employees.department_id=departments.department_id(+);#理解就是把腿增高
+        #SQL99
+        SELECT employee_id,department_name
+        FROM employees LEFT [OUTER] JOIN departments
+        ON employees.department_id=departments.department_id;
+        ```
+
+        
+
+    * 右外连接
+
+      * 除了满足等值连接或非等值连接的行外，还返回右表中不满足连接条件的行
+
+    * 满外连接（全外连接）
+
+      * 除了满足等值连接或非等值连接的行外，还返回左、右表中不满足连接条件的行
+
+      * ```sql
+        #SQL99 MySQL也不支持这种写法 ，但Oracle支持
+        SELECT employee_id,department_name 
+        FROM employees FULL [OUTER] JOIN departments
+        ON employees.department_id=departments.department_id;
+        ```
+
+
+
+MySQL满外连接不支持怎么办？使用UNION 和 7种join组合
+
+### 4、UNION 使用
+
+**合并查询结果**
+
+* 作用：
+
+  * 利用UNION关键字，可以给出多条SELECT语句，并将他们的结果组合成单个结果集。
+
+* 前提条件
+
+  * 两个表对应的列数和数据类型必须相同，兵器相互对应
+  * 各个SELECT语句之间使用UNION或UNION ALL 关键字分隔
+
+* 语法格式
+
+  * ```sql
+    SELECT column，.. FROM table1
+    UNION [ALL]
+    SELECT column, ... FROM table2
+    ```
+
+* **UNION**
+
+  * UNION操作符返回两个查询的结果集的并集，去除重复记录
+
+* **UNION ALL**
+
+  * 操作符返回两个查询的结果集的并集，不去重。（更纯粹）,效率更高
+
+
+
+### 5、七种SQL JOINS的实现
+
+SQL99语法：
+
+![image-20221021161015142](MySql.assets\image-20221021161015142.png)
+
+```sql
+#中图 内连接 #106条
+SELECT e.employee_id,p.department_name
+FROM employees e JOIN departments p
+ON e.department_id=p.department_id
+
+#左上图 左外连接 #107
+SELECT e.employee_id,p.department_name
+FROM employees e LEFT JOIN departments p
+ON e.department_id=p.department_id
+
+#右上图 右外连接 #122
+SELECT e.employee_id,p.department_name
+FROM employees e RIGHT JOIN departments p
+ON e.department_id=p.department_id
+
+#左图 A - A∩B # 1
+SELECT e.employee_id,p.department_name
+FROM employees e LEFT JOIN departments p
+ON e.department_id=p.department_id
+WHERE p.department_id IS NULL
+#或 WHERE e.department_id IS NULL
+
+#右图 B - B∩A # 16
+SELECT e.employee_id,p.department_name
+FROM employees e RIGHT JOIN departments p
+ON e.department_id=p.department_id
+WHERE e.department_id IS NULL
+-- WHERE p.department_id IS NULL 这为 0条 注意
+#左下图 全外连接
+	#第一种方式 #123
+	SELECT e.employee_id,p.department_name
+	FROM employees e LEFT JOIN departments p
+	ON e.department_id=p.department_id
+	UNION
+	SELECT e.employee_id,p.department_name
+	FROM employees e RIGHT JOIN departments p
+	ON e.department_id=p.department_id
+	WHERE e.department_id IS NULL
+
+	#第二种方式
+	SELECT e.employee_id,p.department_name
+	FROM employees e RIGHT JOIN departments p
+	ON e.department_id=p.department_id
+	UNION
+	SELECT e.employee_id,p.department_name
+	FROM employees e LEFT JOIN departments p
+	ON e.department_id=p.department_id
+	WHERE p.department_id IS NULL
+
+-- 右下图 
+#右下图 # 17
+#左图 + 右图 A ∪B- A∩B 或者 (A - A∩B) ∪ （B - A∩B）
+SELECT e.employee_id,p.department_name
+FROM employees e LEFT JOIN departments p
+ON e.department_id=p.department_id
+WHERE p.department_id IS NULL
+UNION ALL #效率更高
+SELECT e.employee_id,p.department_name
+FROM employees e RIGHT JOIN departments p
+ON e.department_id=p.department_id
+WHERE e.department_id IS NULL
+```
+
+### 6、SQL99语法新特性
+
+#### 6.1 自然连接
+
+SQL99在SQL92的基础上提供了一些特殊语法，比如 ==NATURAL JOIN== 用来表示自然连接。我们可以把自然连接理解为SQL92中的等值连接。它会帮你自动查询两张连接表中 ==所有相同的字段==，然后进行==等值连接==
+
+* 不足：
+  * 多个连接条件就不太好了，可选性差。
+
+* 在SQL92标准中：
+
+  * ```sql
+    SELECT employee_id,last_name,department_name
+    FROM employees e JOIN departments d
+    ON e.department_id = d.department_id
+    AND e.manager_id = d.manager_id
+    ```
+
+* 在SQL99中你可以写成：
+
+  * ```sql
+    SELECT employee_id,last_name,department_name
+    FROM employees e NATURAL JOIN departments d;
+    ```
+
+    
+
+#### 6.2 USING 连接
+
+* 指定数据表里的同名字段（同名列）进行等值连接。
+
+* 前提条件：
+
+  * 只能配合JOIN一起使用：
+
+    ```sql
+    SELECT employee_id,last_name,department_name
+    FROM USING(department_id);
+    ```
+
+* 作用：
+  * 简化==JOIN ON==的等值连接
+
+
+
+### 7、表连接约束
+
+* WHERE: 适用于所有关联查询
+* ==ON==: 只能和JOIN一起使用，只能写关联条件。虽然关联条件可以放在WHERE中和其他条件一起写，但分开写可读性更好。
+* USING: 
+  * 只能和JOIN一起使用，而且要求两个关联字段在关联表中名称一致，而且只能表示关联字段值相等。
+
+> 注意
+
+我们要==控制连接表的数量==。多表连接就相当于嵌套for循环一样，非常消耗资源，会让SQL查询性能下降的很严重，因此不要连接不必要的表。在许多DBMS中，也都会有最大连接表的限制。
+
+
+
+> 【强制】超过三个表禁止join。需要join的字段，**数据类型保持绝对一致**；多表关联查询时，保证被关联的字段需要有**索引**
+>
+> 说明：即使双表join也要注意表索引、SQL性能。
+>
+> 来源：阿里巴巴《Java开发手册》
+
+## 3、必要练习
+
+```sql
+#中图 内连接 #106条
+SELECT e.employee_id,p.department_name
+FROM employees e JOIN departments p
+ON e.department_id=p.department_id
+
+#左上图 左外连接 #107
+SELECT e.employee_id,p.department_name
+FROM employees e LEFT JOIN departments p
+ON e.department_id=p.department_id
+
+#右上图 右外连接 #122
+SELECT e.employee_id,p.department_name
+FROM employees e RIGHT JOIN departments p
+ON e.department_id=p.department_id
+
+#左图 A - A∩B # 1
+SELECT e.employee_id,p.department_name
+FROM employees e LEFT JOIN departments p
+ON e.department_id=p.department_id
+WHERE p.department_id IS NULL
+#或 WHERE e.department_id IS NULL
+
+#右图 B - B∩A # 16
+SELECT e.employee_id,p.department_name
+FROM employees e RIGHT JOIN departments p
+ON e.department_id=p.department_id
+WHERE e.department_id IS NULL
+-- WHERE p.department_id IS NULL 这为 0条 注意
+#左下图 全外连接
+	#第一种方式 #123
+	SELECT e.employee_id,p.department_name
+	FROM employees e LEFT JOIN departments p
+	ON e.department_id=p.department_id
+	UNION
+	SELECT e.employee_id,p.department_name
+	FROM employees e RIGHT JOIN departments p
+	ON e.department_id=p.department_id
+	WHERE e.department_id IS NULL
+
+	#第二种方式
+	SELECT e.employee_id,p.department_name
+	FROM employees e RIGHT JOIN departments p
+	ON e.department_id=p.department_id
+	UNION
+	SELECT e.employee_id,p.department_name
+	FROM employees e LEFT JOIN departments p
+	ON e.department_id=p.department_id
+	WHERE p.department_id IS NULL
+
+-- 右下图 
+#右下图 # 17
+#左图 + 右图 A ∪B- A∩B 或者 (A - A∩B) ∪ （B - A∩B）
+SELECT e.employee_id,p.department_name
+FROM employees e LEFT JOIN departments p
+ON e.department_id=p.department_id
+WHERE p.department_id IS NULL
+UNION ALL #效率更高
+SELECT e.employee_id,p.department_name
+FROM employees e RIGHT JOIN departments p
+ON e.department_id=p.department_id
+WHERE e.department_id IS NULL
+
+
+
+
+#显示所有员工的姓名，部门号和名称
+SELECT CONCAT(e.first_name,e.last_name) emp_name,p.department_id,p.department_name
+FROM employees e LEFT JOIN departments p
+ON e.department_id=p.department_id
+
+
+#查询90号部门员工的job_id和90号部门的location_id
+SELECT e.job_id,d.location_id
+FROM employees e JOIN departments d 
+ON e.department_id=d.department_id
+WHERE d.department_id=90
+
+#选择所有有奖金的员工的last_name,department_name,location_id,city
+SELECT e.last_name,d.department_name,l.location_id,l.city
+FROM employees e LEFT JOIN departments d
+ON 
+e.department_id=d.department_id
+LEFT JOIN locations l
+ON
+d.location_id=l.location_id
+WHERE e.commission_pct IS NOT NULL
+
+#选择city在Toronto工作的员工的last_name,job_id,department_id,department_name
+
+SELECT e.last_name,job_id,d.department_id,d.department_name
+FROM employees e  JOIN departments d
+ON e.department_id=d.department_id
+JOIN locations l
+ON
+d.location_id=l.location_id
+WHERE
+l.city='Toronto'
+#sql 92
+SELECT e.last_name,job_id,d.department_id,d.department_name
+FROM employees e,departments d,locations l
+WHERE e.department_id=d.department_id
+AND d.location_id=l.location_id
+AND l.city='Toronto'
+
+#查询员工所在的部门名称，部门地址，姓名，工作，工资，其中员工所在部门名称为‘Executive’
+SELECT d.department_name,l.street_address,CONCAT(e.first_name,e.last_name) emp_name,j.job_title,e.salary
+FROM employees e RIGHT JOIN departments d#查询主对象是部门，这个部门可能没有人
+ON e.department_id=d.department_id
+LEFT JOIN locations l#可能这是假部门
+ON d.location_id=l.location_id
+LEFT JOIN jobs j#可能这员工被白嫖
+ON e.job_id=j.job_id
+WHERE d.department_name='Executive'
+
+#选择指定员工的姓名，员工号，以及他的管理者的姓名和员工号，结果类似于下面的格式
+SELECT CONCAT(e.first_name,e.last_name),e.employee_id,CONCAT(m.first_name,m.last_name),m.employee_id
+FROM employees e
+LEFT JOIN employees m
+ON e.manager_id=m.employee_id
+
+#查询哪个部门没有员工 #可以子查询
+SELECT d.* 
+FROM departments d
+LEFT JOIN employees e
+ON d.department_id=e.department_id
+WHERE 
+e.department_id IS NULL
+
+#查询哪个城市没有部门
+SELECT * 
+FROM locations l
+LEFT JOIN 
+departments d
+ON 
+l.location_id=d.location_id
+WHERE
+d.location_id IS NULL
+
+#查询部门名为 Sales 或 IT 的员工信息
+SELECT e.*
+FROM employees e
+JOIN departments d
+ON e.department_id=d.department_id
+WHERE
+d.department_name IN ('Sales','IT')
+
+```
+
+
+
+
+
+# 七、单行函数
+
+函数是封装
+
+* 分类
+  * 定义角度
+    * 内置函数
+    * 自定义函数
+  * 功能角度
+    * 数值函数、字符串函数、日期和时间函数、流程控制函数、加解密函数、获取MySQL信息函数、聚合函数（或分组函数）等
+  * 从函数定义结构角度
+    * 单行函数
+    * 聚合函数
+  * 
+
+
+
+1、不同DBMS函数的差异
+
+​	我们在使用SQL语言的时候，不是直接和这门语言打交道，而是通过它使用不同的数据库软件，即DBMS。**DBMS之间的差异性很大，远大于同一个语言不同版本之间的差异**。实际上，只有很少的函数是被DBMS同时支持的。比如，大多数DBMS使用（||）或者（+）来做拼接符，而在MySQL中的字符串拼接函数为concat()。大部分DBMS会有自己特定的函数，这就意味着**采用SQL函数的代码可移植性很差的**，因此在使用函数的时候需要特别注意。
+
+
+
+* 单行函数 
+  * 操作数据对象 
+  * 接受参数返回一个结果 
+  * 只对一行进行变换 
+  * 每行返回一个结果 
+  * 可以嵌套 
+  * 参数可以是一列或一个值
+
+## 1、数值函数
+
+### （1 基本函数
+
+|       ABS(x)        |                        返回x的绝对值                         |
+| :-----------------: | :----------------------------------------------------------: |
+|       SIGN(X)       |          返回X的符号。正数返回1，负数返回-1，0返回0          |
+|        PI()         |                        返回圆周率的值                        |
+| CEIL(x)，CEILING(x) |          返回大于或等于某个值的最小整数 天花板 一样          |
+|      FLOOR(x)       |             返回小于或等于某个值的最大整数 地板              |
+|  LEAST(e1,e2,e3…)   |                      返回列表中的最小值                      |
+| GREATEST(e1,e2,e3…) |                      返回列表中的最大值                      |
+|      MOD(x,y)       |                      返回X除以Y后的余数                      |
+|       RAND()        |                       返回0~1的随机值                        |
+|       RAND(x)       | 返回0~1的随机值，其中x的值用作种子值，相同的X值会产生相同的随机 数 |
+|      ROUND(x)       |        返回一个对x的值进行四舍五入后，最接近于X的整数        |
+|     ROUND(x,y)      | 返回一个对x的值进行四舍五入后最接近X的值，并保留到小数点后面Y位 |
+|    TRUNCATE(x,y)    |                 返回数字x截断为y位小数的结果                 |
+|       SQRT(x)       |           返回x的平方根。当X的值为负数时，返回NULL           |
+|     RADIANS(x)      |            将角度转化为弧度，其中，参数x为角度值             |
+|     DEGREES(x)      |            将弧度转化为角度，其中，参数x为弧度值             |
+
+```sql
+SELECT
+ABS(-123),ABS(32),SIGN(-23),SIGN(43),PI(),CEIL(32.32),CEILING(-43.23),FLOOR(32.32),
+FLOOR(-43.23),MOD(12,5)
+FROM DUAL;
+```
+
+![image-20221024095516313](MySql.assets\image-20221024095516313.png)
+
+```sql
+SELECT RAND(),RAND(),RAND(10),RAND(10),RAND(-1),RAND(-1)
+FROM DUAL;
+
+```
+
+![image-20221024095556952](MySql.assets\image-20221024095556952.png)
+
+```sql
+SELECT
+ROUND(12.33),ROUND(12.343,2),ROUND(12.324,-1),TRUNCATE(12.66,1),TRUNCATE(12.66,-1)
+FROM DUAL;
+```
+
+![image-20221024095626009](MySql.assets\image-20221024095626009.png)
+
+```sql
+SELECT RADIANS(30),RADIANS(60),RADIANS(90),DEGREES(2*PI()),DEGREES(RADIANS(90))
+FROM DUAL;
+```
+
+### （2 三角函数
+
+| SIN(x)     | 返回x的正弦值，其中，参数x为弧度值                           |
+| ---------- | ------------------------------------------------------------ |
+| ASIN(x)    | 返回x的反正弦值，即获取正弦为x的值。如果x的值不在-1到1之间，则返回NULL |
+| COS(x)     | 返回x的余弦值，其中，参数x为弧度值                           |
+| ACOS(x)    | 返回x的反余弦值，即获取余弦为x的值。如果x的值不在-1到1之间，则返回NULL |
+| TAN(x)     | 返回x的正切值，其中，参数x为弧度值                           |
+| ATAN(x)    | 返回x的反正切值，即返回正切值为x的值                         |
+| ATAN2(m,n) | 返回两个参数的反正切值                                       |
+| COT(x)     | 返回x的余切值，其中，X为弧度值                               |
+
+```sql
+SELECT SIN(RADIANS(30)),DEGREES(ASIN(1)),TAN(RADIANS(45)),DEGREES(ATAN(1)),DEGREES(ATAN2(1,1) ) FROM DUAL;
+```
+
+![image-20221024100744221](MySql.assets\image-20221024100744221.png)
+
+### （3 其他数学函数
+
+| POW(x,y)，POWER(X,Y) |                    返回x的y次方 一样                     |
+| :------------------: | :------------------------------------------------------: |
+|        EXP(X)        |     返回e的X次方，其中e是一个常数，2.71828182845904      |
+|    LN(X)，LOG(X)     | 返回以e为底的X的对数，当X <= 0 时，返回的结果为NULL 一样 |
+|       LOG10(X)       |   返回以10为底的X的对数，当X <= 0 时，返回的结果为NULL   |
+|       LOG2(X)        |       返回以2为底的X的对数，当X <= 0 时，返回NULL        |
+
+```sql
+mysql> SELECT POW(2,5),POWER(2,4),EXP(2),LN(10),LOG10(10),LOG2(4)
+-> FROM DUAL;
++----------+------------+------------------+-------------------+-----------+---------+
+| POW(2,5) | POWER(2,4) | EXP(2) | LN(10) | LOG10(10) | LOG2(4) |
++----------+------------+------------------+-------------------+-----------+---------+
+| 32 | 16 | 7.38905609893065 | 2.302585092994046 | 1 | 2 |
++----------+------------+------------------+-------------------+-----------+---------+
+1 row in set (0.00 sec)
+
+```
+
+### （4 进制转换函数
+
+| BIN(x)        | 返回x的二进制编码             |
+| ------------- | ----------------------------- |
+| HEX(x)        | 返回x的十六进制编码           |
+| OCT(x)        | 返回x的八进制编码             |
+| CONV(x,f1,f2) | x进制由f1之指定，返回f2进制数 |
+
+```sql
+mysql> SELECT BIN(10),HEX(10),OCT(10),CONV(10,2,8)
+-> FROM DUAL;
++---------+---------+---------+--------------+
+| BIN(10) | HEX(10) | OCT(10) | CONV(10,2,8) |
++---------+---------+---------+--------------+
+| 1010 | A | 12 | 2 |
++---------+---------+---------+--------------+
+1 row in set (0.00 sec)
+```
+
+### （5 字符串函数
+
+|             ASCII(S)             |             返回字符串S中的第一个字符的ASCII码值             |
+| :------------------------------: | :----------------------------------------------------------: |
+|          CHAR_LENGTH(s)          |      返回字符串s的字符数。作用与CHARACTER_LENGTH(s)相同      |
+|            LENGTH(s)             |              返回字符串s的字节数，和字符集有关               |
+|     CONCAT(s1,s2,......,sn)      |               连接s1,s2,......,sn为一个字符串                |
+|  CONCAT_WS(x, s1,s2,......,sn)   |                     x为分隔符，其他同上                      |
+| NSERT(str, idx, len, replacestr) | 将字符串str从第idx位置开始，len个字符长的子串替换为字符串replacestr |
+|        REPLACE(str, a, b)        |           用字符串b替换字符串str中所有出现的字符串           |
+|       UPPER(s) 或 UCASE(s)       |               将字符串s的所有字母转成大写字母                |
+|       LOWER(s) 或LCASE(s)        |               将字符串s的所有字母转成小写字母                |
+|           LEFT(str,n)            |                 返回字符串str最左边的n个字符                 |
+|           RIGHT(str,n)           |                 返回字符串str最右边的n个字符                 |
+|       LPAD(str, len, pad)        |   用字符串pad对str最左边进行填充，直到str的长度为len个字符   |
+|       RPAD(str ,len, pad)        |   用字符串pad对str最右边进行填充，直到str的长度为len个字符   |
+|             LTRIM(s)             |                    去掉字符串s左侧的空格                     |
+|             RTRIM(s)             |                    去掉字符串s右侧的空格                     |
+|         TRIM(s1 FROM s)          |                  去掉字符串s开始与结尾的s1                   |
+|     TRIM(LEADING s1 FROM s)      |                    去掉字符串s开始处的s1                     |
+|     TRIM(LEADING s1 FROM s)      |                    去掉字符串s结尾处的s1                     |
+|          REPEAT(str, n)          |                     返回str重复n次的结果                     |
+|             SPACE(n)             |                         返回n个空格                          |
+|          STRCMP(s1,s2)           |               比较字符串s1,s2的ASCII码值的大小               |
+|       SUBSTR(s,index,len)        | 返回从字符串s的index位置其len个字符，作用与SUBSTRING(s,n,len)、 MID(s,n,len)相同 |
+|        LOCATE(substr,str)        | 返回字符串substr在字符串str中首次出现的位置，作用于POSITION(substr IN str)、INSTR(str,substr)相同。未找到，返回0 |
+|        ELT(m,s1,s2,…,sn)         | 返回指定位置的字符串，如果m=1，则返回s1，如果m=2，则返回s2，如 果m=n，则返回sn |
+|       FIELD(s,s1,s2,…,sn)        |          返回字符串s在字符串列表中第一次出现的位置           |
+|        FIND_IN_SET(s1,s2)        | 返回字符串s1在字符串s2中出现的位置。其中，字符串s2是一个以逗号分 隔的字符串 |
+|            REVERSE(s)            |                     返回s反转后的字符串                      |
+|      NULLIF(value1,value2)       | 比较两个字符串，如果value1与value2相等，则返回NULL，否则返回 value1 |
+
+> 注意：MySQL中，字符串的位置是从1开始的。
+
+```sql
+SELECT FIELD('mm','hello','ssm','amma'),FIND_IN_SET('mm','hello,mm,amma'),
+FIELD('mm','hello','mm','amma')
+ FROM DUAL;
+```
+
+![image-20221024103828546](MySql.assets\image-20221024103828546.png)
+
+```sql
+mysql> SELECT NULLIF('mysql','mysql'),NULLIF('mysql', '');
++-------------------------+---------------------+
+| NULLIF('mysql','mysql') | NULLIF('mysql', '') |
++-------------------------+---------------------+
+| NULL | mysql |
++-------------------------+---------------------+
+1 row in set (0.00 sec)
+```
+
+
+
+### （6 日期和时间函数
+
+**参数 date、time、timeN 没有啥意思，日期、时间和日期时间 都行。嗷呜~**
+
+#### 1、获取日期、时间
+
+| 函数                                                         | 用法                            |
+| ------------------------------------------------------------ | ------------------------------- |
+| CURDATE() ，CURRENT_DATE()                                   | 返回当前日期，只包含年、 月、日 |
+| CURTIME() ， CURRENT_TIME()                                  | 返回当前时间，只包含时、 分、秒 |
+| NOW() / SYSDATE() / CURRENT_TIMESTAMP() / LOCALTIME() / LOCALTIMESTAMP() | 返回当前系统日期和时间          |
+| UTC_DATE()                                                   | 返回UTC（世界标准时间） 日期    |
+| UTC_TIME()                                                   | 返回UTC（世界标准时间） 时间    |
+
+```sql
+SELECT 
+CURDATE(),CURRENT_DATE(),
+CURTIME(),CURRENT_TIME(),
+NOW() , SYSDATE() , CURRENT_TIMESTAMP() , LOCALTIME() ,LOCALTIMESTAMP() ;
+```
+
+![image-20221024104715888](MySql.assets\image-20221024104715888.png)
+
+#### 2、日期与时间戳的转换
+
+| 函数                     | 用法                                                         |
+| ------------------------ | ------------------------------------------------------------ |
+| UNIX_TIMESTAMP()         | 以UNIX时间戳的形式返回当前时间。SELECT UNIX_TIMESTAMP() - >1634348884 |
+| UNIX_TIMESTAMP(date)     | 将时间date以UNIX时间戳的形式返回。                           |
+| FROM_UNIXTIME(timestamp) | 将UNIX时间戳的时间转换为普通格式的时间                       |
+
+
+
+```sql
+mysql> SELECT
+    -> UNIX_TIMESTAMP(),UNIX_TIMESTAMP(NOW()),FROM_UNIXTIME(UNIX_TIMESTAMP())  ;
++------------------+-----------------------+---------------------------------+
+| UNIX_TIMESTAMP() | UNIX_TIMESTAMP(NOW()) | FROM_UNIXTIME(UNIX_TIMESTAMP()) |
++------------------+-----------------------+---------------------------------+
+|       1666579958 |            1666579958 | 2022-10-24 10:52:38             |
++------------------+-----------------------+---------------------------------+
+1 row in set (0.00 sec)
+```
+
+#### 3、获取月份、星期、星期数、天数等函数
+
+| 函数                                     | 用法                                             |
+| ---------------------------------------- | ------------------------------------------------ |
+| YEAR(date) / MONTH(date) / DAY(date)     | 返回具体的日期值                                 |
+| HOUR(time) / MINUTE(time) / SECOND(time) | 返回具体的时间值                                 |
+| MONTHNAME(date)                          | 返回月份：January，..                            |
+| DAYNAME(date)                            | 返回星期几：MONDAY，TUESDAY.....SUNDAY           |
+| WEEKDAY(date)                            | 返回周几，注意，周1是0，周2是1，。。。周日是6    |
+| QUARTER(date）                           | 返回日期对应的季度，范围为1～4                   |
+| WEEK(date) ， WEEKOFYEAR(date)           | 返回一年中的第几周                               |
+| DAYOFYEAR(date)                          | 返回日期是一年中的第几天                         |
+| DAYOFMONTH(date)                         | 返回日期位于所在月份的第几天                     |
+| DAYOFWEEK(date)                          | 返回周几，注意：周日是1，周一是2，。。。周六是 7 |
+
+
+
+```sql
+SELECT YEAR(CURDATE()),MONTH(CURDATE()),DAY(CURDATE()),
+HOUR(CURTIME()),MINUTE(NOW()),SECOND(SYSDATE())
+FROM DUAL;
+```
+
+![image-20221024105704827](MySql.assets\image-20221024105704827.png)
+
+```sql
+SELECT MONTHNAME('2021-10-26'),DAYNAME('2021-10-26'),WEEKDAY('2021-10-26'),
+QUARTER(CURDATE()),WEEK(CURDATE()),DAYOFYEAR(NOW()),
+DAYOFMONTH(NOW()),DAYOFWEEK(NOW())
+FROM DUAL;
+```
+
+![image-20221024105729525](MySql.assets\image-20221024105729525.png)
+
+
+
+| 函数                    | 用法                                       |
+| ----------------------- | ------------------------------------------ |
+| EXTRACT(type FROM date) | 返回指定日期中特定的部分，type指定返回的值 |
+
+![image-20221024105908067](MySql.assets\image-20221024105908067.png)
+
+```sql
+mysql> SELECT EXTRACT(MINUTE FROM NOW()),EXTRACT( WEEK FROM NOW());
++----------------------------+---------------------------+
+| EXTRACT(MINUTE FROM NOW()) | EXTRACT( WEEK FROM NOW()) |
++----------------------------+---------------------------+
+|                         59 |                        43 |
++----------------------------+---------------------------+
+
+
+mysql> SELECT EXTRACT( QUARTER FROM NOW()),EXTRACT( MINUTE_SECOND FROM NOW());
++------------------------------+------------------------------------+
+| EXTRACT( QUARTER FROM NOW()) | EXTRACT( MINUTE_SECOND FROM NOW()) |
++------------------------------+------------------------------------+
+|                            4 |                                5941 |
++------------------------------+------------------------------------+
+1 row in set (0.00 sec)
+```
+
+#### 4、时间和秒钟转换的函数
+
+| 函数                 | 用法                                          |
+| -------------------- | --------------------------------------------- |
+| TIME_TO_SEC(time)    | 将 time 转化为秒并返回结果值。                |
+| SEC_TO_TIME(seconds) | 将 seconds 描述转化为包含小时、分钟和秒的时间 |
+
+```sql
+| TIME_TO_SEC(NOW()) |
++--------------------+
+| 78774 |
++--------------------+
+1 row in set (0.00 sec)
+```
+
+
+
+```sql
+mysql> SELECT SEC_TO_TIME(78774);
++--------------------+
+| SEC_TO_TIME(78774) |
++--------------------+
+| 21:52:54 |
++--------------------+
+1 row in set (0.12 sec)
+ 
+```
+
+#### 5、计算时间间隔函数
+
+##### **第一组**
+
+| 函数                                                         | 用法                                 |
+| ------------------------------------------------------------ | ------------------------------------ |
+| DATE_ADD(datetime, INTERVAL expr type)， ADDDATE(date,INTERVAL expr type) | 返回date与INTERVAL指定的时间间隔的和 |
+| DATE_SUB(date,INTERVAL expr type)， SUBDATE(date,INTERVAL expr type) | 返回date与INTERVAL指定的时间间隔的差 |
+
+![image-20221024112052333](MySql.assets\image-20221024112052333.png)
+
+
+
+```sql
+mysql> SELECT ADDDATE('2021-10-21 23:32:12',INTERVAL 1 SECOND) AS col3,
+    -> DATE_ADD('2021-10-21 23:32:12',INTERVAL '1_1' MINUTE_SECOND) AS col4,
+    -> DATE_ADD(NOW(), INTERVAL -1 YEAR) AS col5, #可以是负数
+    -> DATE_ADD(NOW(), INTERVAL '1_1' YEAR_MONTH) AS col6 #需要单引号
+    -> FROM DUAL;
++---------------------+---------------------+---------------------+---------------------+
+| col3                | col4                | col5                | col6                |
++---------------------+---------------------+---------------------+---------------------+
+| 2021-10-21 23:32:13 | 2021-10-21 23:33:13 | 2021-10-24 11:19:52 | 2023-11-24 11:19:52 |
++---------------------+---------------------+---------------------+---------------------+
+1 row in set (0.00 sec)
+
+
+mysql> SELECT DATE_SUB('2021-01-21',INTERVAL 31 DAY) AS col1,
+    -> SUBDATE('2021-01-21',INTERVAL 31 DAY) AS col2,
+    -> DATE_SUB('2021-01-21 02:01:01',INTERVAL '1 1' DAY_HOUR) AS col3
+    -> FROM DUAL;
++------------+------------+---------------------+
+| col1       | col2       | col3                |
++------------+------------+---------------------+
+| 2020-12-21 | 2020-12-21 | 2021-01-20 01:01:01 |
++------------+------------+---------------------+
+1 row in set (0.00 sec)
+```
+
+##### **第二组** 存在部分其他函数
+
+| 函数                         | 用法                                                         |
+| ---------------------------- | ------------------------------------------------------------ |
+| ADDTIME(time1,time2)         | 返回time1加上time2的时间。当time2为一个数字时，代表的是 秒 ，可以为负数 |
+| SUBTIME(time1,time2)         | 返回time1减去time2后的时间。当time2为一个数字时，代表的 是 秒 ，可以为负数 |
+| DATEDIFF(date1,date2)        | 返回date1 - date2的日期间隔天数                              |
+| TIMEDIFF(time1, time2)       | 返回time1 - time2的时间间隔，单位是时间                      |
+| FROM_DAYS(N)                 | 返回从0000年1月1日起，N天以后的日期                          |
+| TO_DAYS(date)                | 返回日期date距离0000年1月1日的天数                           |
+| LAST_DAY(date)               | 返回date所在月份的最后一天的日期                             |
+| MAKEDATE(year,n)             | 针对给定年份与所在年份中的天数返回一个日期                   |
+| MAKETIME(hour,minute,second) | 将给定的小时、分钟和秒组合成时间并返回                       |
+| PERIOD_ADD(time,n)           | 返回time加上n后的时间                                        |
+
+```sql
+SELECT
+ADDTIME(NOW(),20),SUBTIME(NOW(),30),SUBTIME(NOW(),'1:1:3'),DATEDIFF(NOW(),'2021-10-
+01'),
+TIMEDIFF(NOW(),'2021-10-25 22:10:10'),FROM_DAYS(366),TO_DAYS('0000-12-25'),
+LAST_DAY(NOW()),MAKEDATE(YEAR(NOW()),12),MAKETIME(10,21,23),PERIOD_ADD(20200101010101,
+10)
+FROM DUAL;
+```
+
+```sql
+mysql> SELECT ADDTIME(NOW(), 50);
++---------------------+
+| ADDTIME(NOW(), 50) |
++---------------------+
+| 2019-12-15 22:17:47 |
++---------------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT SUBTIME(NOW(), '1:1:1');
++-------------------------+
+| SUBTIME(NOW(), '1:1:1') |
++-------------------------+
+| 2019-12-15 21:23:50 |
++-------------------------+
+1 row in set (0.00 sec)
+
+
+mysql> SELECT SUBTIME(NOW(), '-1:-1:-1');
++----------------------------+
+| SUBTIME(NOW(), '-1:-1:-1') |
++----------------------------+
+| 2019-12-15 22:25:11 |
++----------------------------+
+1 row in set, 1 warning (0.00 sec)
+
+mysql> SELECT FROM_DAYS(366);
++----------------+
+| FROM_DAYS(366) |
++----------------+
+| 0001-01-01 |
++----------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT MAKEDATE(2020,1);
++------------------+
+| MAKEDATE(2020,1) |
++------------------+
+| 2020-01-01 |
++------------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT MAKEDATE(2020,32);
++-------------------+
+| MAKEDATE(2020,32) |
++-------------------+
+| 2020-02-01 |
++-------------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT MAKETIME(1,1,1);
++-----------------+  
+| MAKETIME(1,1,1) |
++-----------------+
+| 01:01:01 |
++-----------------+
+1 row in set (0.00 sec)
+
+SELECT PERIOD_ADD(20200101010101,1);
+| PERIOD_ADD(20200101010101,1) |
++------------------------------+
+| 20200101010102 |
++------------------------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT TO_DAYS(NOW());
++----------------+
+| TO_DAYS(NOW()) |
++----------------+
+| 737773 |
++----------------+
+1 row in set (0.00 sec)
+```
+
+举例：查询 7 天内的新增用户数有多少？
+
+```sql
+SELECT COUNT(*) as num FROM new_user WHERE TO_DAYS(NOW())-TO_DAYS(regist_time)<=7
+```
+
+
+
+#### 6、日期的格式化与解析
+
+| 函数                              | 用法                                       |
+| --------------------------------- | ------------------------------------------ |
+| DATE_FORMAT(date,fmt)             | 按照字符串fmt格式化日期date值              |
+| TIME_FORMAT(time,fmt)             | 按照字符串fmt格式化时间time值              |
+| GET_FORMAT(date_type,format_type) | 返回日期字符串的显示格式                   |
+| STR_TO_DATE(str,fmt)              | 按照字符串fmt对str进行解析，解析为一个日期 |
+
+上述 ==非GET_FORMAT==函数中fmt参数常用的格式符：
+
+| 格式符 | 说明                                                    | 格式符 | 说明                                                      |
+| ------ | ------------------------------------------------------- | ------ | --------------------------------------------------------- |
+| %Y     | 4位数字表示年份                                         | %y     | 表示两位数字表表示年份                                    |
+| %M     | 月名表示月份（January，....）                           | %m     | 两位数字表示月份（01，02，03,....）                       |
+| %b     | 缩写的月名（Jan,Feb,....)                               | %c     | 数字表示月份（1，2，3...)                                 |
+| %D     | 英文后缀表示月中的天数（1st,2nd,3rd,...）               | %d     | 两位数字表示月中的天数（01,02）                           |
+| %e     | 数字形式表示月中的天数（1,2,3,4,5）                     |        |                                                           |
+| %H     | 24小时制（01，02）                                      | %h和%I | 12小时制（01,02..）                                       |
+| %k     | 数字形式的小时，24小时制（1,2,3）                       | %l     | 数字形式表示小时，12小时制                                |
+| %i     | 两位数字表示分钟                                        | %S和%s | 两位数字表示秒                                            |
+| %w     | 以数字表示周中的天数（0=Sunday,1=Monday)                |        |                                                           |
+| %j     | 以3位数字表示年中的天数（001,002...)                    | %U     | 以数字表示年终的第几周，（1，2，3）其中Sunday为周中第一天 |
+| %u     | 以数字表示年中的第几周（1，2，3）其中Monday为周中第一天 |        |                                                           |
+| %T     | 24小时制                                                | %r     | 12小时制                                                  |
+| %p     | AM或PM                                                  | %%     | 表示%                                                     |
+
+GET_FORMAT函数中date_type和format_type参数取值如下：
+
+![image-20221024133306358](MySql.assets\image-20221024133306358.png)
+
+![image-20221024133246325](MySql.assets\image-20221024133246325.png)
+

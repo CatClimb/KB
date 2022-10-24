@@ -2,6 +2,12 @@
 
 Log4j 
 
+	<dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+
 组成或者说核心类
 
 Loggers
@@ -150,4 +156,65 @@ COMMENT ON COLUMN log.message  IS '输出代码中指定的消息';
 		  ) values(\
 			'itcast','%d{yyyy-MM-dd HH:mm:ss}','%p','%c','%F','%t','%L','%l','%m'\
 		  )
-		  
+
+自定义 logger 对象设置
+
+
+
+	前提条件：
+		com.itheima.Log4jTest 类 
+		Logger logger = Logger.getLogger(Log4jTest.class);
+		        Logger logger1=Logger.getLogger(Logger.class);
+		package org.apache.log4j.Logger 类
+		Logger logger1=Logger.getLogger(Logger.class);
+	
+	
+配置：	
+	#log4j.logger.xxx.xxx=info #跟log4j.rootLogger = 一样
+	
+	 Logger logger = Logger.getLogger(Log4jTest.class);
+	#根的 trace级别和以上级别 控制台输出端
+	log4j.rootLogger=trace,console
+	#自定义com.example包的info级别以上 文件输出端  覆盖级别 继承输出端
+	log4j.logger.com.example=info,file
+	#自定义org.apache包的error级别和以上级别  覆盖级别继承输出端
+	log4j.logger.org.apache=error
+
+	
+	
+	
+log4j2
+
+作用：
+	异常处理 （和 springMVC 提供的异常处理也不错）
+	性能提升 比 log4j1、和logback
+	自动重载配置：修改配置而不需要重启应用 可热部署
+	无垃圾机制：重用和复用 减少gc次数
+特点：
+	日志门面（日志门面还有Slf4j）
+
+		Log4j2 门面API
+		<dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+
+入门：
+
+public class Log4j2Test{
+	public static final Logger LOGGER =LogManager.getLogger(Log4j2Test.class);
+	
+	@Test
+	public void testQuick()throws Exception{
+		LOGGER.fatall("fatal");
+		....
+	}
+}
+	
+	默认类路径下的文件名为log4j2.xml
