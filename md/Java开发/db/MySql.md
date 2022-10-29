@@ -1578,6 +1578,11 @@ FROM employees e RIGHT JOIN departments p
 ON e.department_id=p.department_id
 WHERE e.department_id IS NULL
 -- WHERE p.department_id IS NULL 这为 0条 注意
+为什么会这样呢？
+一：看哪张表需要不满连接条件（也就是外连接）的记录
+二：看连接键是这个表的主键还是外键
+三：分辨：若没有外键的表需要不满连接条件的记录，则主键为NULL 记录也为0了（WHERE p.department_id IS NULL （像上面的一样	））
+
 #左下图 全外连接
 	#第一种方式 #123
 	SELECT e.employee_id,p.department_name
@@ -1676,6 +1681,8 @@ SQL99在SQL92的基础上提供了一些特殊语法，比如 ==NATURAL JOIN== �
 > 说明：即使双表join也要注意表索引、SQL性能。
 >
 > 来源：阿里巴巴《Java开发手册》
+>
+> 性能原因：待处理
 
 ## 3、必要练习
 
@@ -1973,7 +1980,7 @@ mysql> SELECT BIN(10),HEX(10),OCT(10),CONV(10,2,8)
 1 row in set (0.00 sec)
 ```
 
-### （5 字符串函数
+## 2、 字符串函数
 
 |             ASCII(S)             |             返回字符串S中的第一个字符的ASCII码值             |
 | :------------------------------: | :----------------------------------------------------------: |
@@ -2027,7 +2034,7 @@ mysql> SELECT NULLIF('mysql','mysql'),NULLIF('mysql', '');
 
 
 
-### （6 日期和时间函数
+## 3、日期和时间函数
 
 **参数 date、time、timeN 没有啥意思，日期、时间和日期时间 都行。嗷呜~**
 
@@ -2337,4 +2344,299 @@ GET_FORMAT函数中date_type和format_type参数取值如下：
 ![image-20221024133306358](MySql.assets\image-20221024133306358.png)
 
 ![image-20221024133246325](MySql.assets\image-20221024133246325.png)
+
+## 4、流程控制函数
+
+| 函数                                                         | 用法                                          |
+| ------------------------------------------------------------ | --------------------------------------------- |
+| IF(value,value1,value2)                                      | 如果value的值返回value1，否则返回value2       |
+| IFNULL(value1,value2)                                        | 如果value1不为NULL,返回value1，否则返回value2 |
+| CASE WHEN 条件1 THEN 结果1 WHEN 条件2 结果2 ... [ELSE 结果值] END | 相当于java的else if语句                       |
+| CASE expr WHEN 常量值1 THEN 结果值1 WHEN 常量值2 THEN 结果值2 ... [ELSE 值n] END | 相当于java的switch语句                        |
+
+```sql
+SELECT IF(1 > 0,'正确','错误')
+->正确
+SELECT IFNULL(null,'Hello Word')
+->Hello Word
+
+SELECT CASE
+WHEN 1 > 0
+THEN '1 > 0'
+WHEN 2 > 0
+THEN '2 > 0'
+ELSE '3 > 0'
+END
+->1 > 0
+
+SELECT CASE 1
+WHEN 1 THEN '我是1'
+WHEN 2 THEN '我是2'
+ELSE '你是谁'
+
+```
+
+```sql
+SELECT employee_id,salary, CASE WHEN salary>=15000 THEN '高薪'
+WHEN salary>=10000 THEN '潜力股'
+WHEN salary>=8000 THEN '屌丝'
+ELSE '草根' END "描述"
+FROM employees;
+```
+
+```sql
+SELECT oid,`status`, CASE `status` WHEN 1 THEN '未付款'
+WHEN 2 THEN '已付款'
+WHEN 3 THEN '已发货'
+WHEN 4 THEN '确认收货'
+ELSE '无效订单' END
+FROM t_order;
+
+mysql> SELECT CASE WHEN 1 > 0 THEN 'yes' WHEN 1 <= 0 THEN 'no' ELSE 'unknown' END;
++---------------------------------------------------------------------+
+| CASE WHEN 1 > 0 THEN 'yes' WHEN 1 <= 0 THEN 'no' ELSE 'unknown' END |
++---------------------------------------------------------------------+
+| yes                                                                 |
++---------------------------------------------------------------------+
+1 row in set (0.01 sec)
+```
+
+计算工资（细节就是为null的换成0）
+
+```sql
+SELECT employee_id,12 * salary * (1 + IFNULL(commission_pct,0))
+FROM employees;
+```
+
+练习：**查询部门号为 10,20, 30 的员工信息, 若部门号为 10, 则打印其工资的 1.1 倍, 20 号部门, 则打印其 工资的 1.2 倍, 30 号部门打印其工资的 1.3 倍数，其他部门1.4倍。**
+
+```sql
+SELECT e.first_name,CASE e.department_id 
+WHEN 10 THEN 1.1*e.salary
+WHEN 20 THEN 1.2*e.salary
+WHEN 30 THEN 1.3*e.salary
+ELSE 1.4*e.salary 
+END details
+FROM 
+employees e 
+WHERE
+e.department_id IN (10,20,30);
+```
+
+## 5、加密与解密函数
+
+| 函数                        | 用法                                                         |
+| --------------------------- | ------------------------------------------------------------ |
+| PASSWORD(str)               | 返回字符串str的加密版本，41位长的字符串，加密结果==不可逆==，常用于用户的密码加密==MYSQL8 no_support== |
+| MD5(str)                    | 返回字符串str的md5加密后的值，也是一种加密方式。若参数为 NULL，则会返回NULL |
+| SHA(str)                    | 从原明文密码str计算并返回加密后的密码字符串，当参数为 NULL时，返回NULL。 ==SHA加密算法比MD5更加安全 。== |
+| ENCODE(value,password_seed) | 返回使用password_seed作为加密串加密value==MYSQL8 no_support== |
+| DECODE(value,password_seed) | 返回使用password_seed作为加密串解密value ==MYSQL8 no_support== |
+
+## 6、MySQL信息函数
+
+| 函数                                                | 用法                                                     |
+| --------------------------------------------------- | -------------------------------------------------------- |
+| VERSION()                                           | 返回当前版本号                                           |
+| CONNECTION_ID()                                     | 返回当前MySQL服务器的连接数                              |
+| USER(),CURRENT_USER()、SYSTEM_USER()\SESSION_USER() | 返回当前连接MySQL的用户名，返回结果格式为“主机名@用户名” |
+| CHARSET(value)                                      | 返回字符串value自变量的字符集                            |
+| COLLATION(value)                                    | 返回字符串value的比较规则                                |
+
+
+
+```sql
+mysql> SELECT DATABASE();
++------------+
+| DATABASE() |
++------------+
+| test |
++------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT USER(), CURRENT_USER(), SYSTEM_USER(),SESSION_USER();
++----------------+----------------+----------------+----------------+
+| USER() | CURRENT_USER() | SYSTEM_USER() | SESSION_USER() |
++----------------+----------------+----------------+----------------+
+| root@localhost | root@localhost | root@localhost | root@localhost |
++----------------+----------------+----------------+----------------+
+
+mysql> SELECT CHARSET('ABC');
++----------------+
+| CHARSET('ABC') |
++----------------+
+| utf8mb4 |
++----------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT COLLATION('ABC');
++--------------------+
+| COLLATION('ABC') |
++--------------------+
+| utf8mb4_general_ci |
++--------------------+
+1 row in set (0.00 sec)
+```
+
+## 7、其他函数
+
+| 函数                           | 用法                                                         |
+| ------------------------------ | ------------------------------------------------------------ |
+| FORMAT(value,n)                | 返回对数字value进行格式化后的结果数据。n表示==四舍五入==后保留到小数点后n位 |
+| CONV(vale,from,to)             | 将value的值进行不同进制之间的转换                            |
+| INET_ATON(ipvalue)             | 将以点分隔的IP地址转化位一个数字                             |
+| INET_NOTOA(value)              | 将数字形式的IP地址转化为以点分隔的IP地址                     |
+| BENCHMARK(n,expr)              | 将表达式expr重复执行n次。用于测试MySQL处理expr表达式所耗费的时间 |
+| CONVERT(value USING char_code) | 将value所使用的字符编码修改为char_code                       |
+
+# 八、聚合函数
+
+* why
+  * 聚合函数作用于一组数据，并对一组数据返回一个值。
+
+* 语法
+  * 
+
+
+
+
+
+## 1、常用聚合函数
+
+* AVG/SUM
+
+  * 只是用于数值类型的字段（或变量）：
+
+  * ```SQL
+    SELECT AVG（salary）,SUM(salary),AVG(salary)*107
+    FROM employees;
+    
+    ```
+
+  * 如果是其他类型的，就没有什么意义：
+
+  * ```sql
+    SELECT SUM(last_name),AVG(last_name),SUM(hire_date)
+    FROM
+    employees;
+    
+    虽然会有结果：
+    0,0,数字,
+    ```
+
+* MAX/MIN
+
+  * 适用于数值、字符串类型、日期时间类型的字段（或变量）
+
+    * ```sql
+      SELECT MAX (last_name),MAX(salary),MIN(salary)
+      FROM employees;
+      ```
+
+* COUNT  
+
+  * 作用：计算指定字段在查询结果中出现的个数
+
+  * ```sql
+    
+    SELECT COUNT(employee_id),COUNT(*),COUNT(1),COUNT(2),COUNT(commission_pct)
+    FROM 
+    employees;
+    
+    +--------------------+----------+----------+----------+-----------------------+
+    | COUNT(employee_id) | COUNT(*) | COUNT(1) | COUNT(2) | COUNT(commission_pct) |
+    +--------------------+----------+----------+----------+-----------------------+
+    |                107 |      107 |      107 |      107 |                    35 |
+    +--------------------+----------+----------+----------+-----------------------+
+    ```
+
+  * 怎么选取好呢？
+
+    * **应选取COUNT(1)、COUNT(*)，**选取指定字段有可能某条记录该字段为NULL不被记录。
+    * count(*)会统计值为 NULL 的行，而 count(列名)不会统计此列为 NULL 值的行。
+
+  * 原理：
+
+    * COUNT(1)一行记录封装成1对象
+    * COUNT(*)对一行记录封装成`*`对象
+
+* 总下结：
+  * 从count引入的问题我们可知，AVG/SUM/MIN/MAX选取字段可能会产生的非预期的结果。
+
+## 2、GROUP BY
+
+* 作用：
+
+  * 将表中的数据分成若干组
+
+* 语法：
+
+  * ```sql
+    SELECT column,group_function(column)
+    FROM table
+    [WHERE condition]
+    [GROUP BY gourp_by_expression]
+    [ORDER BY column];
+    ```
+
+* 结论：
+
+  1. SELECT中出现的非组函数的字段必须声明在group by 中
+  2. group by 声明在 select、where后面，order by前面，limit则在order by后面。
+  3. MySQL中GOURP BY中使用WITH ROLLUP,把整个数据看成一组进行计算，并加入结果集中
+  4. with rollup 与 order by 相互排斥
+
+
+
+
+
+
+
+```sql
+#需求：查询各个部门的平均工资，最高工资
+SELECT department_id,AVG(IFNULL(salary,0)),MAX(salary)
+FROM employees
+GROUP BY
+department_id;
+
+#需求：查询各个job_id的平均工资
+SELECT job_id,AVG(IFNULL(salary,0))
+FROM employees
+GROUP BY
+job_id;
+
+#需求：查询各个department_id,job_id的平均工资
+SELECT department_id,job_id,AVG(salary)
+FROM employees
+GROUP BY job_id,department_id
+#方式2
+SELECT department_id,job_id,AVG(salary)
+FROM employees
+GROUP BY department_id,job_id
+#过程不一样，结果一样
+
+#这样是错误的，job_id有很多
+#结论1：
+#SELECT中出现的非组函数的字段必须声明在group by 中
+SELECT department_id,job_id,AVG(salary)
+FROM employees
+GROUP BY department_id;
+
+#结论2：group by 声明在 select、where后面，order by前面，limit则在order by后面。
+#结论3：MySQL中GOURP BY中使用WITH ROLLUP,把整个数据看成一组进行计算，并加入结果集中
+SELECT department_id,AVG(salary)
+FROM employees
+GROUP BY department_id WITH ROLLUP;
+
+#以下语句错误
+SELECT department_id,AVG(salary) avg_sal
+FROM employees
+GROUP BY department_id WITH ROLLUP
+ORDER BY avg_sal ASC;
+
+#结论4：with rollup 与 order by 相互排斥
+#
+```
+
+
 

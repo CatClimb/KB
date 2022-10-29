@@ -3805,6 +3805,76 @@ ConsumeEntity(id=1, smeName=易耗品1, smeCount=50, inRecordEntities=null, outR
 
 
 
+## 6.7、MyBatis自定义配置类
+
+```java
+package com.weipu.dx45gdata.common.config;
+
+import com.weipu.dx45gdata.common.mapper.AbDataMapper;
+import com.weipu.dx45gdata.common.service.AbDataService;
+import org.apache.ibatis.mapping.DatabaseIdProvider;
+import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionFactoryBean;
+import org.mybatis.spring.annotation.MapperScan;
+import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
+import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
+import org.mybatis.spring.boot.autoconfigure.MybatisProperties;
+import org.mybatis.spring.boot.autoconfigure.SpringBootVFS;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
+
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+import java.util.List;
+
+@Configuration
+@MapperScan({"com.weipu.dx45gdata.common.mapper"})
+@ComponentScan(basePackages={"com.weipu.dx45gdata.common"})
+public class CustomMybatisConfig  {
+    @Value("${mapper-locations}")
+    private String mapperLocations;
+    @Resource(name = "dataSource")
+    private DataSource dataSource;
+
+    public CustomMybatisConfig(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    @Bean
+    public SqlSessionFactory sqlSessionFactory() throws Exception{
+        SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
+        sqlSessionFactoryBean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources(mapperLocations));
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        org.apache.ibatis.session.Configuration cfg = new org.apache.ibatis.session.Configuration();//configuration
+        sqlSessionFactoryBean.setConfiguration(cfg);
+        return sqlSessionFactoryBean.getObject();
+    }
+//    @Bean
+//    @ConditionalOnBean(AbDataMapper.class)
+//    public AbDataService  abDataService(){
+//
+//    }
+}
+
+```
+
+springboot自定义starter可以整合mybatis，单出现了一个问题，这个问题需要mysql连接属性useSSL为false
+
 # 七、MyBatis与Spring整合
 
 整合步骤：
