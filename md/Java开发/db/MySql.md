@@ -116,13 +116,13 @@ MySQL的历史就是整个互联网的发展史。互联网业务从社交领域
 
 ![image-20220209102208792](MySql.assets/image-20220209102208792.png)
 
-### 1. 4 关于MySQL 8. 0
+### 3. 3 关于MySQL 8. 0
 
 ==MySQL从5.7版本直接跳跃发布了8.0版本，==可见这是一个令人兴奋的里程碑版本。MySQL 8版本在功能上
 做了显著的改进与增强，开发者对MySQL的源代码进行了重构，最突出的一点是多MySQL Optimizer优化
 器进行了改进。不仅在速度上得到了改善，还为用户带来了更好的性能和更棒的体验。
 
-### 1.5 Why choose MySQL?
+### 3.4 Why choose MySQL?
 
 ![image-20220209102230027](MySql.assets/image-20220209102230027.png)
 
@@ -134,7 +134,7 @@ MySQL的历史就是整个互联网的发展史。互联网业务从社交领域
 4. 历史悠久，社区用户非常活跃，遇到问题可以寻求帮助。
 5. 许多互联网公司在用，经过了时间的验证。
 
-### 1.6 Oracle vs MySQL
+### 3.5 Oracle vs MySQL
 
 Oracle 更适合大型跨国企业的使用，因为他们对费用不敏感，但是对性能要求以及安全性有更高的要
 求。
@@ -2561,7 +2561,15 @@ mysql> SELECT COLLATION('ABC');
     * COUNT(*)对一行记录封装成`*`对象
 
 * 总下结：
-  * 从count引入的问题我们可知，AVG/SUM/MIN/MAX选取字段可能会产生的非预期的结果。
+  * 从count引入的问题我们可知，AVG/SUM/MIN/MAX选取字段可能会产生的非预期的结果。他们都会无视或忽略NULL
+  
+  * ```sql
+    SELECT AVG(manager_id),SUM(manager_id)/COUNT(manager_id),SUM(manager_id)/COUNT(*),COUNT(manager_id),COUNT(*),MIN(manager_id),MAX(manager_id)
+    FROM
+    employees
+    ```
+  
+    
 
 ## 2、GROUP BY
 
@@ -2638,5 +2646,1465 @@ ORDER BY avg_sal ASC;
 #
 ```
 
+## 3、HAVING
+
+* 作用
+
+  * 过滤 分好的组
+
+* 结论
+
+  * 行已经被分组
+
+  * HAVING不能单独使用，必须要跟GROUP BY 一起使用(当然也可以 但意义不大)
+
+  * 过滤条件中有聚合函数 
+
+  * HAVING与WHERE对比
+
+    * | WHERE  | 先筛选数据再关联，执行效率高 | 不能使用分组中的计算函数进行筛选       |
+      | ------ | ---------------------------- | -------------------------------------- |
+      | HAVING | 可以使用分组中的计算函数     | 在最后的结果集中进行筛选，执行效率较低 |
 
 
+
+```sql
+#查询各个部门中最高工资比10000高得部门信息
+
+SELECT department_id,MAX(salary)
+FROM employees 
+GROUP BY department_id
+HAVING MAX(salary)>10000
+
+
+#练习： 查询部门id为10,20,30,40这个部门中最高工资比10000高得部门信息
+#方式一：
+SELECT department_id,MAX(salary)
+FROM employees
+WHERE department_id IN (10,20,30,40)
+GROUP BY department_id
+HAVING MAX(salary) > 10000;
+#方式二：
+SELECT department_id,MAX(salary)
+FROM employees
+GROUP BY department_id
+HAVING MAX(salary) > 10000 AND department_id IN (10,20,30,40);
+
+#结论：
+#当过滤条件中没有聚合函数时，
+#则此过滤条件声明在WHERE中或HAVING中都可以
+#效率选第一种方式
+
+#where与having对比
+#1. having使用范围更广。
+#2. 如果过滤条件中没有聚合函数：这种情况下，where的执行效率要高于having
+```
+
+## 4、SELECT的执行过程
+
+* sql92语法
+
+  * ```SQL
+    SELECT ....,...., (存在聚合函数)
+    FROM ...,...,...,
+    WHERE 多表的连接条件 AND 不包含聚合函数的过滤条件
+    GROUP BY ...,...,...
+    HAVING 包含聚合函数的过滤条件
+    ORDER BY ...,...(ASC / DESC)
+    LIMIT ....
+    
+    ```
+
+* sql99语法
+
+  * ```sql
+    #流程2
+    SELECT ... (存在聚合函数)
+    #流程1
+    FROM ... (LEFT RIGHT)JOIN ... ON 多表的连接条件
+    (LEFT RIGHT)JOIN ... ON 多表的连接条件
+    WHERE 不包含聚合函数的过滤条件
+    #流程3
+    GROUP BY ...
+    HAVING 包含聚合函数的过滤条件
+    ORDER BY ...,...(ASC / DESC)
+    LIMIT ...
+    ```
+
+    
+
+* 语句执行过程：
+  * FROM -> ON -> (LEFT /RIGHT) JOIN ->WHERE ->GROUP BY -> HAVING ->SELECT ->DISTINCT-> ORDER BY (ASC /DESC)-> LIMIT 
+
+## 5、操练
+
+```sql
+#1.where子句可否使用组函数进行过滤?
+#答：不能，因为WHERE先于GROUP BY 执行
+
+#2.查询公司员工工资的最大值，最小值，平均值，总和
+SELECT MAX(salary) max_sal,MIN(salary) max_sal,AVG(salary) max_sal,SUM(salary) max_sal
+FROM employees;
+
+#3.查询各job_id的员工工资的最大值，最小值，平均值，总和
+SELECT job_id,MAX(salary),MIN(salary),AVG(salary),SUM(salary)
+FROM employees
+GROUP BY job_id;
+
+#4.选择具有各个job_id的员工人数
+SELECT job_id,COUNT(*)
+FROM employees
+GROUP BY job_id
+
+# 5.查询员工最高工资和最低工资的差距（DIFFERENCE）
+SELECT MAX(salary)-MIN(salary) `DIFFERENCE`
+FROM employees;
+
+# 6.查询各个管理者手下员工的最低工资，其中最低工资不能低于6000，没有管理者的员工不计算在内
+SELECT manager_id,MIN(salary)
+FROM employees
+WHERE manager_id IS NOT NULL
+GROUP BY manager_id
+HAVING MIN(salary) >=6000;
+
+# 7.查询所有部门的名字，location_id，员工数量和平均工资，并按平均工资降序
+SELECT d.department_name,d.location_id,COUNT(e.`employee_id`),AVG(e.salary)
+FROM employees e RIGHT JOIN departments d
+ON e.`department_id`=d.department_id
+GROUP BY department_name
+ORDER BY salary DESC
+
+# 8.查询每个工种(job_id)、每个部门的部门名、工种名和最低工资
+SELECT d.department_name,e.job_id,MIN(e.salary)
+FROM employees e RIGHT JOIN departments d
+ON e.`department_id`=d.`department_id`
+GROUP BY d.`department_name`,e.job_id
+
+```
+
+# 九、子查询
+
+​	子查询又称嵌套查询，子查询指一个查询语句嵌套在另一个查询语句内部的查询，这个特性从MySQL 4.1开始引入。类似嵌套for循环。
+
+## 1、介绍
+
+### 1. 实际问题
+
+![image-20221104093551739](MySql.assets\image-20221104093551739.png)
+
+```sql
+
+#方式一
+SELECT salary
+FROM employees
+WHERE last_name='_Abel';
+
+SELECT last_name
+FROM employees
+WHERE salary > 11000;
+
+#方式二 自连接 快慢待处理
+SELECT e2.last_name
+FROM employees e1,employees e2
+WHERE e1.`last_name`='_Abel'
+AND
+e2.salary > e1.`salary`
+#方式二 自连接 快慢待处理
+SELECT e2.last_name
+FROM employees e1 JOIN employees e2
+
+ON
+e2.salary > e1.`salary`
+WHERE e1.`last_name`='_Abel'
+
+#方式三 子查询
+SELECT last_name
+FROM employees
+WHERE salary > (
+		SELECT salary
+		FROM employees
+		WHERE last_name='_Abel'
+);
+
+
+```
+
+**问题：**子查询和子连接谁好？
+
+**解答：**自连接方式好！ 
+
+题目中可以使用子查询，也可以使用自连接。一般情况建议你使用自连接，因为在许多 DBMS 的处理过 程中，对于自连接的处理速度要比子查询快得多。 
+
+可以这样理解：子查询实际上是通过未知表进行查询后的条件判断，而自连接是通过已知的自身数据表 进行条件判断，因此在大部分 DBMS 中都对自连接处理进行了优化。
+
+### 2. 称谓规范与分类
+
+* 外查询（或主查询）、内查询（或子查询）
+* 从子查询结果数量进行分类
+  * 单行子查询
+  * 多行子查询
+* 从内外关系角度进行分类：
+  * 关联子查询
+    * 外内查询类似于变量xy的自变量因变量。
+  * 非关联子查询
+
+### 3. 子查询的基本使用
+
+* 子查询基本语法结构
+
+  * ![image-20221104095748922](MySql.assets\image-20221104095748922.png)
+
+* 子查询（内查询）在主查询之前一次执行完成。
+
+* 子查询的结果被主查询（外查询）使用
+
+* 注意事项
+
+  * 子查询要包含在括号内（可读性好）
+  * 将子查询放在比较条件的右侧（可读性好）
+  * 单行操作符对应单行子查询，多行操作符对应多行子查询、单行子查询（规定，不然报错）
+
+* 单行子查询操作符
+
+  * | 操作符 | 含义                     |
+    | ------ | ------------------------ |
+    | =      | equal to                 |
+    | >      | greater than             |
+    | >=     | greater than or equal to |
+    | <      | less than                |
+    | <=     | less than or equal to    |
+    | <>     | not equal to             |
+
+* 多行子查询操作符
+
+* | 操作符 | 含义                                                       |
+  | ------ | ---------------------------------------------------------- |
+  | IN     | 等于列表中的任意一个                                       |
+  | ANY    | 需要和单行比较操作符一起使用，和子查询返回的某一个值比较   |
+  | ALL    | 需要和单行比较操作符一起使用，和子查询返回的所有值进行比较 |
+  | SOME   | 等价 ALL 常用 ALL                                          |
+
+## 2、单行子查询
+
+```sql
+ 
+#查询工资大于149号员工工资的员工的信息
+ SELECT employee_id,last_name
+ FROM 
+ employees
+ WHERE salary >(
+	SELECT salary 
+	FROM employees
+	WHERE employee_id=149
+	
+ )
+#返回job_id与141号员工相同，salary比143号员工多的员工姓名，job_id和工资
+
+SELECT last_name,job_id,salary
+FROM employees
+WHERE job_id=(
+	SELECT job_id 
+	FROM employees
+	WHERE employee_id=141
+)
+AND
+salary > (
+	SELECT salary
+	FROM employees
+	WHERE employee_id=143
+)
+AND employee_id NOT IN(174,141);
+
+
+#返回公司工资最少的员工的last_name,job_id和salary (注意结果员工是多个)
+#这是错的 group by 中没包含 last_name,job_id
+#select last_name,job_id,min(salary)
+#from employees
+
+SELECT last_name,job_id,salary
+FROM employees
+WHERE salary = (
+	SELECT MIN(salary)
+	FROM employees
+
+)
+#查询与141号员工的manager_id和department_id相同的其他员工的employee_id，
+#manager_id，department_id
+#方式一 条件更改灵活
+SELECT employee_id,manager_id,department_id
+FROM employees
+WHERE 
+manager_id=(
+	SELECT manager_id
+	FROM employees
+	WHERE employee_id=141
+)
+AND
+department_id=(
+	SELECT department_id
+	FROM employees
+	WHERE employee_id=141
+)
+AND
+employee_id != 141
+
+#方式二 效率好一点点 
+SELECT employee_id,manager_id,department_id
+FROM employees
+WHERE 
+(manager_id,department_id)=(
+			SELECT manager_id,department_id
+			FROM employees
+			WHERE employee_id=141
+			)
+AND
+employee_id != 141
+
+```
+
+### 2.1、HAVING中的子查询
+
+```sql
+SELECT department_id,MIN(salary)
+FROM employees
+GROUP BY department_id
+HAVING MIN(salary) >(
+		SELECT MIN(salary)
+		FROM employees
+		WHERE department_id=110
+		)
+		
+```
+
+### 2.2、case中的子查询
+
+```sql
+#显式员工的employee_id,last_name和location。其中，若员工department_id与location_id为1800
+#的department_id相同，则location为’Canada’，其余则为’USA’。
+SELECT employee_id,last_name,
+				(
+					CASE department_id
+					WHEN
+					(	
+						SELECT department_id
+						FROM departments
+						WHERE 
+						location_id=1800
+					) 
+					THEN 'Canada'
+					ELSE 'USA' END 
+				)
+				"location"
+FROM employees;
+```
+
+### 2.3 单行子查询空值问题
+
+```sql
+#子查询中的空值问题
+SELECT last_name, job_id
+FROM employees
+WHERE job_id =
+#没有值
+(SELECT job_id
+FROM employees
+WHERE last_name = 'Haas');
+
+SELECT last_name, job_id
+FROM employees
+WHERE job_id =
+#为NULL值。
+(SELECT NULL);
+
+#结果都是没有值。
+```
+
+### 2.4、非法子查询
+
+```sql
+SELECT employee_id, last_name
+FROM employees
+WHERE salary =
+(SELECT MIN(salary)
+FROM employees
+GROUP BY department_id);
+
+#结果
+错误代码： 1242
+Subquery returns more than 1 row
+#修改：单行操作符对应单行结果集
+```
+
+## 3、多行子查询
+
+* 也称为集合比较子查询
+* 内查询返回多行
+* 使用多行比较操作符
+
+```sql
+#返回其它job_id中比job_id为‘IT_PROG’工号 任一 工资低的员工的员工号、姓名、job_id 以及salary
+SELECT employee_id,last_name,job_id,salary
+FROM employees
+WHERE salary < ANY (
+	SELECT salary FROM employees
+	WHERE job_id='IT_PROG'
+)
+AND 
+job_id <> 'IT_PROG'
+
+#返回其它job_id中比job_id为‘IT_PROG’工号 所有 工资低的员工的员工号、姓名、job_id 以及salary
+SELECT employee_id,last_name,job_id,salary
+FROM employees
+WHERE salary < ALL (
+	SELECT salary FROM employees
+	WHERE job_id='IT_PROG'
+)
+AND 
+job_id <> 'IT_PROG'
+
+#查询平均工资最低的部门id
+
+#MySQL中聚合函数是不能嵌套的，Oracle可以
+#可以封装成表在进行嵌套，如方式一
+#下面的语句是错误的哦
+#select min(avg(salary)
+#from employees
+#group by employee_id
+SELECT department_id
+FROM employees
+GROUP BY department_id
+
+
+#方式一 
+SELECT department_id
+FROM employees
+GROUP BY department_id
+HAVING AVG(salary) =(
+	SELECT MIN(tmp.avg_sal)
+	FROM (
+
+		SELECT AVG(salary) avg_sal
+		FROM employees
+		WHERE department_id IS NOT NULL
+		GROUP BY
+		department_id
+		
+	) tmp
+	
+)
+
+#方式二
+SELECT department_id
+FROM employees
+GROUP BY department_id
+HAVING
+AVG(salary) <= ALL (
+
+		SELECT AVG(salary)
+		FROM employees
+		WHERE department_id IS NOT NULL
+		GROUP BY
+		department_id
+		
+	)
+
+```
+
+### 3.1 多行子查询空值问题
+
+```sql
+#多行子查询空值为题
+SELECT last_name
+FROM employees
+WHERE employee_id NOT IN (
+#内查询存在NULL值
+SELECT manager_id
+FROM employees
+);
+#结果为没有值
+
+
+SELECT last_name
+FROM employees
+WHERE employee_id NOT IN (
+#内查询没有值。
+SELECT manager_id
+FROM employees
+WHERE last_name='panties'
+);
+
+#结果等于 SELECT last_name FROM employees
+```
+
+## 4、相关子查询
+
+### 4.1 执行过程
+
+* 概念
+  * 如果子查询的执行依赖于外部查询，通常情况下都是因为子查询中的表用到了外部的表，并进行了条件关联，因此每执行一次外部查询，子查询都要重新计算一次，这样的子查询就称之位==关联子查询==
+  * 总结：子查询中使用主查询中的列
+* 相关子查询的执行过程
+  * 相关子查询按照一行接一行的顺序执行，主查询的每一行都执行一次子查询。
+    * 执行流程：
+      * GET 从著查询中获取候选列
+      * EXECUTE 子查询使用主查询的数据
+      * USE 如果满足子查询的条件则返回改行
+        * ![image-20221104143954988](MySql.assets\image-20221104143954988.png)
+* 非相关子查询执行过程
+* 待处理
+
+```sql
+
+#查询员工中工资大于本部门平均工资的员工的last_name,salary和其department_id
+#方式一 关联子查询
+SELECT last_name,salary,department_id
+FROM 
+employees e1
+WHERE salary >(
+	SELECT AVG(e2.salary)
+	FROM
+	employees e2
+	GROUP BY 
+	e2.department_id
+	HAVING 
+	e1.`department_id`=e2.`department_id`
+)
+
+#方式二 在FROM 中使用子查询
+SELECT e1.last_name,e1.salary,e1.department_id
+FROM
+employees e1,(
+	SELECT e2.department_id,AVG(e2.salary) avg_sal
+	FROM
+	employees e2
+	GROUP BY 
+	e2.department_id
+) t_dept_avg_sal
+WHERE e1.`department_id`=t_dept_avg_sal.department_id
+AND
+e1.salary > t_dept_avg_sal.avg_sal
+
+
+
+#查询员工的id,salary,按照department_name 排序
+SELECT e.employee_id,e.salary
+FROM employees e
+ORDER BY (
+	SELECT department_name
+	FROM departments d
+	WHERE e.department_id=d.`department_id`
+)
+
+#若employees表中employee_id与job_history表中employee_id相同的数目不小于2，输出这些相同
+#id的员工的employee_id,last_name和其job_id
+SELECT 
+employee_id,last_name,job_id
+FROM
+employees e
+WHERE 2<=(
+	SELECT COUNT(*)
+	FROM job_history j
+	WHERE e.employee_id=j.`employee_id`
+)
+
+```
+
+### 4.2、EXISTS与 NOT EXISTS 关键字  
+
+* 关联子查询通常也会和EXISTS操作符一起来使用，用来检查在子查询中是否存在满足条件的行。
+* **如果在子查询中不存在满足条件的行**：
+  * 条件返回FALSE
+  * 继续在子查询中查找
+* **如果在子查询中存在满足条件的行**：
+  * 不在子查询中继续查找
+  * 条件返回TRUE
+* NOT EXIST 关键字表示如果不存在某种条件，则返回TRUE 否则返回FALSE
+
+```sql
+
+#查询公司管理者的employee_id，last_name，job_id，department_id信息
+#方式一
+SELECT employee_id,last_name,job_id,department_id
+FROM employees emp
+WHERE  EXISTS (
+	SELECT '这里返回什么都行'
+	FROM employees mgr
+	WHERE emp.employee_id=mgr.manager_id
+)
+
+#方式二 自连接
+SELECT DISTINCT emp.employee_id,emp.last_name,emp.job_id,emp.department_id
+FROM employees emp,employees e2
+WHERE emp.employee_id=e2.manager_id
+
+
+#方式三 非关联多行子查询
+SELECT employee_id,last_name,job_id,department_id
+FROM employees emp
+WHERE emp.employee_id IN (
+		SELECT DISTINCT manager_id
+		FROM employees		
+)
+
+
+#查询departments表中，不存在于employees表中的部门的department_id和department_name
+SELECT department_id,department_name
+FROM departments d
+WHERE NOT EXISTS(
+	SELECT "哈哈笑死 pussy"
+	FROM employees e
+	WHERE e.`department_id`=d.department_id
+)
+```
+
+### 4.3、相关更新
+
+```sql
+
+#在employees中增加一个department_name字段，数据为员工对应的部门名称
+ALTER TABLE employees
+	ADD department_name VARCHAR(20);
+	
+UPDATE employees e
+SET department_name=(
+	SELECT department_name
+	FROM departments d
+	WHERE e.`department_id`=d.`department_id`
+)
+	
+
+#检查更新数据是否正确
+SELECT e.`department_name`,d.department_name
+FROM employees e,departments d
+WHERE e.department_id = d.department_id;
+
+#更新数据撤回sql
+待处理
+```
+
+### 4.4、相关删除
+
+```sql
+#删除表employees中，其与`job_history`表皆有的数据
+DELETE FROM employees e
+WHERE employee_id IN
+(SELECT employee_id
+FROM emp_history
+WHERE employee_id = e.employee_id);
+```
+
+## 5、练习
+
+```sql
+
+#1.查询和Zlotkey相同部门的员工姓名和工资
+#方式一 子查询
+SELECT last_name,salary
+FROM employees
+WHERE department_id=(
+	SELECT department_id
+	FROM employees
+	WHERE last_name='Zlotkey'
+)
+#方式二 自连接 连接条件优先执行
+SELECT
+e1.last_name,e1.salary
+FROM employees e1,employees e2
+WHERE e1.department_id=e2.department_id
+AND
+e2.last_name='Zlotkey'
+#2.查询工资比公司平均工资高的员工的员工号，姓名和工资。
+#方式一
+SELECT 
+employee_id,last_name,salary
+FROM
+employees
+WHERE
+salary >(
+	SELECT AVG(salary)
+	FROM employees
+)
+#3.选择工资大于所有JOB_ID = 'SA_MAN'的员工的工资的员工的last_name, job_id, salary
+#方式一
+SELECT
+last_name,job_id,salary
+FROM
+employees
+WHERE
+salary > ALL (
+	SELECT salary
+	FROM 
+	employees
+	WHERE
+	job_id='SA_MAN'
+)
+
+#4.查询和姓名中包含字母u的员工在相同部门的员工的员工号和姓名
+SELECT
+employee_id,last_name
+FROM
+employees
+WHERE
+department_id IN (
+	SELECT DISTINCT department_id
+	FROM
+	employees
+	WHERE 
+	last_name LIKE "%u%"
+)
+ 
+#5.查询在部门的location_id为1700的部门工作的员工的员工号
+SELECT last_name
+FROM
+employees
+WHERE
+department_id IN(
+	SELECT department_id
+	FROM departments
+	WHERE location_id=1700
+)
+#6.查询管理者是King的员工姓名和工资
+SELECT 
+last_name,salary
+FROM
+employees
+WHERE 
+manager_id IN(
+	SELECT employee_id
+	FROM employees
+	WHERE last_name='King'
+)
+
+#7.查询工资最低的员工信息: last_name, salary
+SELECT last_name,salary
+FROM
+employees
+WHERE
+salary = (
+	SELECT MIN(salary)
+	FROM employees
+)
+#8.查询平均工资最低的部门信息
+#方式一 多行子查询
+
+SELECT department_id,department_name
+FROM
+departments
+WHERE
+department_id=(
+	SELECT department_id
+	FROM 
+	employees
+	GROUP BY department_id
+	HAVING AVG(salary) <= ALL(
+		SELECT  AVG(salary)
+		FROM
+		employees
+		GROUP BY department_id
+	)
+)
+
+
+#方式二 因为不能嵌套聚合函数，用临时表来弄
+SELECT department_id,department_name
+FROM
+departments
+WHERE
+department_id=(
+	SELECT department_id
+	FROM
+	employees
+	GROUP BY department_id
+	HAVING 
+	AVG(salary)=(
+		SELECT MIN(tmp.avg_sal)
+		FROM(
+			SELECT  AVG(salary) avg_sal
+			FROM
+			employees
+			GROUP BY department_id
+		) tmp
+	)	
+)
+#方式三 LIMIT
+SELECT department_id,department_name
+FROM
+departments
+WHERE
+department_id=(
+	SELECT department_id
+	FROM
+	employees
+	GROUP BY department_id
+	HAVING
+	AVG(salary)=(
+		SELECT AVG(salary)
+		FROM
+		employees
+		GROUP BY department_id
+		ORDER BY AVG(salary) ASC
+		LIMIT 1
+	) 
+)
+#方式四 临时表 连接查询 
+d.*
+FROM
+departments d,(
+	SELECT department_id,AVG(salary) avg_sal
+	FROM
+	employees
+	GROUP BY
+	department_id
+	ORDER BY
+	avg_sal
+	ASC
+	LIMIT 1
+	) tmp 
+	
+WHERE
+d.department_id=tmp.department_id
+
+#注意
+#第四种方式最可能漏部门，平均工资的最低的部门可能有多个
+
+
+#9.查询平均工资最低的部门信息和该部门的平均工资（相关子查询）
+#select 子查询
+
+SELECT d.*,(SELECT AVG(salary) FROM employees GROUP BY department_id HAVING department_id=d.department_id) avg_sal
+FROM
+departments d
+WHERE 
+department_id=(
+	
+	SELECT department_id
+	FROM 
+	employees
+	GROUP BY
+	department_id
+	HAVING
+	AVG(salary) = (
+		SELECT AVG(salary)
+		FROM employees
+		GROUP BY
+		department_id
+		ORDER BY
+		AVG(salary) ASC
+		LIMIT 1
+	)
+)
+#mysql 8 This version of MySQL doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery' 我丢
+
+#10.查询平均工资最高的 job 信息
+#方式一： 多行子查询
+SELECT *
+FROM
+jobs
+WHERE job_id=(
+		
+	SELECT job_id
+	FROM
+	employees
+	GROUP BY job_id
+	HAVING AVG(salary) >= ALL(
+		SELECT AVG(salary)
+		FROM
+		employees
+		GROUP BY job_id
+	)
+)
+
+#方式二： 封装成表在聚合
+SELECT *
+FROM
+jobs
+WHERE 
+job_id=(
+	SELECT job_id
+	FROM
+	employees
+	GROUP BY
+	job_id
+	HAVING
+	AVG(salary) =(
+		SELECT MAX(emp_avg_sal.avg_sal)
+		FROM (
+			SELECT AVG(salary) avg_sal
+			FROM
+			employees
+			GROUP BY 
+			job_id
+		) emp_avg_sal
+	)
+)
+#方式三 limit
+SELECT *
+FROM
+jobs
+WHERE
+job_id=(
+	SELECT job_id
+	FROM
+	employees
+	GROUP BY
+	job_id
+	HAVING
+	AVG(salary)=(
+		SELECT AVG(salary)
+		FROM
+		employees
+		GROUP BY
+		job_id
+		ORDER BY
+		AVG(salary)
+		DESC
+		LIMIT 1
+	)
+)
+#方式四 临时表连接 比上面的那题更稳
+SELECT j.*
+FROM jobs j,(
+	SELECT job_id
+	FROM
+	employees
+	GROUP BY
+	job_id
+	HAVING
+	AVG(salary)=(
+		SELECT AVG(salary)
+		FROM
+		employees
+		GROUP BY
+		job_id
+		ORDER BY
+		AVG(salary)
+		DESC
+		LIMIT 1
+	)
+) tmp
+WHERE
+j.job_id=tmp.job_id
+
+
+
+#11.查询平均工资高于公司平均工资的部门有哪些?
+SELECT department_id
+FROM employees
+WHERE
+department_id IS NOT NULL
+GROUP BY department_id
+HAVING
+AVG(salary) > (
+	SELECT AVG(salary)
+	FROM employees
+	WHERE
+	department_id IS NOT NULL
+	 
+)
+
+#12.查询出公司中所有 manager 的详细信息
+#方式一 自连接
+SELECT DISTINCT e1.* 
+FROM
+employees e1,employees e2
+WHERE e1.employee_id=e2.manager_id
+
+#方式二 子查询
+SELECT *
+FROM employees
+WHERE employee_id IN (
+	SELECT DISTINCT manager_id
+	FROM employees
+	
+)
+#方式三 相关子查询 exist
+SELECT DISTINCT *
+FROM employees e
+WHERE  EXISTS (
+	SELECT manager_id
+	FROM employees e1
+	WHERE e.employee_id=e1.employee_id
+)	
+
+#13.各个部门中 最高工资中最低的那个部门的 最低工资是多少?
+
+SELECT department_id,MIN(salary)
+FROM employees
+GROUP BY department_id
+HAVING MAX(salary)=(
+	SELECT MAX(salary)
+	FROM employees
+	GROUP BY department_id
+	ORDER BY MAX(salary) ASC
+	LIMIT 1
+	)
+	
+	
+	
+#14.查询平均工资最高的部门的 manager 的详细信息: last_name, department_id, email, salary
+SELECT last_name, department_id, email, salary
+FROM employees
+WHERE employee_id=(
+	SELECT manager_id
+	FROM departments
+	WHERE department_id=(
+		SELECT department_id
+		FROM employees
+		GROUP BY department_id
+		HAVING AVG(salary)=(
+			SELECT AVG(salary)
+			FROM employees
+			GROUP BY department_id
+			ORDER BY AVG(salary) DESC
+			LIMIT 1
+		)	
+	)
+)
+#15. 查询部门的部门号，其中不包括job_id是"ST_CLERK"的部门号
+SELECT DISTINCT department_id
+FROM departmentS
+WHERE department_id NOT IN ( #IN 与NULL 判断 是 false
+	SELECT  DISTINCT department_id
+	FROM employees
+	WHERE job_id = 'ST_CLERK'
+)
+SELECT DISTINCT department_id
+FROM departments d
+WHERE NOT EXISTS (
+	SELECT *
+	FROM employees e2
+	WHERE d.department_id=e2.department_id
+	AND job_id='ST_CLERK'
+)
+
+
+#16. 选择所有没有管理者的员工的last_name 
+SELECT last_name
+FROM employees e
+WHERE manager_id IS NULL
+
+SELECT last_name
+FROM employees emp
+WHERE NOT EXISTS(
+	SELECT 'xx'
+	FROM employees e2
+	WHERE emp.manager_id=e2.employee_id
+)
+#17．查询员工号、姓名、雇用时间、工资，其中员工的管理者为 'De Haan'
+SELECT emp.employee_id,emp.last_name,emp.hire_date,emp.salary
+FROM employees emp
+WHERE  EXISTS(
+	SELECT *
+	FROM employees mgr
+	WHERE  emp.manager_id=mgr.employee_id
+	AND mgr.last_name='De Haan'
+)
+SELECT emp.employee_id,emp.last_name,emp.hire_date,emp.salary
+FROM employees emp
+WHERE emp.manager_id IN (
+	SELECT employee_id
+	FROM employees 
+	WHERE last_name='De Haan'
+)
+
+#18.查询各部门中工资比本部门平均工资高的员工的员工号, 姓名和工资（相关子查询）
+#方式一 关联子查询
+SELECT last_name,salary,department_id
+FROM 
+employees e1
+WHERE salary >(
+	SELECT AVG(e2.salary)
+	FROM
+	employees e2
+	GROUP BY 
+	e2.department_id
+	HAVING 
+	e1.`department_id`=e2.`department_id`
+)
+
+#方式二 在FROM 中使用子查询
+SELECT e1.last_name,e1.salary,e1.department_id
+FROM
+employees e1,(
+	SELECT e2.department_id,AVG(e2.salary) avg_sal
+	FROM
+	employees e2
+	GROUP BY 
+	e2.department_id
+) t_dept_avg_sal
+WHERE e1.`department_id`=t_dept_avg_sal.department_id
+AND
+e1.salary > t_dept_avg_sal.avg_sal
+#19.查询每个部门下的部门人数大于 5 的部门名称（相关子查询）
+SELECT department_name
+FROM departments d
+WHERE EXISTS (
+	SELECT *
+	FROM employees e
+	WHERE d.department_id=e.department_id
+	GROUP BY e.department_id
+	HAVING 5< COUNT(e.department_id)
+	
+	)
+	
+SELECT department_name
+FROM departments d
+WHERE   5< (
+	SELECT COUNT(e.department_id)
+	FROM employees e
+	WHERE d.department_id=e.department_id
+	#GROUP BY e.department_id 可要可不要
+	)
+
+
+#20.查询每个国家下的部门个数大于 2 的国家编号（相关子查询）
+#自连接
+SELECT l.country_id
+FROM departments d,locations l
+WHERE l.location_id=d.location_id
+GROUP BY  l.country_id
+HAVING 2<COUNT(department_id)
+
+#相关子查询1
+SELECT country_id
+FROM locations l
+WHERE EXISTS (
+	SELECT *
+	FROM departments d
+	WHERE l.location_id=d.location_id
+	GROUP BY l.country_id
+	HAVING 2 <COUNT(*)
+)
+#相关子查询2
+SELECT country_id
+FROM locations l
+WHERE  2 <(
+	SELECT COUNT(*)
+	FROM departments d
+	WHERE l.location_id=d.location_id
+	GROUP BY l.country_id
+	
+)
+
+/*
+	子查询的编写技巧（或步骤）：1、从里往外写 2、从外往里写
+	如何选择？
+	1、如果子查询相对简单，建议从外往里写。一旦子查询结构较复杂，则建议从里往外写
+	
+	2、如果相关子查询的话，通常都是从外往里写
+	
+
+*/
+```
+
+# 十、管理数据库、表
+
+## 1、前提知识
+
+### 1.1 一条数据存储的过程
+
+​	==存储数据是处理数据的第一步==。只有正确地把数据存储起来，我们才能进行有效的处理和分析。否则，只能是一团乱麻，无从下手。
+
+那么，怎样才能把用户各种经营相关的、纷繁复杂的数据，有序、高效地存储起来呢？在MySQL中，一个完整的数据存储过程总共有4步，分别是 **创建数据库、确认字段、创建数据表、插入数据**
+
+![image-20221108133818557](MySql.assets\image-20221108133818557.png)
+
+> 我们要先创建一个数据库，而不是直接创建数据表呢？ 
+
+因为从系统架构的层次上看，MySQL 数据库系统从大到小依次是 ==数据库服务器== 、 ==数据库== 、==数据表==、数 据表的 ==行与列==。
+
+### 1.2 标识符命名规则
+
+* 数据库名、表名不得超过30个字符，变量名限制为29个
+* 必须只能包含 A–Z, a–z, 0–9, _共63个字符
+* 数据库名、表名、字段名等对象名中间不要包含空格
+* 同一个MySQL软件中，数据库不能同名；同一个库中，表不能重名；同一个表中，字段不能重名
+* 必须保证你的字段没有和保留字、数据库系统或常用方法冲突。如果坚持使用，请在SQL语句中使 用`（着重号）引起来
+* **保持字段名和类型的一致性**：在命名字段并为其指定数据类型的时候一定要保证一致性，假如数据 类型在一个表里是整数，那在另一个表里可就别变成字符型
+
+
+
+| 整数类型         | tinyint smallint mediumint int(或integer) bigint             |
+| ---------------- | ------------------------------------------------------------ |
+| 浮点类型         | flooat double                                                |
+| 定点类型         | decimal                                                      |
+| 位类型           | bit                                                          |
+| 日期时间类型     | year time date datetime timestamp                            |
+| 文本字符串类型   | char varchar tinytext text mediumtext longtext               |
+| 枚举类型         | ENUM                                                         |
+| 集合类型         | SET                                                          |
+| 二进制字符串类型 | binary varbinary tinyblob blob medumblob longblob            |
+| JSON类型         | JSON对象 JSON数组                                            |
+| 空间数据类型     | 单值：geometry point linestring polygon                      |
+| 空间数据类型     | 集合： multipoint multilinestring multipolygon geometrycollection |
+
+其中，常用的几类类型介绍如下：
+
+| 数据类型      | 描述                                                         |
+| ------------- | ------------------------------------------------------------ |
+| INT           | 从-2^31到2^31-1的整型数据。存储大小为 **4个字节**            |
+| CHAR(size)    | 定长字符数据。若未指定，**默认为1个字符**，最大长度255       |
+| VARCHAR(size) | 可变长字符数据，根据字符串实际长度保存，**必须指定长度**     |
+| FLOAT(M,D)    | 单精度，占用**4个字节**，M=整数位+小数位，D=小数位。 D<=M<=255,0<=D<=30， **默认M+D<=6** |
+| DOUBLE(M,D)   | 双精度，占用8个字节，D<=M<=255,0<=D<=30，**默认M+D<=15**     |
+| DATE          | 日期型数据，格式'YYYY-MM-DD                                  |
+| BLOB          | 二进制形式的长文本数据，最大可达4G                           |
+| TEXT          | 长文本数据，最大可达4G                                       |
+
+## 2、创建和管理数据库
+
+### 2.1 创建库
+
+```sql
+#方式1：创建数据库
+CREATE DATABASE db_name
+#方式2：创建数据库并指定字符集
+CREATE DATABASE 数据库名  CHARACTER SET 字符集
+#方式3：判断数据库是否已经存在，不存在则创建数据库（推荐）
+CREATE DATABASE IF NOT EXISTS db_name;
+#如果MySQL中已经存在相关的数据库，则忽略创建语句，不再创建数据库。 不会报错
+```
+
+### 2.2 管理库
+
+> 注意：**DATABASE 不能改名。**一些可视化工具可以改名，它是建新库，把所有表复制到新库，再删 旧库完成的。
+
+* 查看当前所有的数据库
+
+```sql
+SHOW DATABASES; #有一个S，代表多个数据库
+```
+
+* 切换数据库
+
+```sql
+USE 数据库名;
+```
+
+
+
+* 查看当前正在使用的数据库
+
+```sql
+SELECT DATABASE(); #使用的一个 mysql 中的全局函数
+```
+
+* 查看指定库下所有的表
+
+```sql
+SHOW TABLES FROM 数据库名
+```
+
+* 查看数据库的创建信息
+
+```sql
+SHOW CREATE DATABASE 数据库名;
+或者：
+SHOW CREATE DATABASE 数据库名\G #这里注意没;号
+```
+
+* 更改数据库字符集
+
+```sql
+ALTER DATABASE 数据库名 CHARACTER SET 字符集; #比如：gbk、utf8等
+```
+
+* 方式1：删除指定的数据库
+
+```sql
+DROP DATABASE 数据库名;
+```
+
+* 方式2：删除指定的数据库（推荐）
+
+```sql
+DROP DATABASE IF EXISTS 数据库名
+```
+
+## 3、创建和管理表
+
+### 3.1 创建表
+
+* 必须具备：
+  * CREATE TABLE权限 
+  * 存储空间
+* 语法格式：
+
+```sql
+CREATE TABLE [IF NOT EXISTS] 表名(
+字段1, 数据类型 [约束条件] [默认值],
+字段2, 数据类型 [约束条件] [默认值],
+字段3, 数据类型 [约束条件] [默认值],
+……
+[表约束条件]
+);
+```
+
+* 必须指定：
+  * 表名
+  * 列名(或字段名)，数据类型，长度
+* 可选指定：
+  * 约束条件
+  * 默认值
+* 创建表举例：
+
+```sql
+#方式一：
+-- 创建表
+CREATE TABLE emp (
+	-- int类型
+	emp_id INT,
+	-- 最多保存20个中英文字符
+	emp_name VARCHAR(20),
+	-- 总位数不超过15位
+	salary DOUBLE,
+	-- 日期类型
+	birthday DATE
+);
+#方式二： 基于现有的表（没有过滤表数据）
+CREATE TABLE myemp2
+AS
+SELECT employee_id,last_name,salary
+FROM employees;
+#方式三：创建表并过滤表数据
+CREATE  TABLE IF NOT EXISTS myemp2
+AS
+SELECT employee_id,last_name,salary
+FROM employees
+WHERE 1=2
+
+
+#基于现表创建新表注意点
+/*
+查询语句中字段的别名，可以作为新创建的表的字段的名称
+*/
+#查看表结构
+DESC employees;
+#查看创建表的语句结构
+SHOW CREATE TABLE employees;
+```
+
+
+
+
+
+### 3.2 管理表
+
+
+
+```SQL
+
+#1.修改表 ALTER TABLE
+DROP TABLE IF EXISTS myempl;
+CREATE TABLE myempl
+AS
+SELECT employee_id,last_name
+FROM employees
+WHERE 1=2
+#1.1 添加一个字段
+ALTER TABLE myempl
+ADD salary DOUBLE(10,2)#默认添加到表中的最后一个字段的位置
+
+ALTER TABLE  myempl
+ADD phone_number VARCHAR(20) FIRST #first 放最前面的位置
+
+ALTER TABLE myempl
+ADD email VARCHAR(45) AFTER last_name # after指定字段后面
+
+#1.2 修改一个字段：数据类型、长度、默认值（略）
+ALTER TABLE myempl
+MODIFY last_name VARCHAR(25) #改数据类型
+
+ALTER TABLE myempl
+MODIFY last_name VARCHAR(35) DEFAULT 'aaa' #改默认值，可以同时改类型
+
+#1.3 重命名一个字段
+ALTER TABLE myempl
+CHANGE salary monthly_salary DOUBLE(10,2);#newcol oldcol oldtype （oldtype不能少）
+
+ALTER TABLE myempl
+CHANGE email my_email VARCHAR(50);#可以同时改类型
+
+#1.4 删除一个字段
+ALTER TABLE myempl
+DROP COLUMN my_email;
+
+#2.重命名表
+#方式一
+RENAME TABLE myempl
+TO myemplx;
+#方式二
+ALTER TABLE myemplx
+RENAME TO myempl;
+
+#3.删除表
+#不光把表结构删除掉，同时表中的数据也删除掉，释放表空间。
+DROP TABLE IF EXISTS myemp2;
+DELETE FROM myemp2 ;
+#4. 清空表
+#保留表结构，删除表数据
+TRUNCATE TABLE myemp2;
+
+#5. DCL 中 commit 和 rollback
+#commit： 提交数据。 一旦执行commit，则数据永久化，不能回滚
+#rollback：回滚数据。一旦执行rollback，则数据回滚，回滚到最近的一次commit之后
+
+#6 对比 TRUNCATE TABLE 和DELETE FROM
+/*
+ 相同点：都可以删除数据并保留表结构
+ 不同点：
+ 1点：
+	TRUNCATE TABLE:一旦执行操作，表数据clear，不能回滚
+	DELETE FROM: 一旦执行此操作，表数据clear，数据可以实现回滚
+	
+#7. DDL和DML的说明：
+① DDL的操作一旦执行，就不可回滚（内置执行DDL之后就执行一次commit）
+② DML的操作默认情况，一旦执行，也是不可回滚的。
+	如果在执行DML之前，执行了 SET autocommit=FALSE 则执行的DML操作就可以实现回滚
+		
+```
+
+> 阿里开发规范： 【参考】TRUNCATE TABLE 比 DELETE 速度快，且使用的系统和事务日志资源少，但 TRUNCATE 无 事务且不触发 TRIGGER，有可能造成事故，故不建议在开发代码中使用此语句。 说明：TRUNCATE TABLE 在功能上与不带 WHERE 子句的 DELETE 语句相同。
+
+## 4、内容扩展
+
+### 拓展1：阿里巴巴《Java开发手册》之MySQL字段命名
+
+* 【 **强制** 】表名、字段名必须使用小写字母或数字，禁止出现数字开头，禁止两个下划线中间只出 现数字。数据库字段名的修改代价很大，因为无法进行预发布，所以字段名称需要慎重考虑。
+  * 正例：aliyun_admin，rdc_config，level3_name
+  * 反例：AliyunAdmin，rdcConfig，level_3_name
+* 【 **强制** 】禁用保留字，如 desc、range、match、delayed 等，请参考 MySQL 官方保留字。
+* 【 **强制** 】表必备三字段：id, gmt_create, gmt_modified。
+  * 说明：其中 id 必为主键，类型为**BIGINT UNSIGNED**、单表时自增、步长为 1。gmt_create, gmt_modified 的类型均为 DATETIME 类型，前者现在时表示主动式创建，后者过去分词表示被 动式更新
+* 【 **推荐** 】表的命名最好是遵循 “业务名称_表的作用”。
+  * 正例：alipay_task 、 force_project、 trade_config
+* 【 推荐 】库名与应用名称尽量一致。
+* 【参考】合适的字符存储长度，不但节约数据库表空间、**节约索引存储，更重要的是提升检索速 度**。
+  * 正例：无符号值可以避免误存负数，且扩大了表示范围。
+
+![image-20221108161105208](MySql.assets\image-20221108161105208.png)
+
+### 拓展2：MySQL8新特性—DDL的原子化
+
+* 在**MySQL 8.0**版本中，InnoDB表的DDL支持事务完整性，即 **DDL操作要么成功要么回滚** 。DDL操作回滚日志 写入到data dictionary数据字典表mysql.innodb_ddl_log（该表是隐藏的表，通过show tables无法看到） 中，用于回滚操作。通过设置参数，可将DDL操作日志打印输出到MySQL错误日志中。
+
+分别在MySQL 5.7版本和MySQL 8.0版本中创建数据库和数据表，结果如下：
+
+```sql
+CREATE DATABASE mytest;
+USE mytest;
+CREATE TABLE book1(
+book_id INT ,
+book_name VARCHAR(255)
+);
+SHOW TABLES;
+
+DROP TABLE book1,book2
+```
+
+结果：
+
+* MySQL 5.7 book1表数据被删除
+* MySQL 8.0 book1表数据没有被删除，因为回滚了
+
+## 5、练习不常用不写了

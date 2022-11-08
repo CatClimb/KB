@@ -122,9 +122,9 @@ set的命令使用：
 		shutdown /h /t 10   10秒后关机
 	计划任务命令：
 		at命令过时了变成schtasks.exe
-		SCHTASKS /CREATE /TN open_text_file /TR notepad /SC MINUTE  每分钟打开记事本
-		SCHTASKS /DELETE /TN open_text_file //删除计划
-		SCHTASKS /CREATE /TN open_text_file /TR notepad /SC MINUTE /ST 15:12 /ET 15:14
+		SCHTASKS /CREATE /TN plan_name /TR notepad /SC MINUTE  每分钟打开记事本
+		SCHTASKS /DELETE /TN plan_name //删除计划
+		SCHTASKS /CREATE /TN plan_name /TR notepad /SC MINUTE /ST 15:12 /ET 15:14
 		schtasks /Query /TN open_text_file 
 	
 		注意终止计划： 模式是就绪
@@ -334,3 +334,7 @@ goto 语句：
 	exit
 	
 bat to exe Converter
+
+
+等待命令
+timeout 7
