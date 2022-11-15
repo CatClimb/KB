@@ -4084,7 +4084,9 @@ TRUNCATE TABLE myemp2;
 
 ![image-20221108161105208](MySql.assets\image-20221108161105208.png)
 
-### 拓展2：MySQL8新特性—DDL的原子化
+## 5、练习不常用不写了
+
+# MySQL8新特性—DDL的原子化
 
 * 在**MySQL 8.0**版本中，InnoDB表的DDL支持事务完整性，即 **DDL操作要么成功要么回滚** 。DDL操作回滚日志 写入到data dictionary数据字典表mysql.innodb_ddl_log（该表是隐藏的表，通过show tables无法看到） 中，用于回滚操作。通过设置参数，可将DDL操作日志打印输出到MySQL错误日志中。
 
@@ -4105,6 +4107,179 @@ DROP TABLE book1,book2
 结果：
 
 * MySQL 5.7 book1表数据被删除
-* MySQL 8.0 book1表数据没有被删除，因为回滚了
+* MySQL 8.0 book1表数据没有被删除，因为回滚了 
 
-## 5、练习不常用不写了
+## 
+
+# 十一、数据处理之增删改
+
+## 1、INSERT
+
+语句结构：
+
+* INSERT [INTO] table_name[(column,...)] VALUES(column_value)
+
+* ```sql
+  DROP TABLE IF EXISTS xx;
+  CREATE TABLE xx(
+  	id  INT PRIMARY KEY,
+  	`name`  VARCHAR(10) ,
+  	x_date DATE,
+  	salary INT
+  )
+  
+  ```
+
+  
+
+* 方式一：一条一条的添加数据
+
+  * ```sql
+    #未指明字段
+    INSERT INTO xx
+    VALUES (1,'Tom','2000-12-21',3400);
+    
+    #指明字段
+    INSERT INTO xx (id,x_date,salary,`name`)
+    VALUES(2,'1999-09-09',4000,'Jerry');
+    
+    #同时插入多条记录
+     INSERT INTO xx(id,`name`,salary)
+     VALUES
+    	(4,'Jie',5000),
+    	(5,'Q',5000)
+    ```
+
+* 
+
+* 方式二：将查询结果插入到表中
+
+  * ```sql
+    #不用书写VALUES语句
+    INSERT INTO xx(id,`name`,salary,x_date)
+     SELECT employee_id,last_name,salary,hire_date
+     FROM employees
+     WHERE department_id IN (70,60);
+     #结论：
+     #字段要一一对应
+     #建议：类型尽量相同（因为可以不同），且类型要大于等于插入类型。不然容易报类型错误
+    ```
+    
+
+
+
+
+## 2、UPDATE
+
+语句结构：
+
+* UPDATE ... SET ... WHERE
+
+* ```sql
+  UPDATE xx
+  SET x_date=CURDATE(),salary=6000
+  WHERE id=103
+  ```
+
+  
+
+## 3、DELETE
+
+语句结构：
+
+* DELETE FROM table_name where ...
+
+* ```sql
+  DELETE FROM departments
+  WHERE department_id =50
+  #增删改操作都可能被约束影响，导致操作失败。
+  ```
+
+  # MySQL8新特性：计算列
+
+  是在DDL中定义的通过a、b两列和计算规则算出c列。
+
+  ```SQL
+  #数值
+  DROP TABLE IF EXISTS tb1;
+  CREATE TABLE tb1(
+  id INT,
+  a INT,
+  b INT,
+  c INT GENERATED ALWAYS AS (a+b) VIRTUAL
+  )
+  
+  INSERT INTO tb1(a,b) VALUES(100,200)
+  SELECT * FROM tb1;
+  
+  #字符
+  DROP TABLE IF EXISTS tb1;
+  CREATE TABLE tb1(
+  id INT,
+  a VARCHAR(10),
+  b VARCHAR(10),
+  c VARCHAR(20) GENERATED ALWAYS AS (CONCAT(a,b)) VIRTUAL
+  )
+  
+  INSERT INTO tb1(a,b) VALUES('s','asad');
+  SELECT * FROM tb1;
+  ```
+
+  
+
+# 十二、MySQL数据类型精讲
+
+| 整数类型         | tinyint smallint mediumint int(或integer) bigint             |
+| ---------------- | ------------------------------------------------------------ |
+| 浮点类型         | flooat double                                                |
+| 定点类型         | decimal                                                      |
+| 位类型           | bit                                                          |
+| 日期时间类型     | year time date datetime timestamp                            |
+| 文本字符串类型   | char varchar tinytext text mediumtext longtext               |
+| 枚举类型         | ENUM                                                         |
+| 集合类型         | SET                                                          |
+| 二进制字符串类型 | binary varbinary tinyblob blob medumblob longblob            |
+| JSON类型         | JSON对象 JSON数组                                            |
+| 空间数据类型     | 单值：geometry point linestring polygon                      |
+| 空间数据类型     | 集合： multipoint multilinestring multipolygon geometrycollection |
+
+常见数据类型的属性，如下：
+
+| MySQL关键字        | 含义                     |
+| ------------------ | ------------------------ |
+| NULL               | 数据列可包含NULL值       |
+| NOT NULL           | 数据列不允许包含NULL值   |
+| DEFAULT            | 默认值                   |
+| PRIMARY KEY        | 主键                     |
+| AUTO_INCREMENT     | 自动递增，适用于整数类型 |
+| UNSIGNED           | 无符号                   |
+| CHARACTER SET name | 指定一个字符集           |
+
+* 关于属性：character set name
+
+* ```sql
+  #创建数据库时指明字符集
+  CREATE DATABASE IF NOT EXISTS  dbtest12 CHARACTER SET 'utf8';
+  SHOW CREATE DATABASE dbtest12;
+  
+  #创建表的时候，指明表的字符集
+  DROP TABLE IF EXISTS temp;
+  CREATE TABLE temp(
+  id INT
+  ) CHARACTER SET 'utf8';
+  SHOW CREATE TABLE temp;
+  
+  #创建表，指明表中字段时，可以指定字段的字符集
+  DROP TABLE IF EXISTS tempx;
+  CREATE TABLE  tempx(
+  id INT,
+  NAME VARCHAR(15) CHARACTER SET 'gbk'
+  );
+  SHOW CREATE TABLE tempx;
+  
+  
+  #以哪个为准呢？
+  #子类下，有设置就遵循多态，没有就继承父类
+  ```
+
+  
