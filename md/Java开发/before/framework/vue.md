@@ -3816,12 +3816,14 @@ import VueResource from 'vue-resource'
 
    3. 作用域插槽：
 
-      1. 理解：数据在组件的自身，但根据数据生成的结构需要组件的使用者来决定。（本质是超过作用域范围之外传递数据。（子组件===>父组件））
+      1. 理解：数据在组件的自身，但<font color='red'>根据数据生成的结构</font>需要组件的使用者来决定。（本质是超过作用域范围之外传递数据。（子组件===>父组件））
+
+         1. 人话：<font color='orange'>父组件种定义数据结构</font>，<font color='gree'>而子组件定义数据</font>，此时使用子组件数据来<font color='red'>填充</font>父组件定义的数据结构
 
       2. 具体编码：
 
          1. App
-
+      
             ```vue
             <template>
               <div class="app">
@@ -3886,7 +3888,7 @@ import VueResource from 'vue-resource'
             
 
          2. Category
-
+      
             ```vue
             <template>
               <div class="containter">
@@ -3917,7 +3919,7 @@ import VueResource from 'vue-resource'
             }
             </style>
             ```
-
+      
             
 
 
@@ -4586,6 +4588,7 @@ props:['id','title','a','b']
 1. 作用：对路由进行权限控制
 2. 分类：全局守卫、独享守卫、组件内守卫
 3. 应用：看需求，可以相互使用
+4. meta 是路由元信息
 
 ### 12.1、全局守卫
 
@@ -4675,7 +4678,7 @@ export default router
 
 1. 对于一个url来说，什么是hash值？——#及其后面的内容就是hash值。
 
-2. hash值不会包含在HTTP请求红，即：hash值不会带给服务器
+2. hash值不会包含在HTTP请求中，即：hash值不会带给服务器
 
 3. hash模式：
 
@@ -4717,7 +4720,7 @@ Mint UI http://mint-ui.github.io
 
 
 
-# ~~前端部署~~
+# 前端部署
 
 1. `npm run build` 对vue项目进行打包，之后得到<font color='red'>dist</font>文件夹
 
@@ -6308,3 +6311,59 @@ Vue3.x写法
 ### （6 。。。。
 
 还有其他改变，看官网吧
+
+
+
+
+
+
+
+# 语法糖
+
+```vue
+父组件
+<Parent>
+	<Child :money="total" v-on:update:money="total  = $event" />
+</Parent>
+等效于
+<Parent>
+	{{isShow}}
+	<Child ref="test" :refbool.sync='isShow'></Child>
+</Parent>
+data() {
+	return {
+		isShow:true
+	}
+},
+
+
+
+子组件
+<div class="">
+	<button type="default" @click="ok">子组件点击</button>
+</div>
+props:{
+	refbool:{
+		type: Boolean,
+		default: false
+	},
+},
+methods:{
+	ok(){
+		this.$emit('update:refbool',false)
+//触发事件：
+//$emit('update:money',money-100);
+	}
+}
+
+
+
+```
+
+# 开发经验：
+
+```js
+//数据清空
+this.formdata=this.$options.data().formdata
+```
+

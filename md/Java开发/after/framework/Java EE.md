@@ -84,11 +84,13 @@ Spring的其他模块还有 AOP、Aspects、Instrumentation 以及 Test 模块�
 
 
 
-
+![image-20211231191848251](Java EE.assets/image-20211231191848251.png)
 
 ![image-20211231191832296](Java EE.assets/image-20211231191832296.png)
 
 ![image-20211231191933599](Java EE.assets/image-20211231191933599.png)
+
+
 
 
 
@@ -1414,8 +1416,10 @@ ss eating
 
 **1）使用<font color='orange'>@Configuration</font>和<font color='orange'>@EnableAspectJAutoProxy</font>注解**
 
-```
-@Configuration @EnableAspectJAutoProxypublic class Appconfig {}
+```java
+@Configuration 
+@EnableAspectJAutoProxy
+public class Appconfig {}
 ```
 
 **2）基于XML配置**
