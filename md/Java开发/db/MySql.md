@@ -5301,3 +5301,272 @@ MySQL的空间数据类型（Spatial Data Type）对应于OpenGIS类，包括单
   * 说明：在存储的时候，FLOAT 和 DOUBLE 都存在精度损失的问题，很可能在比较值的时候，得 到不正确的结果。如果存储的数据范围**超过** DECIMAL 的**范围**，**建议将数据拆成整数和小数并 分开存储。**
 * 【 强制 】如果存储的字符串长度几乎相等，使用 CHAR 定长字符串类型。
 * 【 强制 】VARCHAR 是可变长字符串，不预先分配存储空间，长度不要超过 **5000**。如果存储长度大 于此值，定义字段类型为 TEXT，独立出来一张表，用主键来对应，避免影响其它字段索引效率。
+
+
+
+
+
+
+
+
+
+
+
+# 十三、约束
+
+## 1、约束概述
+
+### 1.1、为什么要他
+
+数据完整性是指数据的精确性和可靠性。塔是防止数据库中存在不符合语义规定的数据和防止因错误信息的输入输出造成无效操作或错误信息而提出的。
+
+为了保证数据的完整性，SQL规范以约束的方式对**表数据进行额外的条件限制。**从以下四个方面考虑：
+
+* ==实体完整性（Entity Integrity）：==
+* ==域完整性（Domain Integrity）：==例如：年龄范围0-120，性别范围“男/女”
+
+* ==引用完整性（Referential Integrity）==：
+* ==用户自定义完整性（User-defined Integrity）==：例如：用户名唯一
+
+### 1.2、他是什么
+
+约束时表级的强制规定
+
+可以在**创建表时规定约束（通过 CREATE TABLE语句）**，或者在**表创建之后通过ALTER TABLE语句规定约束**。
+
+### 1.3 约束的分类
+
+* **根据约束数据列的限制**，约束可分为：
+
+  * **单列约束**：每个约束只约束一列。
+  * **多列约束**：每个约束可约束多列数据
+
+* **根据约束的作用范围**，约束可分为：
+
+  * **列级约束**：只能作用在一个列上，跟在列的定义后面。
+  * **表级约束**：可以作用在多个列上，不与列一起，，而是单独定义。
+
+  
+
+|            | 位置         | 支持的约束类型             | 是否可以起约束名     |
+| ---------- | ------------ | -------------------------- | -------------------- |
+| 列级约束： | 列的后面     | 语法都支持，但外键没有效果 | 不可以               |
+| 表级约束： | 所有列的下面 | 默认和非空不支持，其它支持 | 可以（主键没有效果） |
+
+
+
+* **根据约束起的作用**，约束可分为：
+  * NOT NULL 非空约束，规定某个字段不能为空
+  * UNIQUE 唯一约束 ，规定某个字段在整个表中是唯一的
+  * PRIMARY KEY 主键（非空且唯一）约束
+  * FOREIGN KEY 外键约束
+  * CHECK 检查约束
+  * DEFAULT 默认值约束
+
+
+
+
+* 查看某个表已有的约束
+
+```sql
+#information_schema数据库名（系统库）
+#table_constraints表名称（专门存储各个表的约束）
+SELECT * FROM information_schema.table_constraints
+WHERE table_name = 'test_json';
+
+
+例子
+mysql> select * from information_schema.table_constraints where table_name='lab_gdt';
++--------------------+-------------------+-----------------+--------------+------------+-----------------+----------+
+| CONSTRAINT_CATALOG | CONSTRAINT_SCHEMA | CONSTRAINT_NAME | TABLE_SCHEMA | TABLE_NAME | CONSTRAINT_TYPE | ENFORCED |
++--------------------+-------------------+-----------------+--------------+------------+-----------------+----------+
+| def                | lims              | id              | lims         | lab_gdt    | UNIQUE          | YES      |
+| def                | lims              | PRIMARY         | lims         | lab_gdt    | PRIMARY KEY     | YES      |
+| def                | lims              | lab_gdt_ibfk_1  | lims         | lab_gdt    | FOREIGN KEY     | YES      |
+| def                | lims              | lab_gdt_chk_1   | lims         | lab_gdt    | CHECK           | YES      |
++--------------------+-------------------+-----------------+--------------+------------+-----------------+----------+
+```
+
+## 2、非空约束
+
+### 2.1 作用
+
+限定某个字段/某列的值不允许为空
+
+### 2.2 关键字
+
+NOT NULL
+
+### 2.3 特点
+
+* 默认，所有的类型的值都可以是NULL，包括INT、FLOAT等数据类型
+* **列级约束**
+* 空字符串`''`不等于NULL，0也不等于NULL
+* 该约束好像没约束名字
+
+### 2.4 添加非空约束
+
+* （1）建表时
+
+```mysql
+CREATE TABLE 表名称(
+字段名 数据类型,
+字段名 数据类型 NOT NULL,
+字段名 数据类型 NOT NULL
+);
+```
+
+例子：
+
+```mysql
+DROP TABLE IF EXISTS student1;
+CREATE TABLE student1(
+	sid INT,
+  sname VARCHAR(20) NOT NULL,
+  tel CHAR(11),
+  cardid CHAR(18) NOT NULL
+);
+#success
+INSERT INTO student1 VALUES(1,'张三','1234546','213345465');
+#身份证号为空 fail
+#Column 'cardid' cannot be null
+INSERT INTO student1 VALUE(2,'李四','123456',NULL);
+#成功，tel允许为空
+INSERT INTO student1 VALUES(2,'李四',NULL,'1234554656');
+#fail
+#Column 'cardid' cannot be null
+INSERT INTO student1 VALUES(3,NULL,NULL,'12579');
+
+
+```
+
+建表后
+
+```mysql
+#注意modify 和 add 是针对 列，不是约束
+ALTER TABLE student1 MODIFY sid INT NOT NULL;
+
+```
+
+### 2.5 删除非空约束
+
+```mysql
+#相当于修改某个非注解字段，该字段允许为空
+ALTER TABLE student1 MODIFY sid INT NULL;
+#或者 #去掉not null，相当于修改某个非注解字段，该字段允许为空
+ALTER TABLE student1 MODIFY sid INT;
+```
+
+## 3、唯一约束
+
+### 3.1 作用
+
+* 用来限制某个字段/某列的值不能重复
+
+### 3.2 关键字
+
+* UNIQUE
+
+### 3.3 特点
+
+* 列级约束、列级复合约束（注意是<font color='gree'>复合</font>不唯一哦）
+* 唯一性约束允许列值为空
+* 在创建为约束的时候，<font color='orange'>如果不给唯一约束命名，就默认和列名相同</font>
+*  **MySQL会给唯一约束的列上默认创建一个唯一索引**
+
+
+
+例子 
+
+```mysql
+  create table 表名称(
+  字段名 数据类型,
+  字段名 数据类型 unique,
+  字段名 数据类型 unique key,
+  字段名 数据类型
+  );
+  create table 表名称(
+  字段名 数据类型,
+  字段名 数据类型,
+  字段名 数据类型,
+  [constraint 约束名] unique key(字段名)
+  );
+```
+
+举例
+
+  ```mysql
+    #表示用户名和密码组合不能重复
+    DROP TABLE IF EXISTS USER;
+    CREATE TABLE USER(
+    id INT NOT NULL,
+    NAME VARCHAR(25),
+    PASSWORD VARCHAR(16),
+    -- 使用表级约束语法
+    CONSTRAINT uk_name_pwd UNIQUE(NAME,PASSWORD)
+    );
+    
+    
+    #重复值演示
+    insert into student values(2,'李四','13710011003','101223199012015624');
+    insert into student values(3,'王五','13710011004','101223199012015624'); #身份证号重复
+    #ERROR 1062 (23000): Duplicate entry '101223199012015624' for key 'cardid'
+    
+  ```
+
+建表后指定唯一约束
+
+```mysql
+#列级复合约束
+alter table 表名称 add unique key(字段列表,...,...);
+#列级约束
+#方式一
+alter table 表名称 add unique key(字段列表);
+#方式二
+alter table 表名称 modify 字段名 字段类型 unique;
+```
+
+### 3.4、删除唯一约束
+
+* 添加唯一性约束的列上也会自动创建唯一索引
+* 删除唯一约束只能通过删除唯一索引的方式删除。
+* 删除时需要指定唯一索引名，唯一索引名就和唯一约束名一样。
+* 如何创建唯一约束时未指定名称，如果时单列，就默认和列名相同；如果是组合列，那么默认和列表中排在第一个的列名相同，也可以自定义唯一性约束名。
+
+```mysql
+SELECT * FROM information_schema.constraints
+WHERE table_name='表名';
+```
+
+```mysql
+ALTER TABLE USER
+DROP INDEX uk_name_pwd;
+```
+
+```mysql
+#查看表索引
+SHOW INDEX FROM USER;
+mysql> SHOW INDEX FROM USER;
++-------+------------+-------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+| Table | Non_unique | Key_name    | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment | Index_comment | Visible | Expression |
++-------+------------+-------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+| user  |          0 | uk_name_pwd |            1 | name        | A         |           0 |     NULL |   NULL | YES  | BTREE      |         |               | YES     | NULL       |
+| user  |          0 | uk_name_pwd |            2 | PASSWORD    | A         |           0 |     NULL |   NULL | YES  | BTREE      |         |               | YES     | NULL       |
++-------+------------+-------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+2 rows in set (0.00 sec)
+```
+
+## 4、主键约束
+
+### 4.1 作用
+
+用来唯一标识表中的一行记录
+
+### 4.2 关键字
+
+primary key
+
+### 4.3 特点
+
+* 主键约束相当于**唯一yue'shu**
+

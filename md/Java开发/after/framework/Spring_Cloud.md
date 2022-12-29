@@ -2469,7 +2469,7 @@ Spring Cloud Gateway 使用的Webflux中的reactor-netty响应式编程组件，
 * Predicate
   * 参考的是java8的java.util.function.Predicate开发人员可以匹配HTTP请求中的所有内容，如果请求与断言相匹配则进行路由
 * Filter
-  * 指的是Spring框架中GatewayFilter的实力，使用锅炉其，可以在请求被路由前或者之后对请求进行修改。
+  * 指的是Spring框架中GatewayFilter的实例，使用过滤器，可以在请求被路由前或者之后对请求进行修改。
 
 ### 2、工作流程
 
@@ -2584,7 +2584,7 @@ Spring Cloud Gateway 使用的Webflux中的reactor-netty响应式编程组件，
 
        
 
-4.  主启动类
+4. 主启动类
 
    1. ```java
       package com.atguigu.springcloud;
@@ -2606,7 +2606,11 @@ Spring Cloud Gateway 使用的Webflux中的reactor-netty响应式编程组件，
 
       
 
-5.  测试
+5. 测试
+
+* 有网关之前：访问`http://localhost:8001/payment/get/1` 成功。
+
+* 有网关之后：访问`http://localhost:9527/payment/get/31`成功，之前的也能访问成功
 
 ### 4、路由与代码方式配置
 
