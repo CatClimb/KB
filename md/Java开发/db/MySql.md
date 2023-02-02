@@ -5436,6 +5436,8 @@ INSERT INTO student1 VALUES(2,'李四',NULL,'1234554656');
 #fail
 #Column 'cardid' cannot be null
 INSERT INTO student1 VALUES(3,NULL,NULL,'12579');
+#Column count doesn't match value count at row 1 先看看有没有默认值，没有在赋值空
+INSERT INTO student1 VALUES(3,'12579');
 
 
 ```
@@ -5469,7 +5471,7 @@ ALTER TABLE student1 MODIFY sid INT;
 
 ### 3.3 特点
 
-* 列级约束、列级复合约束（注意是<font color='gree'>复合</font>不唯一哦）
+* 列级约束、列级复合约束（注意是<font color='gree'>是一起的组合</font>不唯一哦）
 * 唯一性约束允许列值为空
 * 在创建为约束的时候，<font color='orange'>如果不给唯一约束命名，就默认和列名相同</font>
 *  **MySQL会给唯一约束的列上默认创建一个唯一索引**
@@ -5534,7 +5536,7 @@ alter table 表名称 modify 字段名 字段类型 unique;
 * 如何创建唯一约束时未指定名称，如果时单列，就默认和列名相同；如果是组合列，那么默认和列表中排在第一个的列名相同，也可以自定义唯一性约束名。
 
 ```mysql
-SELECT * FROM information_schema.constraints
+SELECT * FROM information_schema.table_constraints
 WHERE table_name='表名';
 ```
 
@@ -5568,5 +5570,642 @@ primary key
 
 ### 4.3 特点
 
-* 主键约束相当于**唯一yue'shu**
+* 主键约束相当于**唯一约束+非空约束的组合**，主键约束列不允许重复，也不允许出现空值
+* <font color='gree'>一个表最多只能有一个主键约束</font>
+* 列级约束，列级复合约束（这些列不能为空，且这些列组合的值不允许重复）
+* **MySQL的主键名总是PRIMARY**，自己自定义命名耶没用
+* 当创建主键约束时，系统默认会在所在的列或列组合上建立对应的**主键索引**（能够根据主键查询的，就根据主键查询，效率更高）。如果删除主键约束了，主键约束对应的索引就自动删除了。
+* 需要注意的一点是，**不要修改主键字段的值。**因为主键的**目的**是数据记录的唯一标识，如果修改了主键的值，就有可能会破环数据的完整性。
 
+### 4.4 添加主键约束
+
+```sql
+create table 表名称(
+	字段名 数据类型 primary key,#列级模式
+  字段名 数据类型 NOT NULL,
+  字段名 数据类型 NOT NULL
+)
+create table 表名称(
+	字段名 数据类型,
+  字段名 数据类型,
+  字段名 数据类型,
+  [constraint 约束名] primary key(字段名)#表级模式
+
+)
+#复合主键 （没有联和主键，是网上瞎说的）
+create table 表名称(
+字段名 数据类型,
+字段名 数据类型,
+字段名 数据类型,
+primary key(字段名1,字段名2) #表示字段1和字段2的组合是唯一的，也可以有更多个字段
+);#例子：sc表（student、course）
+
+```
+
+举例：
+
+```sql
+create table temp(
+	id int primary key,
+  name varchar(20)
+)
+desc temp;
++-------+-------------+------+-----+---------+-------+
+| Field | Type | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| id | int(11) | NO | PRI | NULL | |
+| name | varchar(20) | YES | | NULL | |
++-------+-------------+------+-----+---------+-------+
+
+#演示一个表建立两个主键约束
+create table temp(
+id int primary key,
+name varchar(20) primary key
+);
+ERROR 1068 (42000): Multiple（多重的） primary key defined（定义）
+```
+
+### 4.5 删除主键约束
+
+```sql
+alter table 表名称 drop primary key;
+
+ALTER TABLE student DROP PRIMARY KEY;
+
+```
+
+## 5、自增列
+
+### 5.1 作用
+
+某个字段的值自增
+
+### 5.2 关键字
+
+auto_increment
+
+### 5.3 特点和要求
+
+* **一个表最多只能有一个自增长列**
+* 当需要产生唯一标识符或顺序值时，可设置自增长
+* 自增长列约束的列必须是键列（**主键列**，**唯一键列**）
+* 自增约束的列的数据类型必须是==整数类型==
+* 如果自增列指定了**0和null**，会在当前最大值的基础上自增；如果自增列手动指定了具体值，直接赋值为具体值。
+
+错误演示：
+
+```sql
+create table employee(
+eid int auto_increment,
+ename varchar(20)
+);
+# ERROR 1075 (42000): Incorrect table definition; there can be only one auto column
+and it must be defined as a key
+```
+
+```sql
+create table employee(
+eid int primary key,
+ename varchar(20) unique key auto_increment
+);
+# ERROR 1063 (42000): Incorrect column specifier for column 'ename' 因为ename不是整数类型
+```
+
+### 5.4 如何指定自增约束
+
+```sql
+alter table 表名称 modify 字段名 数据类型 auto_increment;#给这个字段增加自增约束
+```
+
+
+
+```sql
+DROP TABLE IF EXISTS employee;
+CREATE TABLE employee(
+eid INT PRIMARY KEY,
+ename VARCHAR(20)
+
+);
+DESC employee;
+
+ALTER TABLE employee MODIFY eid INT AUTO_INCREMENT ;
+DESC employee;
+```
+
+### 5.5 如何删除自增约束
+
+
+
+```sql
+ALTER TABLE 表名称 MODIFY 字段名 数据类型; #去掉auto_increment相当于删除
+ALTER TABLE employee MODIFY eid INT;
+
+DESC employee;
+
+```
+
+### 5.6 MySQL8.0新特性-自增变量的持久化
+
+在MySQL8.0之前自增主键AUTO_INCREMENT的值如果大于max(primary key)+1,在MySQL重启后，会重置AUTO_INCREMENT=MAX(primary key)+1，这种现象在某些情况下会导致业务主键冲突或者其它难以发现的问题。下面通过案列来对比不同的版本中自增变量时否持久化。略。。。
+
+* 在MySQL 5.7系统中，对于自增主键的分配规则，是由InnoDB数据字典 内部一个 **计数器** 来决定的，而该计数器只在 **内存中维护** ，并不会持久化到磁盘中。当数据库重启时，该计数器会被初始化
+* MySQL 8.0将自增主键的计数器持久化到 **重做日志** 中。每次计数器发生改变，都会将其写入重做日志 中。如果数据库重启，InnoDB会根据重做日志中的信息来初始化计数器的内存值。
+
+## 6、外键约束
+
+### 6.1、作用
+
+限定某个表的某个字段的引用完整性
+
+比如：员工表的员工所在部门的选择，必须在部门表能够找到对应的部分。
+
+### 6.2、关键字
+
+FOREIGN KEY
+
+### 6.3、主表和从表/父表和子表
+
+主表（父表）：被引用的表，被参考的表
+
+从表（子表）：引用别人的表，参考别人的表
+
+### 6.4、特点
+
+* 从表的外键列，必须引用主表的**主键**或**唯一约束**列
+  * 为什么？
+    * 因为被依赖/被参考的值必须是唯一的
+* 在创建外键约束时，如果不给外键约束命名，**默认名不是列名，而是自动产生一个外键名（例如：student_ibfk_1）**,也可以指定外键约束名。
+* 创建（CREATE）表时就指定外键约束的话，先创建主表，再创建从表
+* 删表时，先删从表（或先删除外键约束），再删除主表
+* 当主表的记录被从表参照时，主表的记录将不允许删除，如果要删除数据，需要先删除从表中依赖该记录的数据，然后菜可以删除主表的数据。
+* 是在==从表==中指定外键约束，==并且一个表可以建立多个外键约束==
+* **从表的外键列**与主表被参照的列名字**可以不相同**，但是**数据类型必须一样**，逻辑意义一致。如果类型不一样，创建子表时，就会出现错误==ERROR 1005 (HY000): Can't create table'database.tablename'(errno: 150)==
+
+* 删除外键约束后，必须==手动==删除对应的索引。
+
+
+
+### 6.5、添加外键约束
+
+1. 建表时
+
+```sql
+create table 主表名称(
+	字段1 数据类型 primary key,
+  字段2 数据类型
+)
+
+create table 从表名称(
+	字段1 数据类型 primary key,
+  字段2 数据类型，
+  [CONSTRAINT <外键约束名称>] FOREIGN KEY (从表的某个字段) references 主表名（被参考字段）
+)
+```
+
+```sql
+create table dept( #主表
+did int primary key, #部门编号
+dname varchar(50) #部门名称
+);
+create table emp(#从表
+eid int primary key, #员工编号
+ename varchar(5), #员工姓名
+deptid int, #员工所在的部门
+foreign key (deptid) references dept(did) #在从表中指定外键约束
+#emp表的deptid和和dept表的did的数据类型一致，意义都是表示部门的编号
+);
+```
+
+2. 建表后
+
+```sql
+ALTER TABLE 从表名 ADD [CONSTRAINT 约束名] FOREIGN KEY （从表的字段） REFERENCES 主表名（被引用字段）[on update xx][on delete xx];
+```
+
+```sql
+ALTER TABLE emp1
+ADD [CONSTRAINT emp_dept_id_fk] FOREIGN KEY(dept_id) REFERENCES dept(dept_id);
+```
+
+```sql
+create table dept(
+did int primary key, #部门编号
+dname varchar(50) #部门名称
+);
+create table emp(
+eid int primary key, #员工编号
+ename varchar(5), #员工姓名
+deptid int #员工所在的部门
+);
+#这两个表创建时，没有指定外键的话，那么创建顺序是随意
+alter table emp add foreign key (deptid) references dept(did);
+
+```
+
+### 6.6、演示问题
+
+略
+
+### 6.7、约束等级 ⭐⭐
+
+* cascade方式==：在父表update/delete记录时，**同步**update/delete掉子表的匹配记录
+* ==set null方式==：在父表上update/delete记录时，**将子表上匹配记录的列设为null**，但是要注意子表的外键列不能未not null
+* ==no action方式==：如果子表中有匹配的记录，则不允许对父表对应候选键进行update/delete操作
+* ==restrict方式==：同no action，都是立即检查外键约束
+* ==set default方式==：（在可视化工具SQLyog中可能显示空白）：父表有变更时，子表将外键列设置成一个**默认的值**，**但Innodb不能识别**
+* 如果没有指定等级，就相当于<font color='gree'>Restrict</font>方式。
+
+> #### 推荐方式
+>
+> ```sql
+> ON UPDATE CASCADE ON DELETE RESTRICT
+> ```
+>
+> 
+
+(1)演示1： `on update set null on delete cascade`
+
+```sql
+create table dept(
+did int primary key, #部门编号
+dname varchar(50) #部门名称
+);
+create table emp(
+eid int primary key, #员工编号
+ename varchar(5), #员工姓名
+deptid int, #员工所在的部门
+foreign key (deptid) references dept(did) on update set null on delete cascade
+#把修改操作设置为set null等级，把删除操作设置为级联删除等级
+);
+insert into dept values(1001,'教学部');
+insert into dept values(1002, '财务部');
+insert into dept values(1003, '咨询部');
+insert into emp values(1,'张三',1001); #在添加这条记录时，要求部门表有1001部门
+insert into emp values(2,'李四',1001);
+insert into emp values(3,'王五',1002);
+mysql> select * from dept;
++------+--------+
+| did | dname |
++------+--------+
+| 1001 | 教学部 |
+| 1002 | 财务部 |
+| 1003 | 咨询部 |
++------+--------+
+3 rows in set (0.00 sec)
+mysql> select * from emp;
++-----+-------+--------+
+| eid | ename | deptid |
++-----+-------+--------+
+| 1 | 张三 | 1001 |
+| 2 | 李四 | 1001 |
+| 3 | 王五 | 1002 |
++-----+-------+--------+
+3 rows in set (0.00 sec)
+#修改主表，从表对应的字段设置为null
+mysql> update dept set did = 1004 where did = 1002;
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1 Changed: 1 Warnings: 0
+mysql> select * from dept;
++------+--------+
+| did | dname |
+| 1003 | 咨询部 |
+| 1004 | 财务部 | #原来did是1002
++------+--------+
+3 rows in set (0.00 sec)
+mysql> select * from emp;
++-----+-------+--------+
+| eid | ename | deptid |
++-----+-------+--------+
+| 1 | 张三 | 1001 |
+| 2 | 李四 | 1001 |
+| 3 | 王五 | NULL | #原来deptid是1002，因为部门表1002被修改了，1002没有对应的了，就设置为
+null
++-----+-------+--------+
+3 rows in set (0.00 sec)
+#删除主表的记录成功，主表的1001行被删除了，从表相应的记录也被删除了
+mysql> delete from dept where did=1001;
+Query OK, 1 row affected (0.00 sec)
+mysql> select * from dept;
++------+--------+
+| did | dname | #部门表中1001部门被删除
++------+--------+
+| 1003 | 咨询部 |
+| 1004 | 财务部 |
++------+--------+
+2 rows in set (0.00 sec)
+mysql> select * from emp;
++-----+-------+--------+
+| eid | ename | deptid |#原来1001部门的员工也被删除了
++-----+-------+--------+
+| 3 | 王五 | NULL |
++-----+-------+--------+
+1 row in set (0.00 sec)
+
+```
+
+### 6.8、删除外键约束
+
+流程如下：
+
+```sql
+（1）第一步先查看约束名和删除外键约束
+SELECT * FROM information_schema.table_constraints WHERE table_name='表名称'#查看某个表的约束名
+
+ALTER TABLE 从表名 DROP  FOREIGN KEY 外键约束名；
+（2）第二步查看索引名和删除索引（注意，只能手动删除）
+SHOW INDEX FROM 表名称；#查看某个表的索引名
+ALTER TABLE 从表名 DROP INDEX 索引名；
+
+```
+
+**问题1：如果两个表之间有关系（一对一、一对多），比如：员工表和部门表（一对多），它们之间是否 一定要建外键约束？**
+
+答：不是的
+
+**问题2：建和不建外键约束有什么区别？**
+
+* 答：建外键约束，你的操作（创建表、删除表、添加、修改、删除）会受到限制，从语法层面受到限 制。例如：在员工表中不可能添加一个员工信息，它的部门的值在部门表中找不到。 
+* 不建外键约束，你的操作（创建表、删除表、添加、修改、删除）不受限制，要保证数据的 引用完整 性 ，只能依 靠程序员的自觉 ，或者是 在Java程序中进行限定 。例如：在员工表中，可以添加一个员工的 信息，它的部门指定为一个完全不存在的部门。
+
+**问题3：那么建和不建外键约束和查询有没有关系？**
+
+答：没有
+
+> 在MySQL里，外键约束是有成本的，需要消耗系统资源。对于**大并发的SQL操作**，有可能会不适合。比如大型网站的中央数据库，可能会==因为外键约束的系统开销而变得非常慢==，所以，MySQL允许你不使用系统自带的外键约束，在==应用层面==完成检查数据的一致性的逻辑。也就是说，即使你不用外键约束，也要想办法通过应用层面的附加逻辑，来实现外键约束的功能，确保数据的一致性。
+
+### 6.9 阿里开发规范
+
+【 **强制** 】不得使用外键与级联，一切外键概念必须在应用层解决。
+
+**说明：**（概念解释）学生表中的 student_id 是主键，那么成绩表中的 student_id 则为外键。如果更新学 生表中的 student_id，同时触发成绩表中的 student_id 更新，即为级联更新。外键与级联更新适用于 **单机低并发** ，不适合 **分布式** 、 **高并发集群** ；级联更新是**强阻塞**，存在数据库 **更新风暴** 的风险；外键影响 数据库的 **插入速度** 。
+
+## 7、CHECK约束
+
+### 7.1 作用
+
+检查某个字段的值是否符合xx要求，一半值的是值得范围
+
+### 5.2、关键字
+
+CHECK
+
+### 5.3、说明：MySQL5.7不支持
+
+MySQL5.7可以使用check约束，但check约束对数据验证没有任何作用。添加数据时，没有热河错误或警告
+
+但是==MySQL8.0中可以使用check约束了==
+
+### 5.4、例子
+
+```sql
+gender char check('男' or '女')
+age INT check(age > 20)
+sex char(2) check(sex in('男','女'))
+CHECK(height>=0 AND height<3)
+```
+
+## 8、DEFAULT约束
+
+### 8.1、作用
+
+给某个字段/某列指定默认值，一旦设置默认值，在插入数据时，如果此字段没有显示赋值，则赋值为默认值。
+
+### 8.2、关键字
+
+DEFAULT
+
+### 8.3如何给字段加默认值
+
+（1）建表时
+
+```sql
+create table 表名称(
+字段名 数据类型 primary key,
+字段名 数据类型 unique key not null,
+字段名 数据类型 unique key,
+字段名 数据类型 not null default 默认值,
+);
+create table employee(
+eid int primary key,
+ename varchar(20) not null,
+gender char default '男',
+tel char(11) not null default '' #默认是空字符串
+);
+
+```
+
+（2）建表后
+
+```sql
+alter table 表名称 modify 字段名 数据类型 default 默认值;
+#如果这个字段原来有非空约束，你还保留非空约束，那么在默认值约束时，还得保留非空约束，否则非空约束就被删除了
+#同理，在给某个字段加默认值约束也一样，如果这个字段原来有默认值约束，你想保留，也要在modify语句中保留默认值约束，否则就删除了
+alter table 表明成 modify 字段名 数据类型 default 默认值 not null;
+```
+
+
+
+## 9、面试
+
+==面试1、为什么建表时，加`not null default` 或 `default 0`==
+
+答：不想让表中出现null值。
+
+==面试2、为什么不想要null的值==
+
+答：（1） 不好比较。null是一种特殊值，比较时只能用专门的is null 和 is not null来比较。碰到运算符，通常返回null。
+
+（2）效率不高。影响提高索引效果。因此，我们往往在建表时not null default 或 default 0
+
+==面试3、带AUTO_INCREMENT约束的字段值是从1开始的吗？== 
+
+答：是的，默认是1。使用时，可以在插入数据时指定一个值。此后的值在该值上自动加1
+
+==面试4、并不是每个表都可以任意选择存储引擎？==**外键约束（FOREIGN KEY)不能跨引擎使用。**
+
+MySQL支持多种存储引擎，每一个表都可以指定一个不同的存储引擎，需要注意的是：外键约束是用来保证数据的参照完整性，如果表之间需要关联外键，却指定了不同的存储引擎，那么这些表之间是不能创建外键约束的。所以说，存储引擎的选择也不完全是随意的。
+
+# 十四、视图
+
+## 1、常见的数据库对象
+
+| 对象                  | 描述                                                         |
+| --------------------- | ------------------------------------------------------------ |
+| 表(TABLE)             | 表是存储数据的路基单元，以行和列的行时存在，列就是字段，行就是记录 |
+| 数据字典              | 就是系统表，存放数据库相关信息的表。系统表的数据通常由数据库系统维护， 程序员通常不应该修改，只可查看 |
+| 约束 (CONSTRAINT)     | 执行数据校验的规则，用于保证数据完整性的规则                 |
+| 视图(VIEW)            | 一个或者多个数据表里的数据的逻辑显示，视图并不存储数据       |
+| 索引(INDEX)           | 用于提高查询性能，相当于书的目录                             |
+| 存储过程（PROCEDURE） | 用于完成一次完整的业务处理，没有返回值，但可通过传出参数将多个值传给调用环境 |
+| 存储函数(FUNCTION)    | 用于完成一次特定的计算，具有一个返回值                       |
+| 触发器（TRIGGER）     | 相当于一个事件监听器，当数据库发生特定事件后，触发器被触发，完成相应的处理。 |
+
+> ### 为什么使用视图
+>
+> 相当于缓存，比再去查询多个表好
+
+## 2、视图概述
+
+* 视图时一种==虚拟表==，本身是==不具有数据==的，占用很少的内存空间，它是SQL中的一个重要概念
+* ==视图建立在已有表的基础上==，视图依赖的这些表建立的叫==基表==
+* 特点
+  * 视图，可以看做事一个虚拟表，本身事不存储数据的。视图的本质，就可以看作是**存储起来的SELECT语句。**
+  * 视图中SELECT语句中涉及到的表称为基表
+  * 针对视图做DML操作，会影响到对应的基表中的数据，反之亦然。
+  * 视图本身的删除，不会导致基表中数据的删除。
+  * 视图的应用场景：针对于小型项目，不推荐使用视图。
+
+## 3、创建视图
+
+* **在 CREATE VIEW 语句中嵌入子查询**
+
+```sql
+  CREATE [OR REPLACE]
+  [ALGORITHM={UNDEFINED | MERGE | TEMPTABLE}]
+  VIEW 视图名称 [(字段列表)]
+  AS 查询语句
+  [WITH [CASCADED | LOCAL ] CHECK OPTION]
+```
+
+* 精简版
+
+```sql
+CREATE VIEW 视图名称
+AS 查询语句
+```
+
+### 3.1、创建单表视图
+
+举例：
+
+```sql
+CREATE VIEW empvu80
+AS
+SELECT employee_id,last_name,salary
+FROM employees
+WHERE department_id=80;
+```
+
+查询视图：
+
+```sql
+SELECT *
+FROM salvu80;
+```
+
+![image-20230131175310118](MySql.assets\image-20230131175310118.png)
+
+说明1：实际上就是我们在SQL查询语句的基础上封装了视图VIEW，这样就会基于SQL语句的结果集形成一张虚拟表。
+
+说明2：在创建视图时，没有在视图名后面指定字段列表，则视图中字段列表默认和SELECT语句中的字 段列表一致。如果SELECT语句中给字段取了别名，那么视图中的字段名和别名相同。
+
+## 4、查看视图
+
+语法1：查看数据库的表对象、视图对象
+
+```SQL
+SHOW TABLES;
+```
+
+
+
+语法2：查看视图的结构
+
+```sql
+DESC /DESCRIBE 视图名称；
+```
+
+语法3：查看视图的属性信息
+
+```sql
+#查看视图信息（显示数据表的存储引擎、版本、数据行书和数据大小等）
+SHOW TABLE STATUS LIKE '视图名称'\G
+```
+
+![image-20230201092817392](MySql.assets\image-20230201092817392.png)
+
+执行结果显示，注释Comment为VIEW，说明该表为视图，其它的信息为NULL，说明这是一个虚表。
+
+语法4：查看视图的详细定义信息
+
+![image-20230201093007437](MySql.assets\image-20230201093007437.png)
+
+## 5、更新视图
+
+#### 5.1 一般情况
+
+MySQL支持使用INSERT、UPDATE和DELETE语句对**视图**中的数据进行**插入、更新和删除**操作。当视图中的数据发生变化时，数据表中的数据也会发生变化，反之亦然。
+
+```sql
+DROP VIEW IF EXISTS emp_tel;
+CREATE VIEW emp_tel
+AS 
+SELECT * FROM employees;
+
+SELECT * FROM emp_tel;
+
+SELECT first_name,email FROM emp_tel WHERE first_name ='Lex';
+
+UPDATE emp_tel SET email='1232' WHERE first_name='Lex';
+```
+
+#### 5.2 不可更新的视图
+
+要视视图可更新，视图中的行和底层基本表中的行之间必须存在==一对一==的关系。另外当视图定义出现如下情况时，视图不支持更新操作：
+
+* 在定义视图的时候指定了==ALGORITHM=TEMPTABLE==,视图将不支持INSERT和DELETE操作。
+* 视图中==不包含==基表中所有被定义为==非空又未指定默认值的列==，视图将不支持**INSERT**操作。
+* 在定义视图的SELECT语句中使用==JOIN联合查询==，视图将不支持**INSERT**和**DELETE**操作。
+* 在定义视图的SELECT语句后的字段列表中使用了==数学表达式==或==子查询==，视图将不支持**INSERT**，也不支持**UPDATE**
+* 在定义视图的SELECT语句中包含了子查询，而子查询中引用了FROM后面的表，视图将不支持INSERT、UPDATE、DELETE
+* 视图定义基于一个==不可更新视图==
+* 常量视图
+
+> 注意：
+>
+> 虽然可以更新视图数据，但总的来说，视图作为`虚拟表`，主要用于`方便查询`，不建议更新视图的数据。**对视图数据的更改都是通过对实际数据表里数据的操作来完成的。**
+
+## 6、修改、删除视图
+
+#### 6.1 修改视图
+
+方式1：使用**CREATE OR REPLACE VIEW** 子句==修改视图==
+
+```sql
+CREATE OR REPLACE VIEW empvu80
+(id_number,name,sal,department_id)
+AS
+SELECT employee_id first-name || '' ||last_name,salary,deparmtent_id
+FROM employees
+WHERE department-id=80;
+```
+
+> 说明：CREATE VIEW 子句中各列的别名应和子查询中各列相对应
+
+方式2：**ALTER VIEW**
+
+修改视图的语法是：
+
+```sql
+ALTER VIEW 视图名称
+AS
+查询语句
+```
+
+#### 6.2 删除视图
+
+* 删除视图只是删除视图的定义，并不会删除基表的数据
+
+* 删除视图的语法是：
+
+* ```sql
+  DROP VIEW IF EXISTS 视图名称；
+  ```
+
+  > 说明
+  >
+  > 基于视图a、b创建了新的视图c，如果将视图a或者视图b删除，会导致视图c的查询失败。这样的视图c需要手动删除或修改，否则影响使用。
+
+## 7、总结
+
+### 7.1视图优点

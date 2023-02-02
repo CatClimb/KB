@@ -1081,7 +1081,6 @@ public class UplaodServlet extends HttpServlet {
                         // 参数UTF-8.解决乱码问题
                         System.out.println("表单项的value属性值：" + 
                                            fileItem.getString("UTF-8"));
-
                     } else {
                         // 上传的文件
                         System.out.println("表单项的name属性值：" + 

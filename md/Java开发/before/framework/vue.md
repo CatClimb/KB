@@ -3818,9 +3818,9 @@ import VueResource from 'vue-resource'
 
       1. 理解：数据在组件的自身，但<font color='red'>根据数据生成的结构</font>需要组件的使用者来决定。（本质是超过作用域范围之外传递数据。（子组件===>父组件））
 
-         1. 人话：<font color='orange'>父组件种定义数据结构</font>，<font color='gree'>而子组件定义数据</font>，此时使用子组件数据来<font color='red'>填充</font>父组件定义的数据结构
+         1. 人话：<font color='orange'>在父组件中使用子组件数据建立自定义展示结构。</font>
 
-      2. 具体编码：
+      2. 具体编码： 
 
          1. App
       
