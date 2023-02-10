@@ -4106,7 +4106,7 @@ DROP TABLE book1,book2
 
 结果：
 
-* MySQL 5.7 book1表数据被删除
+* MySQL 5.7 book1表数据被删除，DDL没有原子性
 * MySQL 8.0 book1表数据没有被删除，因为回滚了 
 
 ## 
@@ -6057,6 +6057,28 @@ MySQL支持多种存储引擎，每一个表都可以指定一个不同的存储
 
 ## 3、创建视图
 
+* 准备工作
+
+  ```sql
+  CREATE DATABASE dbtest4;
+  USE dbtest4;
+  
+  CREATE TABLE emps
+  AS
+  SELECT *
+  FROM atguigudb.`employees`;
+  
+  CREATE TABLE depts
+  AS
+  SELECT *
+  FROM atguigudb.`departments`;
+  
+  SELECT * FROM emps;
+  SELECT * FROM depts;
+  ```
+
+  
+
 * **在 CREATE VIEW 语句中嵌入子查询**
 
 ```sql
@@ -6074,30 +6096,70 @@ CREATE VIEW 视图名称
 AS 查询语句
 ```
 
-### 3.1、创建单表视图
+### 3.1、基于单表
 
 举例：
 
 ```sql
-CREATE VIEW empvu80
+#单表视图
+#情况1：视图中的字段与基表的字段有一一对应关系
+CREATE VIEW vu_emp1
+AS
+SELECT employee_id,last_name,salary#字段名称与表字段一致
+FROM emps;
+
+	
+#确定视图中字段名的方式1：
+CREATE VIEW vu_emp2
+AS
+SELECT employee_id emp_id,last_name lname,salary#查询语句中字段的别名会作为视图中字段的名称
+FROM emps
+WHERE salary > 8000;
+#确定视图中字段名的方式2：
+CREATE VIEW vu_emp3(emp_id,NAME,monthly_sal)
 AS
 SELECT employee_id,last_name,salary
-FROM employees
-WHERE department_id=80;
+FROM emps
+WHERE salary > 8000;
+
+SELECT * FROM vu_emp3;
+
+#情况2：视图中的字段再基表中可能没有对应的字段
+CREATE VIEW vu_emp_sal
+AS
+SELECT department_id,AVG(salary) avg_sal
+FROM emps
+WHERE department_id IS NOT NULL
+GROUP BY department_id;
+
+SELECT * FROM vu_emp_sal;
+
 ```
 
-查询视图：
+### 3.2、基于多表
 
 ```sql
-SELECT *
-FROM salvu80;
+CREATE VIEW vu_emp_dept
+AS
+SELECT e.employee_id,e.department_id,d.department_name
+FROM emps e JOIN depts d
+ON e.department_id=d.department_id;
+
+SELECT * FROM vu_emp_dept;
 ```
 
-![image-20230131175310118](MySql.assets\image-20230131175310118.png)
+### 3.3、基于视图创建视图
 
-说明1：实际上就是我们在SQL查询语句的基础上封装了视图VIEW，这样就会基于SQL语句的结果集形成一张虚拟表。
+```sql
+CREATE VIEW vu_emp4
+AS
+SELECT employee_id,last_name
+FROM vu_emp1;
 
-说明2：在创建视图时，没有在视图名后面指定字段列表，则视图中字段列表默认和SELECT语句中的字 段列表一致。如果SELECT语句中给字段取了别名，那么视图中的字段名和别名相同。
+SELECT * FROM vu_emp4;
+```
+
+
 
 ## 4、查看视图
 
@@ -6130,7 +6192,7 @@ SHOW TABLE STATUS LIKE '视图名称'\G
 
 ![image-20230201093007437](MySql.assets\image-20230201093007437.png)
 
-## 5、更新视图
+## 5、更新视图数据
 
 #### 5.1 一般情况
 
@@ -6161,7 +6223,7 @@ UPDATE emp_tel SET email='1232' WHERE first_name='Lex';
 * 视图定义基于一个==不可更新视图==
 * 常量视图
 
-> 注意：
+> #### 注意：
 >
 > 虽然可以更新视图数据，但总的来说，视图作为`虚拟表`，主要用于`方便查询`，不建议更新视图的数据。**对视图数据的更改都是通过对实际数据表里数据的操作来完成的。**
 
@@ -6208,7 +6270,7 @@ AS
 
 ## 7、总结
 
-### 7.1视图优点
+### 7.1、视图优点
 
 1. <font color='orange'>操作简单</font>
 
@@ -6224,7 +6286,673 @@ AS
 
 4. **适应灵活多变的需求**当业务系统的需求发生变化后，如果需要改动数据表的结果，则工作量相对较大，可以使用视图来减少改动的工作量。这种方式在实际工作中使用得比较多。
 5. **能够分解复杂得查询逻辑** 数据库中如果存在复杂得查询逻辑，则可以将问题进行分解，创建多个视图获取数据，再将创建得多个视图结合起来，完成复杂得查询逻辑。
-6. 缺点：
-   * 如果我们再实际数据表的基础上创建了视图，那么，**如果实际数据表的结构发生改变，我们就需要及时对相关的视图进行相应的维护。**
-   * 特别时嵌套的视图（就是再视图的基础上创建视图），维护会变得**比较复杂**，==可读性不好==，容易变成系统的潜在隐患。因为创建视图的 SQL 查询可能会对字段重命名，也可能包 含复杂的逻辑，这些都会增加维护的成本。
 
+### 7.2、缺点：
+
+* 如果我们再实际数据表的基础上创建了视图，那么，**如果实际数据表的结构发生改变，我们就需要及时对相关的视图进行相应的维护。**
+* 特别时嵌套的视图（就是再视图的基础上创建视图），维护会变得**比较复杂**，==可读性不好==，容易变成系统的潜在隐患。因为创建视图的 SQL 查询可能会对字段重命名，也可能包 含复杂的逻辑，这些都会增加维护的成本。
+
+# 十五、存储过程与函数
+
+MySQL从5.0版本开始支持存储过程和函数。存储过程和函数能够将复杂的SQL逻辑封装在一起，应用程 序无须关注存储过程和函数内部复杂的SQL逻辑，而只需要简单地调用存储过程和函数即可。
+
+## 1、存储过程概述
+
+### 1.1、理解
+
+* **含义：**存储过程的英文是==Stored Procedure==。它的思想很简单，就是一组经过==预先编译的SQL语句==的封装。
+
+* **执行过程**：存储过程预先存储再MySQLMySQL服务器上，需要执行的时候，客户端只需要想服务器端发出调用存储过程的命令，服务器端就可以把预先存储好的一系列
+* **好处：**
+  1. 简化操作，提高了sql语句的重用性，减少了开发程序员的压力
+  2. 减少操作过程中的十五，提高效率
+  3. 减少网络传输量（客户端不需要把所有的SQL语句通过网络发给服务器）
+  4. 减少了SQL语句暴露再网上的风险，提高哦数据擦汗寻的安全性
+
+* **和视图、函数的对比**
+
+  * 它和视图有着同样的优点、清晰、安全，还可以减少网络传输量，不过它和视图不同，视图是`虚拟表`，通常不对底层数据表直接操作，而存储过程是程序化的SQL，可以==直接操作底层给数据表==，相比于面向集合的操作方式，能够实现一些更复杂的数据处理。
+
+  * 一旦存储过程被创建出来，使用它就像使用函数一样简单，我们直接通过调用存储过程名即可。相较于函数，存储过程时`没有返回值`的。
+
+    
+
+### 1.2、分类
+
+存储过程的参数类型可以是**IN**、**OUT**和**INOUT**
+
+1. 没有参数（无参数无返回）
+2. 仅仅带IN类型（有参数无返回）
+3. 仅仅带OUT类型（无参数有返回）
+4. 既带IN又带OUT（有参数有返回）
+5. 带INOUT（有参数有返回）
+
+注意：IN、OUT、INOUT 都可以再一个存储过程中带多个
+
+## 2、创建存储过程
+
+### 2.1 语法分析
+
+语法：
+
+```sql
+CREATE PROCEDURE 存储过程名（IN|OUT|INOUT 参数名 参数类型，...）
+BEGIN
+	存储过程体
+END
+```
+
+类型于Java中的方法：
+
+```sql
+修饰符 返回类型 方法名 (参数类型 参数名，...){
+	方法体;
+}
+```
+
+1. 参数前面的符号的意思
+
+   * ==IN==：当前参数为输入参数，也就是表示入参；
+     * 存储过程只是读取这个参数的值。如果没有定义参数种类，**默认就是 IN** ，表示输入参数。
+   * ==OUT==：当前参数为输出参数，也就是表示出参
+     * 执行完成之后，调用这个存储过程的客户端或者应用程序就可以**读取这个参数返回的值了**
+   * ==INOUT==：当前参数既可以为输入参数，也可以为输出参数
+
+2. 形参类型可以是MySQL数据库中的任意类型
+
+3. ==characteristics==表示创建存储过程时指定的对存储过程的约束条件，器取值信息如下：
+
+   ```sql
+   LANGUAGE SQL
+   | [NOT] DETERMINISTIC
+   | { CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA}
+   | SQL SECURITY {DEFINER | INVOKER}
+   ```
+
+   * ==LANGUAGE SQL==：说明存储过程执行体是由SQL语句组成的，当前系统支持的语言为SQL
+   * ==[NOT] DETERMINISTIC==：指定存储过程执行的结果是否确定。
+     * DETERMINISTIC表示结果是<font color='orange'>确定</font>的。**每次执行存储过程时，相同的输入会得到相同的输出**。NOT DETERMINISTIC 表示结果时**不确定的**，相同的输入可能得到不同的输出。
+     * 如果没有指定任意一个值，默认为NOT DETERMINISTIC。
+   * =={ CONTAINS SQL | NO SQL READS SQL DATA | MODIFIES SQL DATA}==：指明子程序使用SQL语句限制。
+     * CONTAINS SQL 表示当前存储过程的子程序包含SQL语句，但是并不包含读写数据的SQL语句；
+     * NO SQL 表示当前存储过程的子程序中不包含任何SQL语句。
+     * READS SQL DATA表示当前存储过程的子程序中包含读数据的SQL语句
+     * MODIFIES SQL DATA 表示当前存储过程的子程序中包含写数据的SQL语句
+     * 默认情况下，系统会指定为**CONTAINS SQL**
+   * ==SQL SECURITY {DEFINER | INVOKER}==：执行当前存储过程的权限，既指明哪些用户能够执行当前存储过程
+     * ==DEFINER==表示只有当前存储过程的创建者或者定义者才能执行当前存储过程。
+     * ==INVOKER==表示拥有当前存储过程的访问权限的用户能够执行当前存储过程。
+
+4. 存储过程体中可以由有多条SQL语句，**如果仅仅一条SQL语句，则可以省略BEGIN 和 END**
+
+   编写存储过程并不是一件简单的事情，可能存储过程中需要复杂的SQL语句
+
+   > 1. <font color='red'>BEGIN...END：</font>中间包含了多个语句，每个语句都以（；）号为结束符
+   > 2. <font color='gree'>DECLARE：</font>DECLARE 用来声明变量，使用的位置在于BEGIN...END语句中间，而且需要在其它语句使用之前进行变量声明
+   > 3. <font color='orange'>SET</font>：赋值语句，用于对变量进行赋值
+   > 4. **SELECT...INTO：**把从数据表中查询的结果存放到变量中，也就是为变量赋值。
+
+5. 需要设置新的结束标记
+
+   ```sql
+   DELIMITER 新的结束标记
+   ```
+
+   因为MySQL默认的语句结束符号为分号**‘；’**为了避免于存储过程中SQL语句结束符相冲突，需要使用DELIMITER改变存储过程的结束符。
+
+   例如：
+
+   ​	`DELIMITER //`语句的作用是将MySQL的结束符设置为//，并以`END //`结束存储过程。存储过程定义完毕之后再使用`DELIMITER;`恢复默认结束符。DELIMITER也可以指定其它符号作为结束符。
+
+   ```sql
+   DELIMITER $
+   CREATE PROCEDURE 存储过程名(IN|OUT|INOUT 参数名 参数类型，...)
+   [characteristics]
+   BEGIN
+   	sql语句1;
+   	sql语句2;
+   END $
+   ```
+
+   ```sql
+   DELIMITER $
+   CREATE PROCEDURE select_all_data()
+   BEGIN
+   	SELECT * FROM employees;
+   END $
+   DELIMITER ;
+   ```
+
+
+### 2.2 代码举例
+
+举例1：创建存储过程select_all_data()，查看 employees表的所有数据
+
+```SQL
+DELIMITER $
+CREATE PROCEDURE select_all_data()
+BEGIN
+	SELECT * FROM employees;
+END $
+DELIMITER ;
+```
+
+举例2：创建存储过程avg_employee_salary()，返回所有员工的平均工资
+
+```sql
+DROP PROCEDURE IF EXISTS avg_employee_salary;
+DELIMITER //
+CREATE PROCEDURE avg_employee_salary()
+BEGIN
+  SELECT AVG(salary) AS avg_salary FROM employee;
+END //
+DELIMITER ;
+```
+
+举例3：创建存储过程show_max_salary()，用来查看“employees”表的最高薪资值。
+
+```sql
+DELIMITER $
+CREATE PROCEDURE show_max_salary()
+LANGUAGE SQL
+NOT DETERMINISTIC
+CONTAINS SQL
+SQL SECURITY DEFINER
+COMMENT '查看最高工资'
+BEGIN
+	SELECT MAX(salary) FROM employees;
+END $
+DELIMITER ;
+```
+
+举例4：创建存储过程show_min_salary()，查看“employees”表的最低薪资值。并将最低薪资通过**OUT**参数“ms” 输出
+
+```sql
+DELIMITER //
+CREATE PROCEDURE show_min_salary(OUT ms DOUBLE)
+	BEGIN
+		SELECT MIN(salary) min_salary INTO ms FROM employees;
+	END //
+DELIMITER ;
+```
+
+举例5：创建存储过程show_someone_salary()，查看“employees”表的某个员工的薪资，并用**IN**参数empname 输入员工姓名。
+
+```sql
+DELIMITER //
+CREATE PROCEDURE show_someone_salary(IN empname VARCHAR(20))
+	BEGIN
+		SELECT salary FROM employees  WHERE first_name=empname;
+		
+	END //
+DELIMITER ;
+```
+
+举例6：创建存储过程show_someone_salary2()，查看“employees”表的某个员工的薪资，并用**IN**参数empname 输入员工姓名，用**OUT**参数empsalary输出员工薪资。
+
+```sql
+DELIMITER $
+CREATE PROCEDURE show_someone_salary2(IN empname  VARCHAR(20),OUT empsalary DOUBLE)
+	BEGIN
+		SELECT salary INTO empsalary FROM employees WHERE first_name=empname;
+	END $
+```
+
+举例7：创建存储过程show_mgr_name()，查询某个员工领导的姓名，并用**INOUT**参数“empname”输入员 工姓名，输出领导的姓名。
+
+```sql
+DROP PROCEDURE IF EXISTS show_mgr_name;
+DELIMITER $
+CREATE PROCEDURE show_mgr_name(INOUT empname VARCHAR(20))
+	BEGIN
+		SELECT first_name 
+		INTO empname 
+		FROM employees
+		WHERE employee_id =(
+			SELECT manager_id 
+			FROM employees 
+			WHERE first_name=empname
+		);
+	END $
+DELIMITER ;
+```
+
+
+
+## 3、调用存储过程
+
+### 3.1 调用格式
+
+存储过程有多种调用方法。存储过程必须使用**CALL**语句调用，并且存储过程和数据库相关，如果要执行其它数据库中的存储过程，需要指定数据库名称，例如`CALL dbname.procname`
+
+```sql
+CALL 存储过程名（实参列表）
+```
+
+**格式：**
+
+1. 调用in模式的参数：
+
+   ```sql
+   CALL procedure_name(值)
+   ```
+
+2. 调用out模式的参数：
+
+   ```sql
+   CALL sp1(@name);
+   SELECT @name;
+   ```
+   
+3. 调用inout 模式的参数：
+
+   ```sql
+   SET @name=值;
+   CALL procedure_name(@name);
+   SELECT @name;
+   ```
+
+> 问题 待处理
+>
+> SET @name; 该语句不能用
+
+### 3.2 代码举例
+
+1. 调用 有**输入参数**的存储过程：
+
+```sql
+mysql> CALL show_someone_salary('Lex');
++----------+
+| salary   |
++----------+
+| 17000.00 |
++----------+
+1 row in set (0.00 sec)
+
+Query OK, 0 rows affected (0.00 sec)
+```
+
+2. 调用有 **输出参数**的存的过程：
+
+   ```sql
+   mysql> call show_min_salary(@value);
+   Query OK, 1 row affected (0.01 sec)
+   
+   mysql> select @value;
+   +--------+
+   | @value |
+   +--------+
+   |   2100 |
+   +--------+
+   1 row in set (0.00 sec)
+   
+   mysql>
+   ```
+
+3. 调用有**INOUT** 类型的参数的存储过程：
+
+   ```sql
+   mysql> SET @empname='Lex';
+   Query OK, 0 rows affected (0.00 sec)
+   
+   mysql> CALL show_mgr_name(@empname);
+   Query OK, 1 row affected (0.00 sec)
+   
+   mysql> select @empname;
+   +----------+
+   | @empname |
+   +----------+
+   | Steven   |
+   +----------+
+   1 row in set (0.00 sec)
+   
+   mysql>
+   ```
+
+   如果你用的是 Navicat 工具，那么在编写存储过程的时候，Navicat 会自动设置 DELIMITER 为其他符号， 我们**不需要**再进行 DELIMITER 的操作。
+
+   > ### 提醒
+   >
+   > **最好需要**		
+
+### 3.3如何调试
+
+> 交钱就能调试
+
+在 MySQL 中，存储过程不像普通的编程语言（比如 VC++、Java 等）那样有专门的集成开发环境。因 此，你可以通过 SELECT 语句，把程序执行的中间结果查询出来，来调试一个 SQL 语句的正确性。调试 成功之后，把 SELECT 语句后移到下一个 SQL 语句之后，再调试下一个 SQL 语句。这样 逐步推进 ，就可 以完成对存储过程中所有操作的调试了。当然，你也可以把存储过程中的 SQL 语句复制出来，逐段单独 调试。
+
+
+
+## 4、存储函数的使用
+
+### 4.1 语法分析
+
+学过的函数：LENGTH、SUBSTR、CONCAT等
+
+语法格式：
+
+```sql
+CREATE FUNCTION 函数名(参数名，参数类型，...)
+RETURNS 返回值类型
+[characteristics]
+BEGIN
+	函数体 #函数体中肯定有RETURN 语句
+END
+```
+
+`特点：`
+
+* 参数列表：指定参数为==IN、OUT==或==INOUT==只对==PROCEDURE==是合法的，==FUNCTION==中总是**默认为IN参数**
+* **RETURNS type** 语句表示函数返回数据的类型。
+  * RETURNS子句只能对FUNCTION坐指定，对函数而言这是**强制**的，它用来指定函数的返回类型，而且函数体必须包含一个==RETURN value==语句
+* characteristic 创建函数时指定的对函数的约束，取值与创建存储过程的像通，这里不再赘述。
+* 函数体也可以用BEGIN...END来表示SQL代码的开始和结束。如果函数体只有一条语句，也可以省略BEGIN...END
+
+### 4.2 调用存储函数
+
+在MySQL中，存储函数的使用方法与MySQL内部函数的使用方法是一样的。换言之，**用户自己定义的存储函数与MySQL内部函数**是一个性质的。区别在于，存储函数是==用户自己定义==的，而内部函数是MySQL的**开发者定义**的。
+
+```sql
+SELECT 函数名(实参列表)
+```
+
+### 4.3 代码举例
+
+* 举例1：
+
+```sql
+#创建存储函数，名称为email_by_name(),参数定义为空，该函数查询Abel的email，并返回，数据类型为字符串型。
+
+DROP FUNCTION IF EXISTS email_by_name;
+DELIMITER //
+
+CREATE FUNCTION email_by_name()
+RETURNS VARCHAR(25)
+DETERMINISTIC
+CONTAINS SQL
+BEGIN 
+	RETURN (SELECT email FROM employees WHERE last_name='_Abel');
+END //
+DELIMITER ;
+SELECT email_by_name();
+```
+
+* 举例2：
+
+```sql
+#创建存储函数，名称为email_by_id()，参数传入emp_id，该函数查询emp_id的email，并返回，数据类型
+#为字符串型。
+DROP FUNCTION IF EXISTS email_by_id;
+DELIMITER //
+
+CREATE FUNCTION email_by_id(emp_id INT)
+RETURNS VARCHAR(25)
+LANGUAGE SQL
+DETERMINISTIC
+CONTAINS SQL
+BEGIN
+	RETURN (SELECT email FROM employees WHERE employee_id=emp_id);
+END //
+DELIMITER ;
+SET @empId=102;
+SELECT email_by_id(@empId);
+```
+
+* 举例3：
+
+```sql
+#创建存储函数count_by_id()，参数传入dept_id，该函数查询dept_id部门的员工人数，并返回，数据类型
+#为整型。
+DROP FUNCTION IF EXISTS count_by_id;
+DELIMITER //
+CREATE FUNCTION count_by_id(dept_id INT)
+RETURNS INT
+LANGUAGE SQL
+DETERMINISTIC
+CONTAINS SQL
+BEGIN 
+	RETURN (SELECT COUNT(*) 
+	FROM departments d 
+	LEFT JOIN employees e
+	ON d.department_id=e.department_id
+	WHERE d.department_id=dept_id);
+END //
+DELIMITER ;
+SET @dept_id=50;
+SELECT count_by_id(@dept_id);
+```
+
+> ### **注意：**
+>
+> 若在创建存储函数中报错`you might want to use the less safe log_bin_trust_function_creators variable`
+>
+> 有两种处理方法：
+>
+> * 方式1：加上必要的函数特性`[NOT] DETERMINISTIC”和“{CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA}`
+>
+> * 方式2：
+>
+>   ```sql
+>   SET GLOBAL log_bin_trust_function_creators=1;
+>   ```
+>
+>   
+
+### 4.4 对比存储函数和存储过程
+
+|          | 关键字    | 调用语法        | 返回值                | 应用场景                   |
+| -------- | --------- | --------------- | --------------------- | -------------------------- |
+| 存储过程 | PROCEDURE | CALL 存储过程() | 可以理解为有0个或多个 | 一般用于更新               |
+| 存储函数 | FUNCTION  | SELECT 函数()   | 只是一个              | 一般用于查询结果为一个值并 |
+
+此外，**存储函数可以放在查询语句中使用，存储过程不行**。反之，存储过程的功能更加强大，包括能够`执行对表的操作（比如创建表，删除表等）`和事务操作，这些功能是存储函数不具备的。
+
+## 5、存储过程和函数的查看、修改、删除
+
+### 5.1 查看
+
+创建完之后，怎么世道我们创建的存储过程、存储函数是否成功了呢？
+
+MySQL存储了存储过程和函数的状态信息，用户可以使用**SHOW STATUS**语句或**SHOW CREATE** 语句来查看，也可直接从系统的information_schema数据库中查询。这里介绍3中方法。
+
+1. 使用SHOW CREATE语句查看存储过程和函数的创建信息
+
+```sql
+SHOW CREATE {PROCEDURE | FUNCTION} 存储过程名或函数名
+
+
+```
+
+2. 使用SHOW STATUS 语句查看存储过程和函数的状态信息
+
+```sql
+SHOW {PROCEDURE | FUNCTION} STATUS [LIKE 'pattern']
+```
+
+这个语句返回子程序的特征，如数据库、名字、类型、创建者及创建和修改日期
+
+`[LIKE 'pattern']`：**匹配存储过程或函数的名称**，可以省略。当省略不写时，会列出MySQL数据库中存在的所有存储过程或函数的信息。
+
+例子：
+
+```sql
+mysql> SHOW CREATE FUNCTION count_by_id \G
+*************************** 1. row ***************************
+            Function: count_by_id
+            sql_mode: STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION
+     Create Function: CREATE DEFINER=`wujianmin`@`%` FUNCTION `count_by_id`(dept_id int) RETURNS int
+    DETERMINISTIC
+begin
+        return (select count(*)
+        from departments d
+        left join employees e
+        on d.department_id=e.department_id
+        where d.department_id=dept_id);
+end
+character_set_client: utf8mb3
+collation_connection: utf8_general_ci
+  Database Collation: utf8_general_ci
+1 row in set (0.00 sec)
+
+
+```
+
+```sql
+mysql> SHOW PROCEDURE STATUS LIKE 'SELECT%' \G
+*************************** 1. row ***************************
+                  Db: atguigudb
+                Name: select_all_data
+                Type: PROCEDURE
+             Definer: wujianmin@%
+            Modified: 2023-02-04 22:45:37
+             Created: 2023-02-04 22:45:37
+       Security_type: DEFINER
+             Comment:
+character_set_client: utf8
+collation_connection: utf8_general_ci
+  Database Collation: utf8_general_ci
+1 row in set (0.00 sec)
+```
+
+3. 从**information_schema.Routines**表中查看存储过程和函数的信息
+
+   MySQL中存储过程和函数的信息存储在information_schema数据库下的<font color='orange'>Routines</font>表中。可以通过查询该表的记录来查询过程和函数的信息。其基本语法形式如下：
+
+   ```sql
+   SELECT * FROM information_schema.Routines
+   WHERE ROUTINE_NAME='存储过程或函数的名' [AND ROUTINE_TYPE={'PROCEDURE|FUNCTION'}];
+   ```
+
+   说明：
+
+   如果在MySQL数据库中存在存储过程和函数名称相同的情况，最好指定ROUTINE_TYPE查询条件来指明查询的是存储过程还是函数。
+
+例如：
+
+```sql
+mysql> SELECT * FROM information_schema.Routines
+    -> WHERE ROUTINE_NAME='count_by_id' AND ROUTINE_TYPE = 'FUNCTION' \G
+*************************** 1. row ***************************
+           SPECIFIC_NAME: count_by_id
+         ROUTINE_CATALOG: def
+          ROUTINE_SCHEMA: atguigudb
+            ROUTINE_NAME: count_by_id
+            ROUTINE_TYPE: FUNCTION
+               DATA_TYPE: int
+CHARACTER_MAXIMUM_LENGTH: NULL
+  CHARACTER_OCTET_LENGTH: NULL
+       NUMERIC_PRECISION: 10
+           NUMERIC_SCALE: 0
+      DATETIME_PRECISION: NULL
+      CHARACTER_SET_NAME: NULL
+          COLLATION_NAME: NULL
+          DTD_IDENTIFIER: int
+            ROUTINE_BODY: SQL
+      ROUTINE_DEFINITION: begin
+        return (select count(*)
+        from departments d
+        left join employees e
+        on d.department_id=e.department_id
+        where d.department_id=dept_id);
+end
+           EXTERNAL_NAME: NULL
+       EXTERNAL_LANGUAGE: SQL
+         PARAMETER_STYLE: SQL
+        IS_DETERMINISTIC: YES
+         SQL_DATA_ACCESS: CONTAINS SQL
+                SQL_PATH: NULL
+           SECURITY_TYPE: DEFINER
+                 CREATED: 2023-02-10 11:36:17
+            LAST_ALTERED: 2023-02-10 11:36:17
+                SQL_MODE: STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION
+         ROUTINE_COMMENT:
+                 DEFINER: wujianmin@%
+    CHARACTER_SET_CLIENT: utf8
+    COLLATION_CONNECTION: utf8_general_ci
+      DATABASE_COLLATION: utf8_general_ci
+1 row in set (0.00 sec)
+```
+
+### 5.2 修改
+
+修改存储过程或函数，不影响存储过程或函数功能，**只是修改相关特性**。使用ALTER语句实现。
+
+```sql
+ALTER {PROCEDURE|FUNCTION} 存储过程或函数的名 [characteristic...]
+```
+
+其中，characteristic指定存储过程或函数的特性，其取值信息与创建存储过程、函数时的取值信息**略有 不同**。
+
+```SQL
+CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA }
+| SQL SECURITY { DEFINER | INVOKER }
+| COMMENT 'string
+```
+
+* <font color='orange'>CONTAINS SQL</font> ，表示子程序包含SQL语句，但不包含读或写数据的语句。
+* <font color='orange'>NO SQL</font> ，表示子程序中不包含SQL语句。
+* <font color='orange'>READS SQL DATA</font> ，表示子程序中包含读数据的语句。
+* <font color='orange'>MODIFIES SQL DATA</font> ，表示子程序中包含写数据的语句。 
+* <font color='orange'>SQL SECURITY { DEFINER | INVOKER }</font> ，指明谁有权限来执行。
+  * **DEFINER** ，表示只有定义者自己才能够执行。 
+  * **INVOKER** ，表示调用者可以执行。
+* <font color='orange'>COMMENT 'string'</font> ，表示注释信息。
+
+> ##### 修改存储过程使用ALTER PROCEDURE语句，修改存储函数使用ALTER FUNCTION语句。但是，这两个语句的结构是一样的，语句中的所有参数也是一样的。
+
+**举例1：**
+
+修改存储过程count_by_id的定义。将读写权限改为MODIFIES SQL DATA，并指明调用者可以执行，代码如下：
+
+```SQL
+ALTER PROCEDURE count_by_id
+MODIFIES SQL DATA
+SQL SECURITY INVOKER 
+COMMENT 'FIGHT STREAM' ;
+```
+
+### 5.3 删除
+
+```SQL
+DROP {PROCEDURE | FUNCTION } [IF EXISTS] 存储过程或函数的名
+```
+
+## 6、关于存储过程使用的争议
+
+尽管存储过程有诸多优点，但是对于存储过程的使用，**一直都存在者很多争议**，比如有些公司对于大型项目要求使用存储过程，而有些公司在手册中明确禁止使用存储过程，为什么这些公司对存储过程的使用需求差别这么大呢？
+
+### 6.1 优点
+
+**1、存储过程可以一次编译多次使用。**存储过程只在创建世进行编译，之后的使用都不需要重新编译，这就提升了SQL的执行效率。
+
+**2、可以减少开发工作量。**将代码==封装==称模块，实际上是编程的核心思想之一。这样可以把复杂的问题拆解成不同的模块，然后模块之间可以==重复使用==
+
+，在减少开发工作量的同时，还能保证代码的结构清晰。
+
+**3、存储过程的安全性强**。我们在设定存储过程的时候可以==设置对用户的使用权限==，这样就和视图一样具有较强的安全性。
+
+**4、可以减少网络传输量。**因为代码封装到存储过程中，每次使用只需要调用存储过程即可，这样就减少了网络传输量。
+
+**5、良好的封装性**。在进行相对复杂的数据库操作时，原本需要使用一条一条的SQL语句，可能要连接多次数据库才能完成的操作，现在编程了一次存储过程，只需要==连接一次即可==
+
+### 6.2 缺点
+
+基于上面这些优点，不少大公司都要求大型项目使用存储过程，比如微软、IBM 等公司。但是国内的阿 里并不推荐开发人员使用存储过程，这是为什么呢？
+
+> #### 阿里开发规范
+>
+>  【强制】禁止使用存储过程，存储过程难以调试和扩展，更没有移植性。
+
+存储过程虽然有诸如上面的好处，但缺点也是很明显的。
+
+**1、可移植性差。**存储过程不能跨数据库移植，比如在 MySQL、Oracle 和 SQL Server 里编写的存储过 程，在换成其他数据库时都需要重新编写。
+
+**2、调试困难。**只有少数 DBMS 支持存储过程的调试。对于复杂的存储过程来说，开发和维护都不容 易。虽然也有一些第三方工具可以对存储过程进行调试，但要收费。
+
+**3、存储过程的版本管理很困难。**比如数据表索引发生变化了，可能会导致存储过程失效。我们在开发 软件的时候往往需要进行版本管理，但是存储过程本身没有版本控制，版本迭代更新的时候很麻烦。
+
+**4、它不适合高并发的场景。**高并发的场景需要减少数据库的压力，有时数据库会采用分库分表的方 式，而且对可扩展性要求很高，在这种情况下，存储过程会变得难以维护， 增加数据库的压力 ，显然就 不适用了。
+
+> ### 小结： 
+>
+> 存储过程既方便，又有局限性。尽管不同的公司对存储过程的态度不一，但是对于我们开发人员来说， 不论怎样，掌握存储过程都是必备的技能之一。

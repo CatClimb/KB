@@ -99,7 +99,7 @@ set的命令使用：
 	日期命令： date /T
 	时间命令： time /t
 	启动命令： start /? 启动一个单独的窗口以运行指定的程序或命令。
-	
+	netstat -ano | findstr 8080
 	调用其他bat文件命令：
 	@echo off
 	call 2.bat

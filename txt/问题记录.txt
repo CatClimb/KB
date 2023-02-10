@@ -1,1 +1,7 @@
 ftp：
+1 @annotation用在定义连接点时，对连接点进行限制。
+
+
+ 2 Proceedingjoinpoint 继承了JoinPoint，在JoinPoint的基础上暴露出 proceed()， 这个方法是AOP代理链执行的方法。
+
+        JoinPoint仅能获取相关参数，无法执行连接点。暴露出proceed()这个方法，就能支持 aop:around 这种切面（而其他的几种切面只需要用到JoinPoint，这跟切面类型有关），就能控制走代理链还是走自己拦截的其他逻辑。
