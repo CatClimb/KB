@@ -30,7 +30,7 @@
 
 ### 2. 2 数据库与数据库管理系统的关系
 
-数据库管理系统(DBMS)可以管理多个数据库，一般开发人员会针对每一个应用创建一个数据库。为保存应用中实体的数据，一般会在数据库创建多个表，以保存程序中实体用户的数据。数据库管理系统、数据库和表的关系如图所示：
+数据库管理系统(DBMS)可以管理多个数据库，一般开发人员会针对每一个应用创建一个数据库。为保存应用中实体的数据，一般会在数据库创建多个表，以保存程序中实体用户的数据。数据库管理系统、数据库和表的关系如图所示：。，
 
 ![image-20220209095838316](MySql.assets/image-20220209095838316.png)
 
@@ -707,6 +707,10 @@ SELECT * FROM employees WHERE last_name='king';
 +-------------+------------+-----------+-------+--------------------+------------+---------+----------+----------------+------------+---------------+
 ```
 > MySQL不严谨，**查询字符串不区分大小写**,不符合标准ANSI，Oracle不是这样的哦。
+>
+> #### mysql的表名/字段名/字段值默认不区分大小写
+>
+> show Variables like '%table_names'
 
 # 四、运算符
 ## 1. 算数运算符
@@ -1143,6 +1147,12 @@ SELECT NOT 1, NOT 0, NOT(1+1), NOT !1, NOT NULL;
 数字编号越大，优先级越高。
 
 ![image-20220704140403422](MySql.assets\image-20220704140403422.png)
+
+
+
+> #### 导致的问题
+查阅资料，**关系型运算符优先级高到低为：`NOT >AND >OR`**
+
 
 # 五、 排序和分页
 
@@ -6759,8 +6769,6 @@ MySQL存储了存储过程和函数的状态信息，用户可以使用**SHOW ST
 
 ```sql
 SHOW CREATE {PROCEDURE | FUNCTION} 存储过程名或函数名
-
-
 ```
 
 2. 使用SHOW STATUS 语句查看存储过程和函数的状态信息
@@ -6956,3 +6964,347 @@ DROP {PROCEDURE | FUNCTION } [IF EXISTS] 存储过程或函数的名
 > ### 小结： 
 >
 > 存储过程既方便，又有局限性。尽管不同的公司对存储过程的态度不一，但是对于我们开发人员来说， 不论怎样，掌握存储过程都是必备的技能之一。
+
+# 十六、变量、流程控制与游标
+
+## 1、变量
+
+在MySQL数据库的存储过程和函数中，可以使用变量来存储查询或计算中间结果数据，或者输出最终的结果数据。
+
+在MySQL数据库中，变量分为==系统变量==以及==用户自定变量==
+
+### 1.1 系统变量
+
+#### (1 系统变量分类
+
+变量由系统定义，不是用户定义，属于==服务器==层面。启动MySQL服务，生成MySQL服务实例期间，MySQL将为MySQL服务器内存中的系统变量赋值，这些系统变量定义了当前MySQL服务实例的属性、特征。这些系统变量的值要么==编译MySQL时参数==的默认值，要么是==配置文件==（例如<font color='orange'>my.ini</font>等）中的参数值。大家可以通过网址 https://dev.mysql.com/doc/refman/8.0/en/server-systemvariables.html查看MySQL文档的系统变量。
+
+* 系统变量分为<font color='orange'>全局系统变量</font>（需要添加==global== 关键字）以及<font color='orange'>会话系统变量</font>（需要添加==session==关键字），有时也把全局系统变量简称为全局变量，有时也把会话系统变量称为local变量。==如果不写，默认会话级别==。静态变量（在MySQL服务实例运行期间它们的）<font color='orange'>静态变量</font>（在MySQL）服务实例运行期间它们的值**不能**使用set动态修改）属于特殊的全局系统变量。
+* 每一个MySQL客户机成功连接MySQL服务器后，都会产生与之对应的会话。会话期间，MySQL服务实例会在MySQL服务器内存中生成与该会话对应的会话系统变量，这些**会话系统变量的初始值是全局系统变量值**的**复制**。如下图：
+
+![xxxxxxxxx](MySql.assets\xxxxxxxxx.png)
+
+* 全局系统变量针对于所有会话（连接）有效，但==不能跨重启==
+* 会话系统变量仅针对于当前会话（连接）有效。会话期间，当前会话对某个会话系统变量值的修改，不会影响其他会话同一个会话系统变量的值。
+* 会话1对某个全局系统变量值的修改会导致会话2中同一个全局系统变量值的修改。
+
+* 全局变量和系统变量**交集**的( A ∩ B )
+  * ![image-20230218120855381](MySql.assets\image-20230218120855381.png)
+
+在MySQL中有些系统变量只能是全局的，例如 max_connections 用于限制服务器的最大连接数；有些系 统变量作用域既可以是全局又可以是会话变量，例如 character_set_client 用于设置客户端的字符集；有些系 统变量的作用域只能是当前会话，例如 pseudo_thread_id 用于标记当前会话的 MySQL 连接 ID。
+
+
+
+#### (2 查看系统变量
+
+* 查看所有或部分系统变量
+
+```sql
+#查看所有全局变量
+SHOW GLOBAL VARIABLES;#617个
+
+#查看与当前会话相关的所有会话变量以及全局变量。
+SHOW SESSION VARIABLES;#640个
+#或
+SHOW VARIABLES;#640个
+
+
+```
+
+```SQL
+
+#查看满足条件变量。
+SHOW GLOBAL VARIABLES LIKE '%character_set_client%';
+SHOW SESSION VARIABLES LIKE '%character_set_client%';#lower_case_table_names为全局变量
+SHOW  VARIABLES LIKE '%标识符%';
+
+
+
+```
+
+* 查看指定系统变量
+
+作为MySQL编码规范，MySQL中的系统变量以==两个"@"==开头，其中`@@global`仅用于标记全局系统变量，`@@session`仅用于标记会话系统变量。`@@`首先标记会话系统变量，如果会话系统变量不存在则标记全局系统变量。
+
+```sql
+#查看指定的系统变量的值
+SELECT @@GLOBAL.character_set_client;
+SELECT @@global.character_set_client;
+#查看指定的会话变量的值
+SELECT @@session.character_set_client;
+
+#先找会话在找全局
+SELECT @@character_set_client ;
+
+```
+
+* 修改系统变量的值
+
+有些时候，数据库管理员需要修改系统变量的默认值，以便修改当前会话或者MySQL服务实例属性、特征。具体方法：
+
+**方式一：**修改MySQL==配置文件==（my.ini），继而修改MySQL系统变量的值（该方法需要重启MySQL服务）
+
+**方式二：**在MySQL服务运行期间，使用==set==命令重新设置系统变量的值。
+
+```sql
+#为某个全局变量赋值
+#方式1：
+SET @@global.max_connections=161;
+#方式2：
+SET GLOBAL max_connections=171;
+
+#全局系统变量：针对于当前的数据库实例是有效的，一旦重启mysql服务，就失效了。
+
+#会话系统变量：
+#方式1
+SET @@session.character_set_client='gbk';
+#方式2
+SET SESSION character_set_client='gbk';
+#在当前会话有效（一个连接就是一个会话）
+```
+
+### 1.2 用户变量
+
+#### (1 用户变量分类
+
+用户变量是用户自己定义的，作为MySQL编码规范，MySQL中的用户变量以==一个@==开头。根据作用范围不同，又分为==会话用户变量==和==局部变量==。
+
+* 会话用户变量：作用域和会话变量一样，只对==当前连接==会话有效。
+* 局部变量：只在BEGIN和END语句块中有效，局部变量只能在==存储过程和函数==中使用。
+
+#### (2 会话用户变量
+
+* 变量的定义
+
+```sql
+#方式1：“=”或“:=”
+SET @用户变量 = 值 ；
+SET @用户变量 := 值 ；
+#方式2 “:=” 或 INTO 关键字
+SELECT @用户变量 :=表达式[FROM 等子句];
+SELECT 表达式 INTO @用户变量 [FROM 等子句]；
+```
+
+* 查看用户变量的值（查看、比较、运算等）
+
+```sql
+SELECT @用户变量
+```
+
+```sql
+SELECT @a;
+SELECT @num := COUNT(*) FROM employees;
+SELECT @num;
+SELECT AVG(salary) INTO @avgsalary FROM employees;
+SELECT @avgsalary;
+SELECT @big; #查看某个未声明的变量时，将得到NULL值
+```
+
+#### (3 局部变量
+
+定义：可以使用==DECLARE==语句定义一个局部变量
+
+作用域：仅仅在定义它的BEGIN...END中有效
+
+位置：**只能**放在BEGIN...END中，而且只能放在第一句
+
+```sql
+BEGIN
+	#声明局部变量
+	DECLARE 变量名1 变量数据类型 [DEFAULT 变量默认值];#没有默认值为nu
+	DECLARE 变量名2，变量名3，变量数据类型 [DEFAULT] 变量默认值；
+	#为局部变量赋值
+	SET 变量名1=值;
+	SELECT 值 INTO 变量名2 [FROM 子句];
+	#查看局部变量的值
+	SELECT 变量1,变量2,变量3;
+END
+```
+
+**1、定义变量**
+
+```sql
+DECLARE 变量名 类型 [default 值];
+```
+
+**2、变量赋值**
+
+举例：
+
+```sql
+DECLARE myparam INT DEFAULT 100;
+```
+
+**3、使用变量（查看、比较、运算等）**
+
+```sql
+SELECT 局部变量名;
+```
+
+例子：
+
+```sql
+#局部变量
+DELIMITER //
+DROP PROCEDURE IF EXISTS set_value//
+CREATE  PROCEDURE set_value()
+BEGIN
+	#声明局部变量
+	DECLARE  a INT DEFAULT 0;
+	DECLARE b INT ;
+	#DECLARE a,b INT DEFAULT 0;
+	DECLARE emp_name VARCHAR(25);
+	
+	#赋值
+	SET a=1;
+	SET b :=2;
+	
+	SELECT last_name INTO emp_name FROM employees WHERE employee_id=101;
+	SELECT a,b,emp_name;
+END //
+DELIMITER ;
+
+#调用存储过程
+CALL set_value();
+
+#举例1：声明局部变量，并分别赋值为employees表中employee_id为102的last_name和salary
+
+DELIMITER //
+DROP PROCEDURE IF EXISTS test_pro//
+CREATE PROCEDURE test_pro()
+BEGIN
+	DECLARE emp_name VARCHAR(25);
+	DECLARE sal DOUBLE(8,2) DEFAULT 0.0;
+		#SELECT emp_name,sal :=last_name,salary FROM employees WHERE employee_id=102;
+	SELECT  last_name,salary INTO emp_name,sal FROM employees WHERE employee_id=102;
+
+	SELECT emp_name,sal;
+END //
+DELIMITER ;
+#举例2： 声明两个变量，求和并打印（分别使用会话用户变量，局部变量的方式实现）
+#方式1：使用会话用户变量
+SET @v1 =10;
+SET @v2 :=20;
+#查看
+SET @result :=@v1+@v2;
+
+SELECT @result;
+DROP PROCEDURE IF EXISTS test_num;
+DELIMITER $
+CREATE PROCEDURE test_num()
+BEGIN
+	DECLARE value1,value2,sum_val INT DEFAULT 0;
+	SET value1 = 10;
+	SET value2 =20;
+	SET sum_val= value1+value2;
+	SELECT value1,value2,sum_val;
+END $
+DELIMITER ;
+CALL test_num();
+
+#举例3：创建存储过程“different_salary”查询某员工和他领导的薪资差距，并用IN参数emp_id接收员工
+#id，用OUT参数dif_salary输出薪资差距结果。
+DROP PROCEDURE IF EXISTS different_salary;
+DELIMITER //
+CREATE PROCEDURE different_salary(IN emp_id INT,OUT dif_salary DOUBLE)
+BEGIN
+	DECLARE emp_sal,mgr_sal DOUBLE DEFAULT 0.0;
+	DECLARE mgr_id INT;
+	SELECT  salary INTO emp_sal FROM employees WHERE employee_id=emp_id;
+	#select manager_id into mgr_id from employees where employee_id=emp_id;
+	SELECT salary INTO mgr_sal FROM employees WHERE employee_id =(SELECT manager_id FROM employees WHERE employee_id=emp_id);
+	
+	SELECT mgr_sal-emp_sal INTO dif_salary;
+	
+END //
+DELIMITER ;
+
+SET @emp_id=103;
+CALL different_salary(@emp_id,@diff_sal);
+
+SELECT @diff_sal;
+
+
+
+
+```
+
+#### (4 对比会话用户变量与局部变量
+
+|              | 作用域              | 定义位置              | 语法                                        |
+| ------------ | ------------------- | --------------------- | ------------------------------------------- |
+| 会话用户变量 | 当前会话            | 会话的任何地方        | 加@符号，不用指定类型                       |
+| 局部变量     | 定义它的BEGIN END中 | BENGIN END 的第一句话 | 一般不用加@（**我感觉必须**），需要指定类型 |
+
+## 2、定义条件与处理程序（**定义异常**和**抓异常**）
+
+​	==定义条件==是事先定义程序执行过程中可能遇到的问题，==处理程序==定义了在遇到问题时应当采取的处理方式，并且保证存储过程或函数在遇到警告或错误时能继续执行。这样可以增强存储程序处理问题的能力。
+
+说明：定义条件和处理程序在存储过程、存储函数中都是**支持的**。
+
+
+
+这是个存储过程（内容略）
+
+**从存储过程得出结论：**
+
+在存储过程中未定义条件和处理程序，且当存储过程中执行的SQL语句报错时，MySQL数据库会抛出错误，并退出当前SQL逻辑，不再向下继续执行。
+
+## 2.1、定义条件
+
+定义条件是给MySQL中的错误码命名，这有助于存储的程序代码更清晰。它将一个==错误名字==和==指定的错误条件==关联起来。这个名字可以随后被用在定义条件使用DECLARE语句，语法格式如下：
+
+```sql
+DECLARE 错误名称 CONDITION FOR 错误码（或错误条件）
+```
+
+错误码的说明：
+
+* MySQL_error_code 和 sqlstate_value 都可以表示MySQL的错误。
+  * **MySQL_error_code时数值类型错误代码**
+  * **sqlstate_value是长度未5的字符串类型错误代码。**
+* 例如，在ERROR 1418 (HY000)中，1418是MySQL_error_code，'HY000'是sqlstate_value。 
+* 例如，在ERROR 1142（42000）中，1142是MySQL_error_code，'42000'是sqlstate_value。
+
+
+
+```sql
+#例子一：
+#使用MySQL_error_code
+DECLARE Field_Not_Be_NULL CONDITION FOR 1048;
+#使用sqlstate_value
+DECLARE Field_Not_Be_NULL CONDITION FOR SQLSTATE '23000';
+
+
+```
+
+
+
+可以为SQL执行过程中发生的某种类型的错误定义特殊的处理程序。定义处理程序时，使用DECLARE语句的语法如下：
+
+```sql
+DECLARE 处理方式 HANDLER FOR 错误类型 处理语句
+```
+
+* **处理方式**：处理方式有3个取值：
+  * ==CONTINUE==：表示遇到错误不处理，继续执行
+  * ==EXIT==：表示遇到错误马上退出
+  * ==UNDO==：表示遇到错误后撤回之前的操作。MySQL中暂时不支持这样的操作。
+* **错误类型**（即条件）可以有如下取值：
+  * ==SQLSTATE`'字符串错误码'`==：表示长度为5的sqlstate_value类型的错误代码；
+  * ==MySQL_error_code==：匹配数值类型错误代码；
+  * ==错误名称==：表示DECLARE...CONDITION定义的错误条件名称
+  * ==SQLWARNING==：匹配所有以01开头得SQLSTATE错误代码；
+  * ==NOT FOUND==：匹配所有02开头得SQLSTATE错误代码；
+  * ==SQLEXCEPTION==：匹配所有没有呗SQLWARNING或NOT FOUND捕获得SQLSTATE错误代码；
+* **处理语句**：
+  * 如果出现上述条件之一，则采用对应得处理方式，并执行指定的处理语句。语句可以是像`SET 变量=值`这样的简单语句，也可以是使用`BEGIN...END`编写的复合语句。
+
+### 1 定义方式
+
+```sql
+#方法1：捕获sqlstate_value
+
+
+```
+

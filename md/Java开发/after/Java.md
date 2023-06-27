@@ -1587,7 +1587,7 @@ public class MyBox{
     * **AbstractQueue**
       * PriorityQueue
     * **AbstractMap**   ==key不允许重复但可以为null，value可以重复。==
-      * ==**TreeMap**== **(该类 implements** `SortedMap`)  ==有序==
+      * ==**TreeMap**== 红黑树**(该类 implements** `SortedMap`)  ==有序==
       * ==**HashMap**==：散列表，内容是键值对(key-value)映射。是无序的，即不会记录插入的顺序。==非同步== ==无序== 。哈希表（数组+单向链表+红黑树）
         * ==**LinkedHashMap**==：==有序== 哈希表（数组+双向链表+红黑树）
       * WeakMapHashMap：

@@ -139,10 +139,8 @@ Vue中有2种数据绑定的方式：
 
 2. 双向绑定（v-model）：数据不仅能从data流向页面，还可以从页面（或js）流向data
 
-   备注：
-
    1. 双向绑定一般都应用在表单类元素上（如：input、select等）
-   2. `v-model:value`可以简写为`v-model`，因为v-model默认手机的就是value值。
+2. `v-model:value`可以简写为`v-model`，因为v-model默认手机的就是value值。
 
 双向数据绑定如图：
 
@@ -1690,7 +1688,7 @@ body>
         },
         destroyed(){
             console.log('destroyed')
-        }
+        }	
     })
 </script>
 ```
@@ -2146,7 +2144,10 @@ export default {
 		}
 	}`
 	注意：==**props属性被接收方vc实例所代理**==。
-	备注：props是只读的，Vue底层会监测你对props的修改，如果进行了修改，==**就会发出警告**==，若业务需求确实需要修改，那么请复制一份props的属性内容到data中，然后去修改data中的数据。
+
+
+
+​	~~备注：props是只读的，Vue底层会监测你对props的修改，如果进行了修改，==**就会发出警告**==，若业务需求确实需要修改，那么请复制一份props的属性内容到data中，然后去修改data中的数据。~~ <font color='orange'>错的</font>
 
 
 
@@ -3043,14 +3044,13 @@ export default {
    ```js
    new Vue({
    	......
-   	beforeCreate(){
-   //安装全局事件总线，$bus就是当前应用的vm
-   	Vue.prototype.$bus()=this//$xxx指的是vue的api
-   }
+   	beforeCreate() {
+           Vue.prototype.$bus = this //安装全局事件总线，$bus就是当前应用的vm
+       },
    })
    
    ```
-
+   
 3. 使用事件总线：
 
    1. 接收数据：A组件想接收数据，则在A组件中给 $bus绑定自定义事件，<font color='red'>事件的回调留在A组件自身</font>。
@@ -4720,6 +4720,20 @@ Mint UI http://mint-ui.github.io
 
 
 
+# 十、vue实例对象
+
+## 1、$attrs
+
+从父组件传入子组件 非prop属性、emits属性、或v-on事件。
+
+prop优先级高于$attrs,标有prop prop有，$attrs没有
+
+
+
+
+
+
+
 # 前端部署
 
 1. `npm run build` 对vue项目进行打包，之后得到<font color='red'>dist</font>文件夹
@@ -6318,7 +6332,9 @@ Vue3.x写法
 
 
 
-# 语法糖
+# 补充
+
+## 1、语法糖
 
 ```vue
 父组件
@@ -6360,10 +6376,36 @@ methods:{
 
 ```
 
-# 开发经验：
+## 2、开发经验：
 
 ```js
 //数据清空
 this.formdata=this.$options.data().formdata
 ```
 
+挂载完成后：
+
+vue实例上会挂载当前的组件的doc节点，挂载地方如下：
+
+```js
+//必须在挂载完成之后
+mounted(){
+        console.log('this.$el; :>> ', this.$el);
+}
+```
+
+
+
+## 3、多个v-model以及替代方式
+
+备注：
+
+​	
+
+```vue
+<input v-model="num" type="text" />
+等价于=>
+<input v-bind:velue="num" v-on:input="$event.target.value" />
+```
+
+**model**是Vue修改v-model绑定属性和默认绑定方法的选项； 使用sync修饰符

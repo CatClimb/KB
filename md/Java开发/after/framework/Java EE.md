@@ -1454,6 +1454,22 @@ public class Appconfig {}
 
 例子如下：
 
+**切入点指示器**
+
+##### Supported Pointcut Designators
+
+Spring AOP supports the following AspectJ pointcut designators (PCD) for use in pointcut expressions:
+
+- `execution`: For matching method execution join points. This is the primary pointcut designator to use when working with Spring AOP.
+- `within`: Limits matching to join points within certain types (the execution of a method declared within a matching type when using Spring AOP).
+- `this`: Limits matching to join points (the execution of methods when using Spring AOP) where the bean reference (Spring AOP proxy) is an instance of the given type.
+- `target`: Limits matching to join points (the execution of methods when using Spring AOP) where the target object (application object being proxied) is an instance of the given type.
+- `args`: Limits matching to join points (the execution of methods when using Spring AOP) where the arguments are instances of the given types.
+- `@target`: Limits matching to join points (the execution of methods when using Spring AOP) where the class of the executing object has an annotation of the given type.
+- `@args`: Limits matching to join points (the execution of methods when using Spring AOP) where the runtime type of the actual arguments passed have annotations of the given types.
+- `@within`: Limits matching to join points within types that have the given annotation (the execution of methods declared in types with the given annotation when using Spring AOP).
+- `@annotation`: Limits matching to join points where the subject of the join point (the method being run in Spring AOP) has the given annotation.
+
 **1目标接口：**
 
 ```java
