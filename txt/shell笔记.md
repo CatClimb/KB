@@ -33,8 +33,18 @@ readonly myUrl
 #删除变量
 
 ```
-myUrl="https://www.google.com"
-readonly myUrl
-unset
-```terminal
+unset variable_name
 
+```terminal
+#注意
+只读变量不能被删除
+
+
+for skill in Ada Coffe Action Java; do
+    echo "I am good at ${skill}Script"
+done
+
+I am good at AdaScript
+I am good at CoffeScript
+I am good at ActionScript
+I am good at JavaScript
