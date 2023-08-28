@@ -6894,7 +6894,7 @@ ALTER {PROCEDURE|FUNCTION} 存储过程或函数的名 [characteristic...]
 ```SQL
 CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA }
 | SQL SECURITY { DEFINER | INVOKER }
-| COMMENT 'string
+| COMMENT 'string'
 ```
 
 * <font color='orange'>CONTAINS SQL</font> ，表示子程序包含SQL语句，但不包含读或写数据的语句。
@@ -7304,7 +7304,423 @@ DECLARE 处理方式 HANDLER FOR 错误类型 处理语句
 
 ```sql
 #方法1：捕获sqlstate_value
+DECLARE CONTINUE HANDLER FOR SQLSTATE '42S02' SET @info='NO_SUCH_TABLE';
+#方法2：捕获mysql_error_value
+DECLARE CONTINUE HANDLER FOR 1146 SET @info='NO_SUCH_TABLE';
+#方法3：先定义条件，再调用
+DECLARE no_such_table CONDITION FOR 1146;
+DECLARE CONTINUE HANDLER FOR NO_SUCH_TABLE SET @info='NO_SUCH_TABLE';
+#方法4：使用SQLWARNING
+DECLARE EXIT HANDLER FOR SQLWARNING SET @info='ERROR';
+#方法5：使用NOT FOUND 
+DECLARE EXIT HANDLER FOR NOT FOUND SET @info='NO_SUCH_TABLE';
+#方法6：使用SQLEXCEPTION
+DECLARE EXIT HANDLER FOR SQLEXCEPTION SET @info='ERROR';
+```
 
+例子略啦
+
+## 3、流程控制
+
+解决复杂问题不可能通过一个 SQL 语句完成，我们需要执行多个 SQL 操作。流程控制语句的作用就是控 制存储过程中 SQL 语句的执行顺序，是我们完成复杂操作必不可少的一部分。只要是执行的程序，流程 就分为三大类：
+
+* 顺序结构
+* 分支结构
+* 循环结构
+
+针对于MySQL的流程控制语句主要有3类。注意：只能用于**存储程序**
+
+* 条件判断语句：IF语句和CASE语句
+* 循环语句：LOOP、WHILE和REPEAT语句
+* 跳转语句：ITERATE 和 LEAVE语句
+
+### 3.1 分支结构之IF
+
+```MYSQL
+IF 表达式1 THEN 操作1
+
+[ELSEIF 表达式2 THEN 操作2] ... ...
+[ELSE 操作N]
+END IF
 
 ```
 
+举例：
+
+```mysql
+IF val IS NULL
+	THEN SELECT 'val is null';
+ELSE SELECT 'val is not null';
+END IF;
+```
+
+### 3.2 分支结构之CASE
+
+* CASE语句的语法结构1：
+
+
+```mysql
+#情况一：类似于switch
+CASE 表达式
+WHEN 值1 THEN 结果1或语句1（如果是语句，需要加分号）
+WHEN 值2 THEN 结果2或语句2（如果是语句，需要加分号）
+...
+ELSE 结果n或语句n（如果是语句，需要加分号）
+END [case] （如果是放在begin end）中需要加上case，如果放在select反面不需要）
+```
+
+* CASE 语句的语法结构2：
+
+```mysql
+#情况二：类似于多重if
+CASE 
+WHEN 条件1 THEN 结果1或语句1（如果是语句需要加分号）
+WHEN 条件2 THEN 结果2或语句2（如果是语句，需要加分号）
+...
+ELSE 结果n或语句n（如果是语句，需要加分号）
+END [case] （如果是放在begin end）中需要加上case，如果放在select反面不需要）
+```
+
+### 3.3 循环结构之LOOP
+
+```mysql
+[loop_label]:LOOP
+	[语句]
+	LEAVE [loop_label];
+END LOOP [loop_label];
+```
+
+### 3.4循环结构之WHILE
+
+```MYSQL
+[while_label] WHILE 循环条件 DO
+	循环体
+END WHILE [while_label]
+```
+
+### 3.5循环结构之REPEAT
+
+```MYSQL
+REPEAT
+	循环体
+UNTIL 结束循环条件
+END REPEAT;
+```
+
+### 3.6跳转语句之LEAVE语句
+
+LEAVE语句：可以用在循环语句内，或者以 BEGIN 和 END 包裹起来的程序体内，表示跳出循环或者跳出 程序体的操作。如果你有面向过程的编程语言的使用经验，你可以把 LEAVE 理解为 break。
+
+```mysql
+LEAVE 标记名
+```
+
+### 3.7 跳转语句之ITERATE语句
+
+```mysql
+ITERATE label
+```
+
+## 4、游标
+
+### 4.1、什么是游标（或光标）
+
+虽然我们也可以通过筛选条件 WHERE 和 HAVING，或者是限定返回记录的关键字 LIMIT 返回一条记录， 但是，**却无法在结果集中像指针一样，向前定位一条记录、向后定位一条记录，或者是 随意定位到某一 条记录** ，并对记录的数据进行处理。
+
+这个时候，就可以用到游标。游标，提供了一种灵活的操作方式，让我们能够对结果集中的每一条记录 进行定位，并对指向的记录中的数据进行操作的数据结构。游标让 SQL **这种面向集合的语言有了面向过 程开发的能力**。
+
+在 SQL 中，游标是一种临时的数据库对象，可以指向存储在数据库表中的数据行指针。这里游标 充当了 **指针**的作用 ，我们可以通过操作游标来对数据行进行操作。
+
+### 4.2游标使用
+
+> 注意
+>
+> 游标必须在声明处理程序之前被声明，并且变量和条件还必须在声明游标或处理程序之前被声明。 如果我们想要使用游标，一般需要经历四个步骤。不同的 DBMS 中，使用游标的语法可能略有不同。
+
+第一步 **声明游标**
+
+```mysql
+DECLARE cursor_name CURSOR FOR [select语句];
+```
+
+这个语法适用于 MySQL，SQL Server，DB2 和 MariaDB。如果是用 Oracle 或者 PostgreSQL，需要写成：
+
+```mysql
+DECLARE cursor_name CURSOR IS [select语句]; 
+```
+
+要使用 SELECT 语句来获取数据结果集,比如：
+
+```
+DECLARE cur_emp CURSOR FOR
+SELECT employee_id,salary FROM employees
+```
+
+第二步，**打开游标**
+
+```MYSQL
+OPEN cursor_name
+```
+
+当我们定义好游标之后，如果想要使用游标，必须先打开游标。打开游标的时候 SELECT 语句的查询结 果集就会送到游标工作区，为后面游标的 **逐条读取** 结果集中的记录做准备。
+
+第三步 **使用游标**（从游标中取得数据）
+
+```mysql
+FETCH cursor_name INTO var_name [, var_name]
+```
+
+这句的作用是使用 cursor_name 这个游标来读取当前行，并且将数据保存到 var_name 这个变量中，游 标指针指到下一行。如果游标读取的数据行有多个列名，则在 INTO 关键字后面赋值给多个变量名即可。
+
+> 注意：var_name必须在声明游标之前就定义好。
+
+例子：
+
+```mysql
+FETCH cur_emp INTO emp_id, emp_sal ;
+```
+
+第四步：**关闭游标**
+
+```mysql
+CLOSE cursor_name
+```
+
+有 OPEN 就会有 CLOSE，也就是打开和关闭游标。当我们使用完游标后需要关闭掉该游标。因为游标会 <font color='orange'>占用系统资源</font> ，如果不及时关闭，**游标会一直保持到存储过程结束**
+
+例如：
+
+```mysql
+DELIMITER //
+CREATE PROCEDURE get_count_by_limit_total_salary(IN limit_total_salary DOUBLE,OUT
+total_count INT)
+BEGIN
+DECLARE sum_salary DOUBLE DEFAULT 0; #记录累加的总工资
+DECLARE cursor_salary DOUBLE DEFAULT 0; #记录某一个工资值
+DECLARE emp_count INT DEFAULT 0; #记录循环个数
+#定义游标
+DECLARE emp_cursor CURSOR FOR SELECT salary FROM employees ORDER BY salary DESC;
+#打开游标
+OPEN emp_cursor;
+REPEAT
+#使用游标（从游标中获取数据）
+FETCH emp_cursor INTO cursor_salary;
+SET sum_salary = sum_salary + cursor_salary;
+SET emp_count = emp_count + 1;
+UNTIL sum_salary >= limit_total_salary
+END REPEAT;
+SET total_count = emp_count;
+#关闭游标
+CLOSE emp_cursor;
+END //
+DELIMITER 
+```
+
+
+
+### 4.3 总结
+
+游标是 MySQL 的一个重要的功能，为 **逐条读取** 结果集中的数据，提供了完美的解决方案。跟在**应用层** 面实现相同的功能**相比**，游标可以在存储程序中使用，**效率高**，程序也更加简洁。
+
+但同时也会**带来一些性能问题**，比如在使用游标的过程中，**会对数据行进行 加锁** ，这样在**业务并发量大** 的时候，不仅会**影响**业务之间的**效率**，还会 消耗系统资源 ，造成内存不足，这是因为游标是在内存中进 行的处理
+
+**建议**：养成用完之后就关闭的习惯，这样才能提高系统的整体效率。
+
+使用SET GLOBAL语句设置的变量值只会 临时生效 。 数据库重启 后，服务器又会从MySQL配置文件中读取 变量的默认值。 MySQL 8.0版本新增了 SET PERSIST 命令。例如，设置服务器的最大连接数为1000：
+
+
+
+## 5、大技巧（持久化配置）
+
+> ​	使用SET GLOBAL 语句设置的变量值只会==临时生效==，==数据库重启==后，服务器又会从MySQL配置文件中读取变量的默认值。MySQL8.0版本新增了==SET PERSIST==命令。`SET PERSIST global max_connections = 1000;`
+
+MySQL会将该命令的配置保存到数据目录下的<font color='orange'> mysqld-auto.cnf</font> 文件中，下次启动时会读取该文件，用 其中的配置来覆盖默认的配置文件。
+
+# 十七、触发器
+
+
+
+## 1、触发器概述
+
+作用：为了保证数据的完整性
+
+MySQL从 5.0.2 版本开始支持触发器。MySQL的触发器和存储过程一样，都是嵌入到MySQL服务器的一 段程序。
+
+触发器是由 **事件来触发** 某个操作，这些事件包括 **INSERT** 、 **UPDATE** 、 **DELETE** 事件。
+
+## 2、创建触发器
+
+创建触发器语法：
+
+```mysql
+CREATE TRIGGER 触发器名称
+{BEFORE|AFTER} {INSERT|UPDATE|DELETE} ON 表名
+FOR EACH ROW
+触发器的执行语句块
+```
+
+* ==表名：==表示触发器监控的对象。
+
+* ==BEFORE|AFTER==：表示触发的时间。BEFORE表示在事件之前触发；AFTER表示在事件之后触发。
+
+* ==INSERT|UPDATE|DELETE==：表示触发的事件
+
+  待处理
+
+
+
+例如：
+
+```mysql
+#创建数据表：
+CREATE TABLE test_trigger (
+id INT PRIMARY KEY AUTO_INCREMENT,
+t_note VARCHAR(30)
+);
+CREATE TABLE test_trigger_log (
+id INT PRIMARY KEY AUTO_INCREMENT,
+t_log VARCHAR(30)
+);
+#创建触发器：创建名称为before_insert的触发器，向test_trigger数据表插入数据之前，向
+test_trigger_log数据表中插入before_insert的日志信息。
+DELIMITER //
+CREATE TRIGGER before_insert
+BEFORE INSERT ON test_trigger
+FOR EACH ROW
+BEGIN
+INSERT INTO test_trigger_log (t_log)
+VALUES('before_insert');
+END //
+DELIMITER 
+#向test_trigger数据表中插入数据
+INSERT INTO test_trigger (t_note) VALUES ('测试 BEFORE INSERT 触发器');
+#查看test_trigger_log数据表中的数据
+mysql> SELECT * FROM test_trigger_log;
++----+---------------+
+| id | t_log |
++----+---------------+
+| 1 | before_insert |
++----+---------------+
+1 row in set (0.00 sec)
+```
+
+## 3、查看、删除触发器
+
+### 3.1 查看触发器：
+
+1. 方式1：查看当前数据库的所有触发器的定义
+
+   ```mysql
+   SHOW TRIGGERS\
+   ```
+
+2. 方式2：查看当前数据库中某个触发
+
+   ```mysql
+   SHOW CREATE TRIGGER 触发器名
+   ```
+
+3. 方式3：从系统information_schema.TRIGGERS;
+
+   ```mysql
+   SELET * FROM information_schema.TRIGGERS
+   ```
+
+   
+
+### 3.2删除触发器
+
+触发器也是数据库对象，删除触发器也用DROP语句，语法格式如下：
+
+```mysql
+DROP TRIGGER IF EXISTS 触发器名称
+```
+
+## 4 触发器的优点
+
+### 4.1优点
+
+**1、触发器可以确保数据的完整性**
+
+**2、触发器可以帮助我们记录操作日志**
+
+**3、触发器还可以用在操作数据前，对数据进行合法性检查** 
+
+### 4.2 缺点
+
+**1、触发器最大的一个问题就是可读性差**
+
+因为触发器存储在数据库中，并且又事件驱动，这就意味着触发器有可能==不受应用层的控制==，这对系统维护时非常有挑战的。
+
+```mysql
+比如，创建触发器用于修改会员储值操作。如果触发器中的操作出了问题，会导致会员储值金额更新失
+败。我用下面的代码演示一下：
+mysql> update demo.membermaster set memberdeposit=20 where memberid = 2;
+ERROR 1054 (42S22): Unknown column 'aa' in 'field list'
+结果显示，系统提示错误，字段“aa”不存在。
+这是因为，触发器中的数据插入操作多了一个字段，系统提示错误。可是，如果你不了解这个触发器，
+很可能会认为是更新语句本身的问题，或者是会员信息表的结构出了问题。说不定你还会给会员信息表
+添加一个叫“aa”的字段，试图解决这个问题，结果只能是白费力。
+```
+
+**2、相关数据的变更，可能会导致触发器出错**
+
+特别是数据表结构的变更，都可能会导致触发器出错，进而影响数据操作的正常运行。这些都会由于触 发器本身的隐蔽性，影响到应用中错误原因排查的效率。
+
+### 4.3注意点
+
+> 触发器的触发事件与联机等级冲突处理
+
+注意，如果在子表中定义了外键约束，并且**外键指定了ON UPDATE/DELETE CASCADE/SET NULL子句**，此 时修改父表被引用的键值或删除父表被引用的记录行时，也会引起子表的修改和删除操作，此时基于子 表的**UPDATE和DELETE**语句定义的**触发器**并**不会被激活**。
+
+# 十八、MySQL8其它新特性
+
+## 1、MySQL8新特性概述
+
+==MySQL从5.7版本直接跳跃发布了8.0版本==，可见这是一个令人兴奋的里程碑版本。MySQL 8版本在功能上 做了显著的改进与增强，开发者对MySQL的源代码进行了重构，最突出的一点是多MySQL Optimizer优化 器进行了改进。不仅在速度上得到了改善，还为用户带来了更好的性能和更棒的体验。
+
+### 1.1 MySQL8.0新增特性
+
+1. 更简便的NoSQL支持
+
+   NoSQL泛指非关系型数据库和数据存储。随着互联网平台的规模飞速发展，传统 的关系型数据库已经越来越不能满足需求。从5.6版本开始，MySQL就开始支持简单的NoSQL存储功能。 MySQL 8对这一功能做了优化，以更灵活的方式实现NoSQL功能，不再依赖模式（schema）。
+
+2. 更好的索引
+
+   在查询中，正确地使用索引可以提高查询的效率。MySQL 8中新增了 **隐藏索引** 和 **降序索引** 。隐藏索引可以用来测试去掉索引对查询性能的影响。在查询中混合存在多列索引时，使用降序索引 可以提高查询的性能
+
+3. 更完善的JSON支持
+
+   MySQL从5.7开始支持原生JSON数据的存储，MySQL 8对这一功能做了优化，增加 了聚合函数 **JSON_ARRAYAGG()** 和 **JSON_OBJECTAGG()** ，将参数聚合为JSON数组或对象，新增了**行内 操作符 ->>**，是**列路径运算符 ->的增强**，对JSON排序做了提升，并优化了JSON的更新操作。
+
+4. 安全和账户管理
+
+   MySQL 8中新增了 caching_sha2_password 授权插件、角色、密码历史记录和FIPS 模式支持，这些特性提高了数据库的安全性和性能，使数据库管理员能够更灵活地进行账户管理工作。
+
+5. InnoDB的变化
+
+   ==InnoDB是MySQL默认的存储引擎==，是事务型数据库的首选引擎，支持事务安全表 （ACID），支持行锁定和外键。在MySQL 8 版本中，InnoDB在自增、索引、加密、死锁、共享锁等方面 做了大量的 **改进和优化**，并且支持原子数据定义语言（DDL），提高了数据安全性，对事务提供更好的支持。
+
+6. 数据字典
+
+   在之前的MySQL版本中，字典数据都存储在元数据文件和非事务表中。从MySQL 8开始新增 了事务数据字典，在这个字典里存储着数据库对象信息，这些数据字典存储在内部事务表中。
+
+7. 原子数据定义语句
+
+   MySQL 8开始支持原子数据定义语句（Automic DDL），即 原子DDL 。目前，只有 InnoDB存储引擎支持原子DDL。原子数据定义语句（DDL）将与DDL操作相关的数据字典更新、存储引擎 操作、二进制日志写入结合到一个单独的原子事务中，这使得即使服务器崩溃，事务也会提交或回滚。 使用支持原子操作的存储引擎所创建的表，在执行DROP TABLE、CREATE TABLE、ALTER TABLE、 RENAME TABLE、TRUNCATE TABLE、CREATE TABLESPACE、DROP TABLESPACE等操作时，都支持原子操 作，即事务要么完全操作成功，要么失败后回滚，不再进行部分提交。 对于从MySQL 5.7复制到MySQL 8 版本中的语句，可以添加 **IF EXISTS** 或 **IF NOT EXISTS** 语句来避免发生错误。
+
+8. 资源管理
+
+   MySQL 8开始支持创建和管理资源组，允许将服务器内运行的线程分配给特定的分组，以便 线程根据组内可用资源执行。组属性能够控制组内资源，启用或限制组内资源消耗。数据库管理员能够 根据不同的工作负载适当地更改这些属性。 目前，CPU时间是可控资源，由“虚拟CPU”这个概念来表 示，此术语包含CPU的核心数，超线程，硬件线程等等。服务器在启动时确定可用的虚拟CPU数量。拥有 对应权限的数据库管理员可以将这些CPU与资源组关联，并为资源组分配线程。 资源组组件为MySQL中（。。。待处理）属性，除去名字和类型，其他属性都可在创建之后进行更改。 在一些平台下，或进行了某些MySQL的配 置时，资源管理的功能将受到限制，甚至不可用。例如，如果安装了线程池插件，或者使用的是macOS 系统，资源管理将处于不可用状态。在FreeBSD和Solaris系统中，资源线程优先级将失效。在Linux系统 中，只有配置了CAP_SYS_NICE属性，资源管理优先级才能发挥作用。
+
+9. 字符集支持
+
+   MySQL 8中默认的字符集由 latin1 更改为 utf8mb4 ，并首次增加了日语所特定使用的集 合，utf8mb4_ja_0900_as_cs。
+
+10. 优化器增强
+
+    MySQL优化器开始支持隐藏索引和降序索引。隐藏索引不会被优化器使用，验证索引的必 要性时不需要删除索引，先将索引隐藏，如果优化器性能无影响就可以真正地删除索引。降序索引允许 优化器对多个列进行排序，并且允许排序顺序不一致。
+
+    11. 公用表表达式 公用表达式（Common Table Expressions）简称为CTE，MySQL现在支持递归和非递归
+
+暂停。。。得听讲

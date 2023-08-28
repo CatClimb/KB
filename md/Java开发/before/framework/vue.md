@@ -2341,7 +2341,7 @@ new Vue({
 
 `Vue.use()`
 
-plugins.js
+plugins.js 插件如下：
 
 ```js
 export default {

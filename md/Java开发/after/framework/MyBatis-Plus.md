@@ -1586,3 +1586,11 @@ Closing non transactional SqlSession [org.apache.ibatis.session.defaults.Default
 没有什么好写的。看吧。
 
 [MybatisX快速开发插件 | MyBatis-Plus (baomidou.com)](https://baomidou.com/pages/ba5b24/)
+
+
+
+开发经验：
+
+要想update delete fan'hui
+
+useAffectedRows=true
