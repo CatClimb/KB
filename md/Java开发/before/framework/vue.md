@@ -4122,7 +4122,7 @@ computed(){
 2. mapActions或mapMutations方法：用于帮助我们生成与`actions或mutations对话的方法`，即包含 `$store.dispatch('xxx',yyy)或$store.commit('xxx',yyy)`函数
 
 ```js
-computed(){
+methods:{
     //借助mapMutations生成对应的方法，方法中会调用commit去联系 mutations
      //对象写法
  	 ...mapMutations({increment:'JIA',decrement:'JIAN'}),
