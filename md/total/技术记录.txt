@@ -1,0 +1,15 @@
+虚拟技术：
+docker
+WSL2
+
+落地产品：
+VMware
+VirtualBox
+Hyper-V
+
+window包管理器：
+scoop
+
+
+其他：
+vagrant

@@ -7762,4 +7762,907 @@ MySQL在8.0.4以后的版本中采用支持Unicode的国际化组件库实现正
 
 16. 待处理
 17. <font color='orange'>增强的MySQL复制</font>
-18. 
+
+
+
+# 高级篇
+
+# 一、 MySQL的数据目录
+
+## 1、MySQL8主要目录结构
+
+### 1.1、数据库文件的存放路径
+
+* MySQL数据库文件的存放路径：/var/lib/mysql
+
+* ```terminal
+  mysql> show variables like 'datadir';
+  +---------------+----------------------+
+  | Variable_name | Value                |
+  +---------------+----------------------+
+  | datadir       | /var/lib/mysql/      |
+  +---------------+----------------------+
+  1 row in set, 1 warning (0.00 sec)
+  ```
+
+
+### 1.2、相关命令目录
+
+**相关命令目录：/usr/bin（msqladmin、mysqlbinlog、mysqldump等命令）和/usr/sbin**
+
+### 1.3、配置文件目录
+
+**配置文件目录：/usr/share/mysql-8.0（命令及配置文件），/etc/mysql（如my.cnf）**
+
+## 2、数据库和文件系统的关系（系统数据库）
+
+### 2.1、查看默认数据库
+
+查看一下在我的计算机上当前有哪些数据库
+
+```mysql
+mysql> SHOW DATABASES;
+```
+
+可以看到有4个数据库是属于MySQL自带的系统数据库。
+
+* **mysql**
+
+  * MySQL系统自带的核心数据库，它存储了MySQL的用户账户和权限信息，一些存储过程、事件的定义信息，一些运行过程中产生的日志信息，一些帮助信息以及时区信息等。
+
+* **information_schema**
+
+  * MySQL系统自带的数据库，这个数据库保存着MySQL服务器 **维护的所有其他数据库的信息**，比如有哪些表、哪些试图、哪些触发器、哪些列、哪些索引。这些信息并不是真实的用户数据，而是一些描述性信息，有时候也称之为 **元数据**。在系统数据库**information_schema**中提供了一些以 **innodb_**开头的表，用于表示内部系统表。
+
+  * ```mysql
+    mysql> use information_schema
+    Database changed
+    mysql> show tables like 'innodb_%';
+    +-----------------------------------------+
+    | Tables_in_information_schema (INNODB_%) |
+    +-----------------------------------------+
+    | INNODB_BUFFER_PAGE                      |
+    | INNODB_BUFFER_PAGE_LRU                  |
+    | INNODB_BUFFER_POOL_STATS                |
+    | INNODB_CACHED_INDEXES                   |
+    ```
+
+* **performance_schema**
+
+  * MySQL系统自带的数据库，这个数据库里主要保存MySQL服务器运行过程中的一些状态信息，可以用来 **监控 MySQL 服务的各类性能指标**。包括统计最近执行了哪些语句，在执行过程的每个阶段都花费了多长时间，内存的使用情况等信息。
+
+* **sys**
+
+  * MySQL系统自带的数据库，这个数据库主要是通过 **视图** 的形式把 **information_schema** 和 **performance_schema**结合起来，帮助系统管理员和开发人员监控MySQL的技术性能。
+
+### 2.2 数据库在文件系统中的表示
+
+看一下我的计算机上的数据目录下的内容：
+
+```mysql
+root@atguigu01 mysql]# cd /var/lib/mysql
+[root@atguigu01 mysql]# ll
+总用量 189980
+-rw-r-----. 1 mysql mysql 56 7月 28 00:27 auto.cnf
+-rw-r-----. 1 mysql mysql 179 7月 28 00:27 binlog.000001
+-rw-r-----. 1 mysql mysql 820 7月 28 01:00 binlog.000002
+-rw-r-----. 1 mysql mysql 179 7月 29 14:08 binlog.000003
+-rw-r-----. 1 mysql mysql 582 7月 29 16:47 binlog.000004
+-rw-r-----. 1 mysql mysql 179 7月 29 16:51 binlog.000005
+-rw-r-----. 1 mysql mysql 179 7月 29 16:56 binlog.000006
+-rw-r-----. 1 mysql mysql 179 7月 29 17:37 binlog.000007
+-rw-r-----. 1 mysql mysql 24555 7月 30 00:28 binlog.000008
+-rw-r-----. 1 mysql mysql 179 8月 1 11:57 binlog.000009
+-rw-r-----. 1 mysql mysql 156 8月 1 23:21 binlog.000010
+-rw-r-----. 1 mysql mysql 156 8月 2 09:25 binlog.000011
+-rw-r-----. 1 mysql mysql 1469 8月 4 01:40 binlog.000012
+-rw-r-----. 1 mysql mysql 156 8月 6 00:24 binlog.000013
+-rw-r-----. 1 mysql mysql 179 8月 6 08:43 binlog.000014
+-rw-r-----. 1 mysql mysql 156 8月 6 10:56 binlog.000015
+-rw-r-----. 1 mysql mysql 240 8月 6 10:56 binlog.index
+-rw-------. 1 mysql mysql 1676 7月 28 00:27 ca-key.pem
+-rw-r--r--. 1 mysql mysql 1112 7月 28 00:27 ca.pem
+-rw-r--r--. 1 mysql mysql 1112 7月 28 00:27 client-cert.pem
+-rw-------. 1 mysql mysql 1676 7月 28 00:27 client-key.pem
+drwxr-x---. 2 mysql mysql 4096 7月 29 16:34 dbtest
+-rw-r-----. 1 mysql mysql 196608 8月 6 10:58 #ib_16384_0.dblwr
+-rw-r-----. 1 mysql mysql 8585216 7月 28 00:27 #ib_16384_1.dblwr
+-rw-r-----. 1 mysql mysql 3486 8月 6 08:43 ib_buffer_pool
+-rw-r-----. 1 mysql mysql 12582912 8月 6 10:56 ibdata1
+-rw-r-----. 1 mysql mysql 50331648 8月 6 10:58 ib_logfile0
+这个数据目录下的文件和子目录比较多，除了 information_schema 这个系统数据库外，其他的数据库
+在 数据目录 下都有对应的子目录。
+以我的 temp 数据库为例，在MySQL5.7 中打开：
+在MySQL8.0中打开：
+-rw-r-----. 1 mysql mysql 50331648 7月 28 00:27 ib_logfile1
+-rw-r-----. 1 mysql mysql 12582912 8月 6 10:56 ibtmp1
+drwxr-x---. 2 mysql mysql 4096 8月 6 10:56 #innodb_temp
+drwxr-x---. 2 mysql mysql 4096 7月 28 00:27 mysql
+-rw-r-----. 1 mysql mysql 26214400 8月 6 10:56 mysql.ibd
+srwxrwxrwx. 1 mysql mysql 0 8月 6 10:56 mysql.sock
+-rw-------. 1 mysql mysql 5 8月 6 10:56 mysql.sock.lock
+drwxr-x---. 2 mysql mysql 4096 7月 28 00:27 performance_schema
+-rw-------. 1 mysql mysql 1680 7月 28 00:27 private_key.pem
+-rw-r--r--. 1 mysql mysql 452 7月 28 00:27 public_key.pem
+-rw-r--r--. 1 mysql mysql 1112 7月 28 00:27 server-cert.pem
+-rw-------. 1 mysql mysql 1680 7月 28 00:27 server-key.pem
+drwxr-x---. 2 mysql mysql 4096 7月 28 00:27 sys
+drwxr-x---. 2 mysql mysql 4096 7月 29 23:10 temp
+-rw-r-----. 1 mysql mysql 16777216 8月 6 10:58 undo_001
+-rw-r-----. 1 mysql mysql 16777216 8月 6 10:58 undo_002
+
+```
+
+这个数据目录下的文件和子目录比较多，除了 information_schema 这个系统数据库外，其他的数据库 在 数据目录 下都有对应的子目录。以我的 **temp** 数据库为例，在MySQL5.7 中打开：
+
+```mysql
+[root@atguigu02 mysql]# cd ./temp
+[root@atguigu02 temp]# ll
+总用量 1144
+-rw-r-----. 1 mysql mysql 8658 8月 18 11:32 countries.frm
+-rw-r-----. 1 mysql mysql 114688 8月 18 11:32 countries.ibd
+-rw-r-----. 1 mysql mysql 61 8月 18 11:32 db.opt
+-rw-r-----. 1 mysql mysql 8716 8月 18 11:32 departments.frm
+-rw-r-----. 1 mysql mysql 147456 8月 18 11:32 departments.ibd
+-rw-r-----. 1 mysql mysql 3017 8月 18 11:32 emp_details_view.frm
+-rw-r-----. 1 mysql mysql 8982 8月 18 11:32 employees.frm
+-rw-r-----. 1 mysql mysql 180224 8月 18 11:32 employees.ibd
+-rw-r-----. 1 mysql mysql 8660 8月 18 11:32 job_grades.frm
+-rw-r-----. 1 mysql mysql 98304 8月 18 11:32 job_grades.ibd
+-rw-r-----. 1 mysql mysql 8736 8月 18 11:32 job_history.frm
+-rw-r-----. 1 mysql mysql 147456 8月 18 11:32 job_history.ibd
+-rw-r-----. 1 mysql mysql 8688 8月 18 11:32 jobs.frm
+-rw-r-----. 1 mysql mysql 114688 8月 18 11:32 jobs.ibd
+-rw-r-----. 1 mysql mysql 8790 8月 18 11:32 locations.frm
+-rw-r-----. 1 mysql mysql 131072 8月 18 11:32 locations.ibd
+-rw-r-----. 1 mysql mysql 8614 8月 18 11:32 regions.frm
+```
+
+### 2.3、表在文件系统中的表示
+
+#### 2.3.1 InnoDB存储引擎模式
+
+1. **表结构**
+
+   为了保存表结构，**InnoDB**在**数据目录**下对应得数据库子目录下创建了一个专门用于 **描述表结构的文件**，文件名是这样：
+
+   
+
+   ```mysql
+   表名.frm 
+   ```
+
+   是以 **二进制格式** 存储的
+
+   > 注意 
+   >
+   > mysql5.7有frm格式文件，mysql8 没有了
+   >
+   > Oracle官方将frm文件的信息以及更多信息移动到叫做序列化字典（Serialized Dictionary Information，SDI），SDI被写在ibd文件内部。为了从IBD文件中提取SDI信息，Oracle提供了一个应用程序ibd2sdi
+   > 这个工具不需要下载，MySQL8自带了这个工具，只要我们配置好了环境变量就可以到处使用
+   > ————————————————
+   >
+   > ```terminal
+   > ibd2sdi --dump-file=解析后的文件名.txt 要解析的表名.ibd
+   > ```
+   >
+   > 原文链接：https://blog.csdn.net/m0_46573836/article/details/122699162
+
+2. **表中数据和索引**
+
+   * ① 系统表空间（`system tablespace`）
+
+     * 默认情况下，InnoDB会在数据目录下创建一个名为`ibdata1`、大小为 `12M`这个文件就是对应的**系统表空间**。在文件系统上的表示。怎么才12M？注意这个文件是 **自扩展文件** ，当不够用的时候它会自 己增加文件大小。
+
+     * 配置代码：(扩展待处理)
+
+     * ```terminal
+       [server]
+       innodb_data_file_path=data1:512M;data2:512M;autoextend
+       ```
+
+       
+
+   * ② 独立表空间（`file-per-table tablespace`）
+
+     * 在MySQL5.6.6以及之后的版本中，InnoDB并不会默认的把各个表的数据存储到系统表空间中，而是为 **每一个表建立一个独立表空间**。文件格式：`表名.ibd`。该文件存储表的**数据**和**索引**。
+
+   * ③ 系统表空间与独立表空间的设置
+
+     * 我们可以自己指定使用`系统表空间`和`独立表空间` 来存储数据，这个功能由启动参数 `innodb_file_per_table` 控制，比如说我们想可以将表数据都存储到`系统表空间`时，可以在启动MySQL服务器的时候这样配置：
+
+       * ```mysql
+         [server]
+         innodb_file_per_table=0 
+         #为全局变量，没有会话变量
+         # 0 代表使用系统表空间 1 代表使用独立表空间
+         ```
+
+     ④ 其他类型表空间
+
+     * 随着MySQL的发展，除了上述两种老牌表空间之外，现在还新提出了一些不同类型的表空间，比如**通用表空间**（general tablespace）、**临时表空间**（temporary tablespace）等。
+
+#### 2.3.2 MySAM存储引擎模式
+
+1. 表结构
+
+   在存储表结构方面，`MyISAM`和`InnoDB`一样，也是在 **数据目录**下对应的数据库子目录下创建了一个专 门用于描述表结构的文件：
+
+   ```mysql
+   表名.frm
+   ```
+
+# 	二、用户与权限管理
+
+## 1、用户管理
+
+
+
+### 1.1、登录MySQL服务器
+
+```terminal
+mysql –h hostname|hostIP –P port –u username –p DatabaseName –e "SQL语句
+```
+
+下面详细介绍命令中的参数： 
+
+* -h参数 后面接主机名或者主机IP，hostname为主机，hostIP为主机IP。 
+
+* -P参数 后面接MySQL服务的端口，通过该参数连接到指定的端口。MySQL服务的默认端口是3306， 不使用该参数时自动连接到3306端口，port为连接的端口号。 
+
+* -u参数 后面接用户名，username为用户名。
+
+* -p参数 会提示输入密码。 
+
+* DatabaseName参数 指明登录到哪一个数据库中。如果没有该参数，就会直接登录到MySQL数据库 中，然后可以使用USE命令来选择数据库。
+
+* -e参数 后面可以直接加SQL语句。登录MySQL服务器以后即可执行这个SQL语句，然后退出MySQL 服务器。
+
+### 1.2、创建用户
+
+```mysql
+CREATE USER 用户名 [IDENTIFIED BY '密码'][,用户名 [IDENTIFIED BY '密码']];
+```
+
+* 用户名参数表示新建用户的账户，由 **用户（User）** 和 **主机名（Host）** 构成；
+
+* [ ]”表示可选
+* CREATE USER语句可以同时创建多个用户。
+
+例如：
+
+```mysql
+CREATE USER zhang3 IDENTIFIED BY '123123'; # 默认host是 %
+CREATE USER 'kangshifu'@'localhost' IDENTIFIED BY '123456'
+```
+
+### 1.3、修改用户
+
+```mysql
+UPDATE mysql.user SET USER='li4' WHERE USER='wang5';
+FLUSH PRIVILEGES
+```
+
+### 1.4、删除用户
+
+1. ==方式1：使用DROP方式删除（推荐）==
+
+```mysql
+DROP USER user[,user]…
+```
+
+2. ==方式2：使用DELETE方式删除==
+
+```mysql
+DELETE FROM mysql.user WHERE Host=’hostname’ AND User=’username’
+FLUSH PRIVILEGES;
+```
+
+> 注意：**不推荐**通过 `DELETE FROM USER u WHERE USER='li4' `进行删除，系统会有残留信息保 留。而`drop user`命令会删除用户以及对应的权限，执行命令后你会发现mysql.user表和mysql.db表 的相应记录都消失了
+
+### 1.5、设置当前用户密码
+
+==旧的写法如下==：
+
+```mysql
+#修改当前用户的密码（MySQL5.7 测试有效）
+SET PASSWORD=PASSWORD('123456');
+```
+
+这里介绍==推荐的写法==：
+
+1. ==使用ALTER USER 命令来修改当前用户密码==
+
+   ```mysql
+   ALTER USER USER() IDENTIFIED BY 'new_password';
+   ```
+
+   
+
+2. ==使用SET语句来修改当前用户密码==
+
+   ```mysql
+   SET PASSWORD='new_password';
+   ```
+
+### 1.6、修改其他用户密码
+
+1. ==使用ALTER语句来修改普通用户的密码==，可以使用ALTER USER 语法来修改普通用户的密码，基本语法形式如下：
+
+   ```mysql
+   ALTER USER user [IDENTIFIED BY 'new_password'] [,user [IDENTIFIED BY 'new_password']
+   ```
+
+2. ==使用SET命令来修改普通用户的密码==
+
+   ```mysql
+   SET PASSWORD FOR 'username'@'hostname' ='new_password';
+   ```
+
+3. ==使用UPDATE语句修改普通用户的密码（不推荐）==
+
+   ```mysql
+   UPDATE MySQL.user SET authentication_string=PASSWORD("123456")
+   WHERE User = "username" AND Host = "hostname";
+   
+   ```
+
+   
+
+### 1.7、MySQL8密码管理（了解）
+
+1. **密码过期策略**
+
+   * 在MySQL中，数据库管理员可以==手动设置==账号密码过期，也可以建立一个自动密码过期策略。
+   * 过期策略可以是==全局的==，也可以为==每个账号==设置单独的过期策略。
+
+   全局设置：
+
+   * 方式①：使用SQL语句更改该变量的值并持久化
+
+     * ```mysql
+       SET PERSIST default_password_lifetime=180; #建立全局策略，
+       ```
+
+   * 方式②：配置文件my.cnf中进行维护
+
+     * ```mysql
+       [mysqld]
+       default_password_lifetime=100 #建立全局策略，设置密码每隔180天过期
+       ```
+
+   手动设置：
+
+   每个账号即可延用全局密码过期策略，也可单独设置策略。在`CREATE USER`和`ALTER USER`语句上加入 `PASSWORD EXPIRE`选项可实现单独设置策略。
+
+   ```mysql
+   #设置kangshifu账号密码每90天过期
+   CREATE USER 'kangshifu'@'localhost' PASSWORD EXPIRE INTERVAL 90 DAY;
+   ALTER USER 'kangshifu'@'localhost' PASSWORD EXPIRE INTERVAL 90 DAY;
+   #设置密码永不过期：
+   CREATE USER 'kangshifu'@'localhost' PASSWORD EXPIRE NEVER;
+   ALTER USER 'kangshifu'@'localhost' PASSWORD EXPIRE NEVER;
+   #延用全局密码过期策略
+   CREATE USER 'kangshifu'@'localhost' PASSWORD EXPIRE DEFAULT;
+   ALTER USER 'kangshifu'@'localhost' PASSWORD EXPIRE DEFAULT;
+   ```
+
+2. **密码重用策略**
+
+   * 手动设置密码重用方式1：全局
+
+     * 方式①：使用SQL
+
+       * ```mysql
+         SET PERSIST password_history = 6; #设置不能选择最近使用过的6个密码
+         SET PERSIST password_reuse_interval = 365; #设置不能选择最近一年内的密码
+         ```
+
+     * 方式②：my.cnf配置文件
+
+       * ```properties
+         [mysqld]
+         password_history=6
+         password_reuse_interval=365
+         ```
+
+   * 手动设置密码重用方式2：单独设置
+
+     * ```mysql
+       #不能使用最近5个密码：
+       CREATE USER 'kangshifu'@'localhost' PASSWORD HISTORY 5;
+       ALTER USER 'kangshifu'@'localhost' PASSWORD HISTORY 5;
+       #不能使用最近365天内的密码：
+       CREATE USER 'kangshifu'@'localhost' PASSWORD REUSE INTERVAL 365 DAY;
+       ALTER USER 'kangshifu'@'localhost' PASSWORD REUSE INTERVAL 365 DAY;
+       #既不能使用最近5个密码，也不能使用365天内的密码
+       CREATE USER 'kangshifu'@'localhost'
+       PASSWORD HISTORY 5
+       PASSWORD REUSE INTERVAL 365 DAY;
+       ALTER USER 'kangshifu'@'localhost'
+       PASSWORD HISTORY 5
+       PASSWORD REUSE INTERVAL 365 DAY;
+       ```
+
+       
+
+## 2、权限管理
+
+### 2.1权限列表
+
+```mysql
+show privileges;
+```
+
+1. ==CREATE和DROP权限==
+
+   如果将 MySQL数据库中的DROP权限授予某用户，用户就可以删除MySQL访问权限保存的数据库。
+
+2. ==SELECT、INSERT、UPDATE和DELETE权限==
+
+   允许在一个数据库现有的表上实施操作
+
+3. ==SELECT权限==
+
+   只有在它们真正从一个表中检索行时才被用到。
+
+4. ==INDEX权限==
+
+   允许创建或删除索引，INDEX适用于已有的表。如果具有某个表的CREATE权限，就可以在CREATE TABLE语句中包括索引定义。
+
+5. ==ALTER权限==
+
+   可以使用ALTER TABLE来更改表的结构和重新命名表。
+
+6. ==CREATE ROUTINE权限==
+
+   用来创建保存的程序（函数和程序），ALTER ROUTINE 权限用来更改和删除保存的程序。
+
+7. ==EXECUTE权限==
+
+   用来执行保存的 程序。
+
+8. ==GRANT权限==
+
+   允许授权给其他用户，可用于数据库、表和保存的程序。
+
+9. ==FILE权限==
+
+   用户可以使用L**OAD DATA INFILE**和**SELECT …INTO OUTFILE**语句读或写服务器上的文件，任何被授予FILE权限的用户都能读或写MYSQL服务器上的任何文件（说明用户可以读任何数据库目录下的文件，因为服务器可以访问这些文件）
+
+### 2.2授予权限的原则
+
+权限控制主要是出于安全因素，因此需要遵循以下几个 **经验原则** ：
+
+* **授予满足需求的最小权限**，防止用户干坏事。
+* 创建用户的时候**限制用户的登录主机**，一般时限制成指定IP或者内网IP段
+* 为每个用户==设置满足密码复杂度的密码==
+* ==定期清理不需要的用户==，回收权限或者删除用户。
+
+### 2.3 授予权限
+
+给用户授权的方式有2种，分别通过把==角色赋予用户给用户授权==和==直接给用户授权==。用户是数据库的使用者。
+
+授权命令：
+
+```mysql
+GRANT 权限1，权限2，_权限n ON 数据库名称，表名称 TO 用户名@用户地址 [IDENTIFIED BY '密码口令']
+```
+
+* 该权限如果发现没有该用户，则会直接新建一个用户。
+
+比如：
+
+* 给li4用户用本地命令行方式，授予atguigudb这个库下的所有表的增删改查的权限。
+
+  ```mysql
+  GRANT SELECT,INSERT,DELETE,UPDATE ON atguigudb.* TO li4@localhost;
+  ```
+
+* 授予通过网络方式登录的joe用户，对所有库所有表的全部权限，密码设为123。注意这里唯独不包括grant的权限
+
+  ```mysql
+  GRANT ALL PRIVILEGES ON *.* TO 'joe'@'%' IDENTIFIED BY '123';
+  ```
+
+  > 我们在开发应用的时候，经常会遇到一种需求，就是要根据用户的不同，对数据进行横向和纵向的 分组。 所谓横向的分组，就是指用户可以接触到的数据的范围，比如可以看到哪些表的数据； 所谓纵向的分组，就是指用户对接触到的数据能访问到什么程度，比如能看、能改，甚至是 删除。
+
+### 2.4 查看权限
+
+* 查看当前用户权限
+
+  ```mysql
+  SHOW GRANTS;
+  #或
+  SHOW GRANTS FOR CURRENT_USER;
+  #或
+  SHOW GRANTS FOR CURRENT_USER;
+  ```
+
+  
+
+* 查看某用户的全局权限
+
+  ```mysql
+  SHOW GRANTS FOR 'user'@'主机地址';
+  ```
+
+### 2.5 收回权限
+
+收回权限就是取消已经赋予用户的某些权限。**收回用户不必要的权限可以在一定程度上保证系统安全性**。MySQL种使用==REVOKE语句==取消用户的某些权限。使用REVOKE收回权限之后，用户账户的记录将从db、host、tables_priv和columns_priv表中删除，但是用户账户记录任然在user表中保存（删除user表中的账户记录使用DROP USER 语句）
+
+**注意：在将用户账户从user表删除之前，应该收回相应用户的所有权限**
+
+* 收回权限命令
+
+  * ```mysql
+    REVOKE 权限1,权限2,_权限n ON 数据库名.表名称 FROM 用户名@用户地址;
+    ```
+
+  * 举例
+
+  * ```mysql
+    #收回全库全表的所有权限
+    REVOKE PRIVILEGES ALL ON *.* FROM 'joe'@'%';
+    #收回mysql库下的所有表的curd权限
+    REVOKE INSERT,DELETE,UPDATE,SELECT ON mysql.* from 'joe'@localhost;
+    ```
+
+  * **注意：需用户重新登录后才能生效**
+
+
+
+## 3、权限表
+
+### 3.1 user表
+
+```mysql
+mysql> desc user;
++--------------------------+-----------------------------------+------+-----+-----------------------+-------+
+| Field                    | Type                              | Null | Key | Default               | Extra |
++--------------------------+-----------------------------------+------+-----+-----------------------+-------+
+| Host                     | char(255)                         | NO   | PRI |                       |       |
+| User                     | char(32)                          | NO   | PRI |                       |       |
+| Select_priv              | enum('N','Y')                     | NO   |     | N                     |       |
+| Insert_priv              | enum('N','Y')                     | NO   |     | N                     |       |
+| Update_priv              | enum('N','Y')                     | NO   |     | N                     |       |
+| Delete_priv              | enum('N','Y')                     | NO   |     | N                     |       |
+| Create_priv              | enum('N','Y')                     | NO   |     | N                     |       |
+| Drop_priv                | enum('N','Y')                     | NO   |     | N                     |       |
+| Reload_priv              | enum('N','Y')                     | NO   |     | N                     |       |
+| Shutdown_priv            | enum('N','Y')                     | NO   |     | N                     |       |
+| Process_priv             | enum('N','Y')                     | NO   |     | N                     |       |
+| File_priv                | enum('N','Y')                     | NO   |     | N                     |       |
+| Grant_priv               | enum('N','Y')                     | NO   |     | N                     |       |
+| References_priv          | enum('N','Y')                     | NO   |     | N                     |       |
+| Index_priv               | enum('N','Y')                     | NO   |     | N                     |       |
+| Alter_priv               | enum('N','Y')                     | NO   |     | N                     |       |
+| Show_db_priv             | enum('N','Y')                     | NO   |     | N                     |       |
+| Super_priv               | enum('N','Y')                     | NO   |     | N                     |       |
+| Create_tmp_table_priv    | enum('N','Y')                     | NO   |     | N                     |       |
+| Lock_tables_priv         | enum('N','Y')                     | NO   |     | N                     |       |
+| Execute_priv             | enum('N','Y')                     | NO   |     | N                     |       |
+| Repl_slave_priv          | enum('N','Y')                     | NO   |     | N                     |       |
+| Repl_client_priv         | enum('N','Y')                     | NO   |     | N                     |       |
+| Create_view_priv         | enum('N','Y')                     | NO   |     | N                     |       |
+| Show_view_priv           | enum('N','Y')                     | NO   |     | N                     |       |
+| Create_routine_priv      | enum('N','Y')                     | NO   |     | N                     |       |
+| Alter_routine_priv       | enum('N','Y')                     | NO   |     | N                     |       |
+| Create_user_priv         | enum('N','Y')                     | NO   |     | N                     |       |
+| Event_priv               | enum('N','Y')                     | NO   |     | N                     |       |
+| Trigger_priv             | enum('N','Y')                     | NO   |     | N                     |       |
+| Create_tablespace_priv   | enum('N','Y')                     | NO   |     | N                     |       |
+| ssl_type                 | enum('','ANY','X509','SPECIFIED') | NO   |     |                       |       |
+| ssl_cipher               | blob                              | NO   |     | NULL                  |       |
+| x509_issuer              | blob                              | NO   |     | NULL                  |       |
+| x509_subject             | blob                              | NO   |     | NULL                  |       |
+| max_questions            | int unsigned                      | NO   |     | 0                     |       |
+| max_updates              | int unsigned                      | NO   |     | 0                     |       |
+| max_connections          | int unsigned                      | NO   |     | 0                     |       |
+| max_user_connections     | int unsigned                      | NO   |     | 0                     |       |
+| plugin                   | char(64)                          | NO   |     | caching_sha2_password |       |
+| authentication_string    | text                              | YES  |     | NULL                  |       |
+| password_expired         | enum('N','Y')                     | NO   |     | N                     |       |
+| password_last_changed    | timestamp                         | YES  |     | NULL                  |       |
+| password_lifetime        | smallint unsigned                 | YES  |     | NULL                  |       |
+| account_locked           | enum('N','Y')                     | NO   |     | N                     |       |
+| Create_role_priv         | enum('N','Y')                     | NO   |     | N                     |       |
+| Drop_role_priv           | enum('N','Y')                     | NO   |     | N                     |       |
+| Password_reuse_history   | smallint unsigned                 | YES  |     | NULL                  |       |
+| Password_reuse_time      | smallint unsigned                 | YES  |     | NULL                  |       |
+| Password_require_current | enum('N','Y')                     | YES  |     | NULL                  |       |
+| User_attributes          | json                              | YES  |     | NULL                  |       |
++--------------------------+-----------------------------------+------+-----+-----------------------+-------+
+```
+
+user表是MySQL中最重要的一个权限表，==记录用户账号和权限信息==，有49个字段。
+
+1. **范围列（或用户列）**
+
+   * **host** ：表示连接类型
+     * `%` 表示所有远程通过TCP方式的连接
+     * `IP 地址`如 (192.168.1.2、127.0.0.1) 通过制定ip地址进行的TCP方式的连接
+     * `机器名` 通过制定网络中的机器名进行的TCP方式的连接
+     * `::1`IPv6的本地ip地址，等同于IPv4的127.0.01
+   * **user**：表示用户名，同一用户通过不同方式链接的权限是不一样
+   * **password**：密码
+     * 所有密码串通过 password(明文字符串) 生成的密文字符串。MySQL 8.0 在用户管理方面增加了 角色管理，默认的密码加密方式也做了调整，由之前的 `SHA1`改为了 `SHA2 `，不可逆 。同时 加上 MySQL 5.7 的禁用用户和用户过期的功能，MySQL 在用户管理方面的功能和安全性都较之 前版本大大的增强了。
+     * mysql 5.7 及之后版本的密码保存到 authentication_string 字段中不再使用password 字 段。
+
+2. **权限列**
+
+   * Grant_priv字段
+     * 表示是否拥有GRANT权限
+   * Shutdown_priv字段
+     * 表示是否拥有停止MySQL服务的权限
+   * Super_priv字段
+     * 表示是否拥有超级权限
+   * Execute_priv字段
+     * 表示是否拥有EXECUTE权限。拥有EXECUTE权限，可以执行存储过程和函数。
+   * Select_priv,Insert_priv等
+     * 为该用户所拥有的权限。
+
+   3. **安全列**
+      * 安全列只有6个字段，其中两个是ssl相关的（ssl_type、ssl_cipher），用于`加密`；两个是x509相关的（x509_issuer、x509_subject）用于`标识用户`;另外两个Plugin字段用于`验证用户身份`的插件，该字段不能为空。 如果该字段为空，服务器就使用内建授权验证机制验证用户身份。
+   4. **资源控制列**
+      * 资源控制列的字段用来==限制用户使用的资源，==，包含4个字段，分别为：
+        * ①max_questions，用户每小时允许执行的查询操作次数
+        * ②max_updates，用户每小时允许执行的更新操作次数；
+        * ③max_connections，用户每小时允许执行的连接操作次数。
+        * ④max_user_connections，用户允许同时建立的连接次数。
+        * **注意： 默认都是0，没有限制**
+
+### 3.2 db表
+
+```mysql
+mysql> DESCRIBE db;
++-----------------------+---------------+------+-----+---------+-------+
+| Field                 | Type          | Null | Key | Default | Extra |
++-----------------------+---------------+------+-----+---------+-------+
+| Host                  | char(255)     | NO   | PRI |         |       |
+| Db                    | char(64)      | NO   | PRI |         |       |
+| User                  | char(32)      | NO   | PRI |         |       |
+| Select_priv           | enum('N','Y') | NO   |     | N       |       |
+| Insert_priv           | enum('N','Y') | NO   |     | N       |       |
+| Update_priv           | enum('N','Y') | NO   |     | N       |       |
+| Delete_priv           | enum('N','Y') | NO   |     | N       |       |
+| Create_priv           | enum('N','Y') | NO   |     | N       |       |
+| Drop_priv             | enum('N','Y') | NO   |     | N       |       |
+| Grant_priv            | enum('N','Y') | NO   |     | N       |       |
+| References_priv       | enum('N','Y') | NO   |     | N       |       |
+| Index_priv            | enum('N','Y') | NO   |     | N       |       |
+| Alter_priv            | enum('N','Y') | NO   |     | N       |       |
+| Create_tmp_table_priv | enum('N','Y') | NO   |     | N       |       |
+| Lock_tables_priv      | enum('N','Y') | NO   |     | N       |       |
+| Create_view_priv      | enum('N','Y') | NO   |     | N       |       |
+| Show_view_priv        | enum('N','Y') | NO   |     | N       |       |
+| Create_routine_priv   | enum('N','Y') | NO   |     | N       |       |
+| Alter_routine_priv    | enum('N','Y') | NO   |     | N       |       |
+| Execute_priv          | enum('N','Y') | NO   |     | N       |       |
+| Event_priv            | enum('N','Y') | NO   |     | N       |       |
+| Trigger_priv          | enum('N','Y') | NO   |     | N       |       |
++-----------------------+---------------+------+-----+---------+-------+
+22 rows in set (0.01 sec)
+```
+
+1. **用户列** 
+   * db表用户列有3个字段，分别是**Host、User、Db。**这3个字段分别表示**主机名、用户名和数据库名**
+2. **权限列**
+   * Create_routine_priv和Alter_routine_priv这两个字段决定用户是否具有创建和修改存储过程的权限。
+
+### 3.3 tables_priv表和columns_priv表
+
+tables_priv表用来==对表设置操作权限==，columns_priv表用来对表的==某一列设置权限==。tables_priv表和columns_priv表的结构分别如图：
+
+<img src="MySql.assets\image-20240301153137581.png" alt="image-20240301153137581" style="zoom: 200%;" />
+
+tables_priv表有8个字段，分别是Host、Db、User、Table_name、Grantor、Timestamp、Table_priv和 Column_priv，各个字段说明如下：
+
+
+
+* `Host `、 `Db `、 `User `和 `Table_name`，不言而喻
+* Grantor表示修改该记录的用户
+* Timestamp 表示修改该记录的时间。
+* `Table_priv`表示对象的操作权限。包括Select、Insert、Update、Delete、Create、Drop、Grant、 Referenc
+* `Column_priv`字段表示对表中的列的操作权限，包括Select、Insert、Update和References。
+
+```mysql
+mysql> desc columns_priv;
++-------------+----------------------------------------------+------+-----+-------------------+-----------------------------------------------+
+| Field       | Type                                         | Null | Key | Default           | Extra                                         |
++-------------+----------------------------------------------+------+-----+-------------------+-----------------------------------------------+
+| Host        | char(255)                                    | NO   | PRI |                   |                                               |
+| Db          | char(64)                                     | NO   | PRI |                   |                                               |
+| User        | char(32)                                     | NO   | PRI |                   |                                               |
+| Table_name  | char(64)                                     | NO   | PRI |                   |                                               |
+| Column_name | char(64)                                     | NO   | PRI |                   |                                               |
+| Timestamp   | timestamp                                    | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
+| Column_priv | set('Select','Insert','Update','References') | NO   |     |                   |                                               |
++-------------+----------------------------------------------+------+-----+-------------------+-----------------------------------------------+
+7 rows in set (0.00 sec)
+```
+
+### 3.4 procs_priv表
+
+procs_priv表示可以对**存储过程和存储函数设置操作权限**，表结构如图：
+
+```mysql
+mysql> desc mysql.procs_priv;
++--------------+----------------------------------------+------+-----+-------------------+-----------------------------------------------+
+| Field        | Type                                   | Null | Key | Default           | Extra                                         |
++--------------+----------------------------------------+------+-----+-------------------+-----------------------------------------------+
+| Host         | char(255)                              | NO   | PRI |                   |                                               |
+| Db           | char(64)                               | NO   | PRI |                   |                                               |
+| User         | char(32)                               | NO   | PRI |                   |                                               |
+| Routine_name | char(64)                               | NO   | PRI |                   |                                               |
+| Routine_type | enum('FUNCTION','PROCEDURE')           | NO   | PRI | NULL              |                                               |
+| Grantor      | varchar(288)                           | NO   | MUL |                   |                                               |
+| Proc_priv    | set('Execute','Alter Routine','Grant') | NO   |     |                   |                                               |
+| Timestamp    | timestamp                              | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
++--------------+----------------------------------------+------+-----+-------------------+-----------------------------------------------+
+8 rows in set (0.00 sec)
+```
+
+## 4、访问控制（了解）
+
+### 4.1 连接核实阶段
+
+当用户试图连接MySQL服务器时，服务器基于用户的身份以及用户是否能提供正确的密码验证身份来确 定接受或者拒绝连接。即客户端用户会在连接请求中提供用户名、主机地址、用户密码，MySQL服务器 接收到用户请求后，会**使用user表中的host、user和authentication_string这3个字段匹配客户端提供信息**
+
+服务器只有在user表记录的Host和User字段匹配客户端主机名和用户名，并且提供正确的密码时才接受 连接。**如果连接核实没有通过，服务器就完全拒绝访问；否则，服务器接受连接，然后进入阶段2等待 用户请求。**
+
+### 4.2 请求核实阶段
+
+一旦建立了连接，服务器就进入了访问控制的阶段2，也就是请求核实阶段。对此连接上进来的每个请 求，服务器检查该请求要执行什么操作、是否有**足够的权限**来执行它，这正是需要授权表中的权限列发 挥作用的地方。这些权限可以来自user、db、table_priv和column_priv表。
+
+确认权限时，MySQL首先 检**查user表** ，如果指定的权限没有在user表中被授予，那么MySQL就会继续 **检查db表** ，db表是下一安全层级，其中的权限限定于数据库层级，在该层级的SELECT权限允许用户查看指 定数据库的所有表中的数据；如果在该层级没有找到限定的权限，则MySQL继续 **检查tables_priv表** 以及 **columns_priv表** ，如果所有权限表都检查完毕，但还是没有找到允许的权限操作，MySQL将 **返回错误信息** ，用户请求的操作不能执行，操作失败。
+
+> 提示：MySQL通过向下层级的顺序（从user表到columns_priv表）检查权限表，但并不是所有的权限都要执行该过程。例如，一个用户登录到MySQL服务器之后只执行对MySQL的管理操作，此时只 涉及管理权限，因此MySQL只检查user表。另外，如果请求的权限操作不被允许，MySQL也不会继 续检查下一层级的表。
+
+## 5、角色管理
+
+### 5.1 角色的理解
+
+引入角色的目的是`方便管理拥有相同权限的用户`，**恰当的权限设定，可以确保数据的安全性，这是至关重要的。**
+
+![image-20240301163003981](MySql.assets\image-20240301163003981.png)
+
+### 5.2 创建角色
+
+创建角色使用 CREATE ROLE 语句，语法如下：
+
+```mysql
+CREATE ROLE ‘role_name’ [@'host_name'] [,'role_name'[@'host_name']]
+```
+
+角色名称的命名规则和用户名类似。如果==host_name省略，默认为%==，==role_name不可省略==，不可为空。
+
+例子：
+
+```mysql
+CREATE ROLE 'manager'@'localhost';
+```
+
+### 5.3 给角色赋予权限
+
+创建角色之后，默认这个角色是没有任何权限的，我们需要给角色授权。给角色授权的语法结构是：
+
+```mysql
+GRANT privileges ON table_name TO 'role_name'[@'host_name'];
+```
+
+上述语句中privileges代表权限的名称，多个权限以逗号隔开。可使用SHOW语句查询权限名称，列出了部分权限列表。
+
+```mysql
+show privileges\G;
+```
+
+练习1：我们现在想给经理角色授予商品信息表、盘点表和应付账款表的只读权限，就可以用下面的代码 来实现：
+
+```mysql
+GRANT SELECT ON demo.settlement TO 'manager'@'localhost';
+GRANT SELECT ON demo.goodsmaster TO 'manager'@'localhost';
+GRANT SELECT ON demo.invcount TO 'manager'@'localhost';
+```
+
+### 5.4 查看角色的权限
+
+```mysql
+ mysql> SHOW GRANTS FOR 'manager'@‘localhost’;
++-------------------------------------------------------+
+| Grants for manager@% |
++-------------------------------------------------------+
+| GRANT USAGE ON *.* TO `manager`@`%` |
+| GRANT SELECT ON `demo`.`goodsmaster` TO `manager`@`%` |
+| GRANT SELECT ON `demo`.`invcount` TO `manager`@`%` |
+| GRANT SELECT ON `demo`.`settlement` TO `manager`@`%` |
++-------------------------------------------------------+
+
+```
+
+**注意**：只要你创建了一个角色，系统就会自动给你一个==USEGE==权限，意思是 **连接登录数据库的权限**
+
+### 5.5 回收角色的权限
+
+角色授权后，可以对角色的权限进行维护，对权限进行添加或撤销。添加权限使用GRANT语句，与角色 授权相同。撤销角色或角色权限使用REVOKE语句。
+
+```mysql
+#语法
+REVOKE privileges ON tablename FROM 'rolename';
+#：撤销school_write角色的权限。 （1）使用如下语句撤销school_write角色的权限。
+REVOKE INSERT, UPDATE, DELETE ON school.* FROM 'school_write';
+#revoke  after  looking
+SHOW GRANTS FOR 'school_write';
+```
+
+### 5.6 删除角色
+
+```mysql
+#语法
+DROP ROLE role [,role2]...
+#例子
+DROP ROLE 'school_read';
+```
+
+**注意：** 如果你删除了角色，那么用户也就**失去**了通过**这个角色所获得的所有权限**
+
+### 5.7 给用户赋予角色
+
+角色创建并授权后，要赋给用户**并**处于==激活状态==才能发挥作用
+
+使用如下：
+
+```mysql
+#语法
+GRANT role1 [,role2,...] TO user1 [,user2,...];
+#例子
+GRANT 'school_read' TO 'kangshifu'@'localhost';
+#查看授权
+SHOW GRANTS FOR 'kangshifu'@'localhost';
+#查看当前用户当前角色
+SELECT CURRENT_ROLE();
+```
+
+### 5.8 激活角色
+
+**方式1：使用 set default role 命令激活角色**
+
+```mysql
+SET DEFAULT ROLE ALL TO 'xx'@‘localhost’;
+```
+
+**方式2：将active_all_roles_on_login设置为ON**（是全局变量，没有会话变量）
+
+```mysql
+SET GLOBAL activate_all_roles_on_login=ON;
+#作用范围：全体角色永久激活
+```
+
+### 5.9 撤销用户角色
+
+```mysql
+#语法
+REVOKE role1 FROM user1;
+#练习
+REVOKE 'school_read' FROM 'kangshifu'@'localhost';
+#查看
+SHOW GRANTS FOR 'kangshifu'@'localhost';
+```
+
+### 5.10 设置强制角色
+
+**方式1：服务启动前设置** 
+
+```mysql
+[mysqld]
+mandatory_roles='role1,role2@localhost,r3@%.atguigu.com'
+#%.atguigu.com解释：而是允许以 ".atguigu.com" 结尾的任意 IP 地址访问数据库
+```
+
+**方式2：运行时设置**
+
+```mysql
+SET PERSIST mandatory_roles = 'role1,role2@localhost,r3@%.example.com'; #系统重启后仍然有效
+SET GLOBAL mandatory_roles = 'role1,role2@localhost,r3@%.example.com'; #系统重启后失效
+```
+
